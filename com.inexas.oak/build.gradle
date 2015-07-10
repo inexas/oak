@@ -1,0 +1,148 @@
+/**
+ * build.gradle for Oak
+ */
+
+// I n c l u d e   p l u g i n s
+
+apply plugin: 'eclipse'				// To be able to create an Eclipse project
+apply plugin: 'java'
+apply plugin: 'project-report'		// For lots of reports .../build/reports/project/
+									// Gradle info, see  dependencies, properties, tasks
+apply plugin: 'maven'				// Build pom.xml, move artifacts to OSS
+apply plugin: 'signing'				// Sign JAR files
+
+// D e f i n e   u s e f u l   c o n s t a n t s
+
+def PROJECT_NAME = 'Oak'
+def PROJECT_NAME_LOWER = 'oak'
+def PROJECT_VENDOR = 'Inexas'
+def PROJECT_GROUP = 'com.inexas'
+def PROJECT_VERSION = '0.1.0'
+def PROJECT_DESCRIPTION = 'Oak - Better than JSON, much better than XML'
+def PROJECT_URL = 'http://www.inexas.org'
+def PROJECT_JAVA_VERSION = '1.8'
+
+// J A  R   f i l e
+
+group = PROJECT_GROUP
+version = PROJECT_VERSION
+description = PROJECT_DESCRIPTION
+sourceCompatibility = PROJECT_JAVA_VERSION
+archivesBaseName = PROJECT_NAME_LOWER
+
+
+defaultTasks 'compileTestJava'	
+
+test {
+	enableAssertions true
+}
+
+repositories {
+	flatDir {
+		dirs LocalRepository
+	}
+	mavenLocal()
+	mavenCentral()
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir 'src'
+		}
+		java {
+			srcDir 'srcgen'
+		}
+	}
+	test {
+		java {
+			srcDir 'srctest'
+		}
+	}
+}
+
+jar {
+	manifest {
+		attributes(
+			"Specification-Title": PROJECT_DESCRIPTION,
+			"Specification-Version": PROJECT_VERSION,
+			"Specification-Vendor": PROJECT_VENDOR,
+			"Implementation-Title": PROJECT_DESCRIPTION,
+			"Implementation-Version": PROJECT_VERSION,
+			"Implementation-Vendor": PROJECT_VENDOR)
+	}
+}
+
+dependencies {
+	compile 'com.inexas:util:0.1.0'
+	compile 'com.inexas:tad:0.1.0'
+	compile 'org.antlr:antlr4-runtime:4.5'
+	compile 'org.apache.commons:commons-lang3:3.3.2'
+	testCompile 'junit:junit:4.11'
+}
+
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			beforeDeployment {
+				MavenDeployment deployment -> signing.signPom(deployment)
+			}
+	
+			// See ~/.gradle/gradle.properties for ossUsername & ossPassword
+			
+			repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+				authentication(userName: ossUsername, password: ossPassword)
+			}
+	
+			snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+				authentication(userName: ossUsername, password: ossPassword)
+			}
+	
+			pom.project {
+				name PROJECT_NAME
+				packaging 'jar'
+				description PROJECT_DESCRIPTION
+				url PROJECT_URL
+	
+				scm {
+					url 'https://github.com/inexas/' + PROJECT_NAME_LOWER
+					connection 'scm:git:git://github.com/inexas/'+ PROJECT_NAME_LOWER + '.git'
+					developerConnection 'scm:git:git@github.com:inexas/'+ PROJECT_NAME_LOWER + '.git'
+				}
+	
+				licenses {
+					license {
+						name 'The Apache License, Version 2.0'
+						url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+					}
+				}
+	
+				developers {
+					developer {
+						id 'kwhittingham'
+						name 'Keith Whittingham'
+						email 'kwhittingham@gmail.com'
+					}
+				}
+			}
+		}
+	}
+}

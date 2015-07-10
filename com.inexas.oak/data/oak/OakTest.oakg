@@ -1,0 +1,129 @@
+Grammar { // Identifies type of file, in this case: Grammar
+	key: OakTest;
+	
+	Object [{
+		/**
+		 * Define the Grammar as a key, a Map of Objects and a Map
+		 * of Properties
+		 */
+		key: Grammar;
+		class: "com.inexas.oak.Grammar";
+		root;
+		
+		Member [{ // The list of membership rules
+			key: key;
+		}, {
+			key: Object;
+			cardinality: 1..*;
+			collection: map;
+		}, {
+			key: Property;
+			cardinality: 1..*;
+			collection: map;
+		}, {
+			key: visitors;
+			cardinality: 0..*;
+	}]
+		
+	}, {
+		/**
+		 * Define a Object as a key, class and a list of 1 or more Members
+		 */
+		key: Object;
+		class: "com.inexas.oak.Objet";
+		
+		Member [{
+			key: key;
+		}, {
+			key: class;
+			cardinality: 1..1;
+		}, {
+			key: root;
+			cardinality: 0..1;
+		}, {
+			key: Member;
+			cardinality: 1..*;
+			collection: list;
+		}]
+		
+	}, {
+		/**
+		 * Define a Member as a key, cardinality and optional collection type
+		 */
+		key: Member;
+		class: "com.inexas.oak.Member";
+		
+		Member [{
+			key: key;
+			cardinality: 1..1;
+		}, {
+			key: cardinality;
+			cardinality: 0..1;
+		}, {
+			key: collection;
+			cardinality: 0..1;
+		}]
+	}]
+		
+	Object {
+		key: Property;
+		class: "com.inexas.oak.Property";
+		
+		Member [{
+			key: key;
+			cardinality: 1..1;
+		}, {
+			key: type; // Data type, default text
+			cardinality: 0..1;
+		}, {
+			key: Constraint; // Constraints apply to Property value
+			cardinality: 0..*;
+			collection: list;
+		}]
+	}
+
+	Object {
+		key: Constraint;
+		class: "com.inexas.oak.Constraint";
+		
+		Member [{
+			key: key;
+			cardinality: 1..1;
+		}, {
+			key: value;
+			cardinality: 0..*;
+			collection: set;
+		}]
+	}
+
+	Property [{ // The set of Property definitions
+		key: key;
+		type: identifier;
+	}, {
+		key: root;
+		type: bool;
+	}, {
+		key: cardinality;
+		type: cardinality;
+	}, {
+		key: collection;
+		type: identifier;
+		Constraint {
+			key: choice;
+			value [ set, map, list ]
+		}
+	}, {
+		key: type;
+		type: identifier;
+	}, {
+		key: class;
+		type: text;
+	}, {
+		key: value;
+		type: ANY;
+	}, {
+		key: visitors;
+		type: text;
+	}]
+	
+}

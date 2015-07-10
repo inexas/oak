@@ -1,0 +1,24 @@
+Grammar {
+	key: OakTest;
+	
+	Object [{
+		key: Test1;
+		class: "com.inexas.oak.Test1";
+		
+		Member [{
+			key: key1;
+		}, {
+			key: key2;
+			cardinality: 0..1;
+		}]
+	}]
+
+	Property [{
+		key: key1;
+		type: identifier;
+	}, {
+		key: key2;
+		type: bool;
+	}]
+
+}
