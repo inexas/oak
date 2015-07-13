@@ -72,7 +72,7 @@ literal
 	|	FloatingPointLiteral
 	|	BigDecimalLiteral
 	|	StringLiteral
-	|	DateLiteral
+	|	DateTimeLiteral
 	|	True
 	|	False
 	|	Null
@@ -128,7 +128,6 @@ Shr:		'>>';
 Usr:		'>>>';	// Usr must be last math operator
 Comma:		',';
 Semi:		';';
-At:			'@';
 Null:		'null';
 True:		'true';
 False:		'false';
@@ -281,8 +280,20 @@ StringLiteral
 	:	'"' StringCharacter*  '"'
 	;
 
-DateLiteral
-	:	'\'' [0-9:/ ]+  '\''
+DateTimeLiteral
+	:	'@' Date WS Time
+	|	'@' Date
+	|	'@' Time
+	;
+
+// yyyy/mm/dd
+fragment Date
+	:	Digit+ '/' Digit+ '/' Digit+
+	;
+
+// hh:mm[:ss[:ms]]
+fragment Time
+	:	Digit+ ':' Digit+ ( ':' Digit+ (':' Digit+)? )?
 	;
 
 fragment StringCharacter
@@ -290,6 +301,7 @@ fragment StringCharacter
 	|	EscapeSequence
 	;
 
+// Unused
 fragment SingleCharacter
 	:	~['\\]
 	;

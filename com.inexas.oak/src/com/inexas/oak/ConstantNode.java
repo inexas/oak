@@ -10,9 +10,12 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import com.inexas.exception.*;
 
 public class ConstantNode extends ExpressionNode {
-	public final static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("y/M/d HH:mm:ss");
 	public final static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("y/M/d");
-	public final static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+	public final static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+	public final static DateTimeFormatter timeFormatterSecs = DateTimeFormatter.ofPattern("HH:mm:ss");
+	public final static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("y/M/d HH:mm");
+	public final static DateTimeFormatter dateTimeFormatterSecs =
+			DateTimeFormatter.ofPattern("y/M/d HH:mm:ss");
 	public final DataType type;
 	private Object value;
 
@@ -54,21 +57,43 @@ public class ConstantNode extends ExpressionNode {
 	public static ConstantNode toDate(ParserRuleContext context, String text) {
 
 		final boolean containsDate = text.indexOf('/') > 0;
-		final boolean containsTime = text.indexOf(':') > 0;
+		int colonCount = 0;
+		final char[] ca = text.toCharArray();
+		for(final char c : ca) {
+			if(c == ':') {
+				colonCount++;
+			}
+		}
 
 		final Temporal temporal;
 		final DataType dataType;
 		if(containsDate) {
-			if(containsTime) {
-				temporal = LocalDateTime.parse(text, dateTimeFormatter);
-				dataType = DataType.datetime;
-			} else {
-				temporal = LocalDate.parse(text, dateFormatter);
+			if(colonCount == 0) {
 				dataType = DataType.date;
+				temporal = LocalDate.parse(text, dateFormatter);
+			} else {
+				dataType = DataType.datetime;
+				final DateTimeFormatter formatter;
+				if(colonCount == 1) {
+					formatter = dateTimeFormatter;
+				} else if(colonCount == 2) {
+					formatter = dateTimeFormatterSecs;
+				} else {
+					throw new InexasRuntimeException("Can't parse date/time: " + text);
+				}
+				temporal = LocalDateTime.parse(text, formatter);
 			}
 		} else {
-			temporal = LocalTime.parse(text, timeFormatter);
 			dataType = DataType.time;
+			final DateTimeFormatter formatter;
+			if(colonCount == 1) {
+				formatter = timeFormatter;
+			} else if(colonCount == 2) {
+				formatter = timeFormatterSecs;
+			} else {
+				throw new InexasRuntimeException("Can't parse date/time: " + text);
+			}
+			temporal = LocalTime.parse(text, formatter);
 		}
 
 		return new ConstantNode(context, temporal, dataType);

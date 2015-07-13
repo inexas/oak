@@ -42,7 +42,7 @@ public class Member implements Keyed {
 		return key;
 	}
 
-	void accept(GrammarVisitor visitor) {
+	void accept(DialectVisitor visitor) {
 		visitor.visit(this);
 	}
 }

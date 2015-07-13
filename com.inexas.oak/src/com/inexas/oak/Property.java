@@ -39,7 +39,7 @@ public class Property extends Locus.Base implements Keyed {
 		return key;
 	}
 
-	void accept(GrammarVisitor visitor) {
+	void accept(DialectVisitor visitor) {
 		visitor.enter(this);
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {

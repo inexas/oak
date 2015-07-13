@@ -1,13 +1,13 @@
-Grammar { // Identifies type of file, in this case: Grammar
+Dialect { // Identifies type of file, in this case: Dialect
 	key: OakTest;
 	
 	Object [{
 		/**
-		 * Define the Grammar as a key, a Map of Objects and a Map
+		 * Define the Dialect as a key, a Map of Objects and a Map
 		 * of Properties
 		 */
-		key: Grammar;
-		class: "com.inexas.oak.Grammar";
+		key: Dialect;
+		class: "com.inexas.oak.Dialect";
 		root;
 		
 		Member [{ // The list of membership rules
@@ -23,7 +23,7 @@ Grammar { // Identifies type of file, in this case: Grammar
 		}, {
 			key: visitors;
 			cardinality: 0..*;
-	}]
+		}]
 		
 	}, {
 		/**
@@ -36,7 +36,7 @@ Grammar { // Identifies type of file, in this case: Grammar
 			key: key;
 		}, {
 			key: class;
-			cardinality: 1..1;
+			cardinality: 0..1;
 		}, {
 			key: root;
 			cardinality: 0..1;

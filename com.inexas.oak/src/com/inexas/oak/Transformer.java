@@ -86,7 +86,7 @@ public class Transformer extends OakVisitor.Base {
 			}
 			if(result == null) {
 				advisory.reportError
-						(node, "'" + name + "' is not a valid child, expecting: " + getExpected());
+				(node, "'" + name + "' is not a valid child, expecting: " + getExpected());
 			}
 
 			return result;
@@ -522,7 +522,7 @@ public class Transformer extends OakVisitor.Base {
 					value = node.path;
 					break;
 
-				// $CASES-OMITTED$
+					// $CASES-OMITTED$
 				default:
 					// !todo React to bad types
 					throw new ImplementMeException(rule.dataType.name());
@@ -559,7 +559,7 @@ public class Transformer extends OakVisitor.Base {
 				value = node.getValue();
 				break;
 
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				// !todo Implement default and other values
@@ -582,7 +582,7 @@ public class Transformer extends OakVisitor.Base {
 				value = node.cardinality;
 				break;
 
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				throw new ImplementMeException();
@@ -613,7 +613,7 @@ public class Transformer extends OakVisitor.Base {
 			if(object != null) {
 				if(state == null) {
 					root = object;
-					// visitorsList = ((Grammar)object).visitorsList;
+					// visitorsList = ((Dialect)object).visitorsList;
 				} else {
 					state.add(node, relation, object);
 				}

@@ -32,7 +32,7 @@ public class Objet extends Locus.Base implements Keyed {
 		return key;
 	}
 
-	void accept(GrammarVisitor visitor) {
+	void accept(DialectVisitor visitor) {
 		visitor.enter(this);
 		for(final Member member : members) {
 			member.accept(visitor);

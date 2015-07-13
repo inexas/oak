@@ -29,7 +29,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 
 	public abstract void toMarkup(TextBuilder tb);
 
-	void accept(GrammarVisitor visitor) throws OakException {
+	void accept(DialectVisitor visitor) throws OakException {
 		visitor.visit(this);
 	}
 

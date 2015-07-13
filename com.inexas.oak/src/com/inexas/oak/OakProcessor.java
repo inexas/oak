@@ -14,8 +14,8 @@ public class OakProcessor {
 		transform(rulebase, visitorList, sourceFile);
 	}
 
-	public OakProcessor(File grammarFile, String[] visitorList, File sourceFile) {
-		final Rule[] rulebase = getRulebase(grammarFile);
+	public OakProcessor(File dialectFile, String[] visitorList, File sourceFile) {
+		final Rule[] rulebase = getRulebase(dialectFile);
 		if(advisory.isEmpty()) {
 			transform(rulebase, visitorList, sourceFile);
 		}
@@ -30,17 +30,17 @@ public class OakProcessor {
 	}
 
 	/**
-	 * Read an Oak grammar file into a rulebase
+	 * Read an Oak dialect file into a rulebase
 	 *
-	 * @param grammarFile
-	 *            The grammar file to read (typically something.oakg).
+	 * @param dialectFile
+	 *            The dialect file to read (typically something.oakd).
 	 * @return Return null if there's a failure.
 	 */
-	private Rule[] getRulebase(File grammarFile) {
+	private Rule[] getRulebase(File dialectFile) {
 		Rule[] result = null;
 
-		// Parse Oak grammar...
-		final Oak oak = new Oak(grammarFile);
+		// Parse Oak dialect...
+		final Oak oak = new Oak(dialectFile);
 		advisory = oak.getAdvisory();
 
 		// Transform to AST...
@@ -53,9 +53,9 @@ public class OakProcessor {
 
 			// Convert AST to rulebase...
 			if(advisory.isEmpty()) {
-				final Grammar grammar = (Grammar)transformer.getRoot();
-				final GenerateSourceGrammarVisitor visitor = new GenerateSourceGrammarVisitor(advisory);
-				grammar.accept(visitor);
+				final Dialect dialect = (Dialect)transformer.getRoot();
+				final GenerateSourceDialectVisitor visitor = new GenerateSourceDialectVisitor(advisory);
+				dialect.accept(visitor);
 				result = visitor.getRulebase();
 			}
 		}
@@ -64,15 +64,15 @@ public class OakProcessor {
 	}
 
 	/**
-	 * Read an Oak grammar file into a rulebase
+	 * Read an Oak dialect file into a rulebase
 	 *
-	 * @param grammarFile
-	 *            The grammar file to read (typically something.oakg).
+	 * @param dialectFile
+	 *            The dialect file to read (typically something.oakd).
 	 * @return Return null if there's a failure.
 	 */
 	private void transform(Rule[] rulebase, String[] visitorList, File sourceFile) {
 
-		// Parse Oak grammar...
+		// Parse Oak dialect...
 		final Oak oak = new Oak(sourceFile);
 		advisory = oak.getAdvisory();
 

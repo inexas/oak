@@ -2,14 +2,14 @@ package com.inexas.oak;
 
 import com.inexas.oak.advisory.OakException;
 
-public interface GrammarVisitor {
-	public class Base implements GrammarVisitor {
+public interface DialectVisitor {
+	public class Base implements DialectVisitor {
 
 		/**
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void enter(Grammar grammar) {
+		public void enter(Dialect dialect) {
 			// Nothing to do
 		}
 
@@ -17,7 +17,7 @@ public interface GrammarVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void exit(Grammar grammar) {
+		public void exit(Dialect dialect) {
 			// Nothing to do
 		}
 
@@ -74,14 +74,14 @@ public interface GrammarVisitor {
 	}
 
 	/**
-	 * @param grammar
+	 * @param dialect
 	 */
-	void enter(Grammar grammar);
+	void enter(Dialect dialect);
 
 	/**
-	 * @param grammar
+	 * @param dialect
 	 */
-	void exit(Grammar grammar);
+	void exit(Dialect dialect);
 
 	/**
 	 * @param object

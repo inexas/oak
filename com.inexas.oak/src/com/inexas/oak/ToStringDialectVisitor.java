@@ -3,16 +3,16 @@ package com.inexas.oak;
 import com.inexas.util.*;
 
 /**
- * Visits a Grammar AST and produces a String version of it that will transform
+ * Visits a Dialect AST and produces a String version of it that will transform
  * back into the original source.
  *
  * todo Print out arrays of objects as arrays todo Insert a line break between
  * type changes
  */
-public class ToStringGrammarVisitor implements GrammarVisitor {
+public class ToStringDialectVisitor implements DialectVisitor {
 	private final TextBuilder tb;
 
-	public ToStringGrammarVisitor(boolean pretty) {
+	public ToStringDialectVisitor(boolean pretty) {
 		tb = new TextBuilder(pretty);
 	}
 
@@ -28,15 +28,15 @@ public class ToStringGrammarVisitor implements GrammarVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void enter(Grammar grammar) {
-		startObject("Grammar", grammar.key);
+	public void enter(Dialect dialect) {
+		startObject("Dialect", dialect.key);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void exit(Grammar grammar) {
+	public void exit(Dialect dialect) {
 		endObject();
 	}
 

@@ -3,13 +3,13 @@ package com.inexas.oak;
 import java.util.*;
 import com.inexas.oak.advisory.Locus;
 
-public class Grammar extends Locus.Base {
+public class Dialect extends Locus.Base {
 	final String key;
 	final Map<String, Objet> objectMap;
 	final Map<String, Property> propertyMap;
 	final List<String> visitorsList;
 
-	public Grammar(
+	public Dialect(
 			String key,
 			Map<String, Objet> objectMap,
 			Map<String, Property> propertyMap,
@@ -29,12 +29,12 @@ public class Grammar extends Locus.Base {
 	}
 
 	public String toString(boolean pretty) {
-		final GrammarVisitor visitor = new ToStringGrammarVisitor(pretty);
+		final DialectVisitor visitor = new ToStringDialectVisitor(pretty);
 		accept(visitor);
 		return visitor.toString();
 	}
 
-	void accept(GrammarVisitor visitor) {
+	void accept(DialectVisitor visitor) {
 		visitor.enter(this);
 
 		for(final Objet objet : objectMap.values()) {

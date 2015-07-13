@@ -8,28 +8,28 @@ import com.inexas.oak.advisory.Advisory;
 import com.inexas.util.FileU;
 
 /**
- * This runs a test but also rebuilds the oakg files.
+ * This runs a test but also rebuilds the oakd files.
  */
 public class TestOakCompiler {
 
 	private void doStringBasedTest(String string) {
 		final Object root = doTest(new Oak(string), false, "com.inexas.oak");
-		assertTrue(root instanceof Grammar);
+		assertTrue(root instanceof Dialect);
 		// final String got = rule.toString(false);
 		// final String exp = string.replaceAll(" ", "");
 		// assertEquals(exp, got);
 	}
 
-	private Grammar doTest(Oak oak, boolean write, String packageName) {
-		Grammar result = null;
+	private Dialect doTest(Oak oak, boolean write, String packageName) {
+		Dialect result = null;
 
-		// Transform to Grammar tree...
-		result = (Grammar)oak.processTransform(OakRulebase.rules);
+		// Transform to Dialect tree...
+		result = (Dialect)oak.processTransform(OakRulebase.rules);
 		final Advisory advisory = oak.getAdvisory();
 
 		// Convert to Rulebase...
 		if(advisory.isEmpty() && write && result != null) {
-			final GenerateSourceGrammarVisitor visitor = new GenerateSourceGrammarVisitor(
+			final GenerateSourceDialectVisitor visitor = new GenerateSourceDialectVisitor(
 					advisory);
 			result.accept(visitor);
 			if(advisory.isEmpty()) {
@@ -47,7 +47,7 @@ public class TestOakCompiler {
 
 	@Test
 	public void testOak() {
-		final File file = new File(FileU.DATA + "oak/OakTest.oakg");
+		final File file = new File(FileU.DATA + "oak/OakTest.oakd");
 		if(!file.exists()) {
 			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
 		}
@@ -57,7 +57,7 @@ public class TestOakCompiler {
 
 	@Test
 	public void testWillow() {
-		final File file = new File(FileU.DATATEST + "oak/OakTest.oakg");
+		final File file = new File(FileU.DATATEST + "oak/OakTest.oakd");
 		if(!file.exists()) {
 			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
 		}
@@ -68,7 +68,7 @@ public class TestOakCompiler {
 	@Test
 	public void testObject() {
 		// doStringBasedTest(""
-		// + "Grammar {"
+		// + "Dialect {"
 		// + "  key:G;"
 		// + "  Object [{"
 		// + "    key:O;"
@@ -77,7 +77,7 @@ public class TestOakCompiler {
 		// + "  }]"
 		// + "}");
 		doStringBasedTest(""
-				+ "Grammar {\n"
+				+ "Dialect {\n"
 				+ "  key:G;\n"
 				+ "  Object {\n"
 				+ "    key:O;\n"

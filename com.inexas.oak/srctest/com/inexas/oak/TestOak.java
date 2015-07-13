@@ -194,4 +194,19 @@ public class TestOak {
 		doTest("a:5;", "a:abs(-5);");
 		Context.detach(register);
 	}
+
+	@Test
+	public void testDate() {
+		doTest("a:@2012/12/12;", "a: @2012/12/12;");
+	}
+
+	@Test
+	public void testTime() {
+		doTest("a:@01:02:00;", "a: @01:02;");
+	}
+
+	@Test
+	public void testDateTime() {
+		doTest("a:@2012/12/12 10:20:39;", "a: @2012/12/12 10:20:39;");
+	}
 }

@@ -15,8 +15,8 @@ public enum DataType {
 	time(64, Date.class),
 	datetime(96, Date.class),
 	identifier(128, String.class),
-	cardinality(256, Cardinality.class),
-	path(512, String.class),
+	path(256, String.class),
+	cardinality(512, Cardinality.class),
 	ANY(1024 - 1, Object.class),
 	NULL(1024, null);
 

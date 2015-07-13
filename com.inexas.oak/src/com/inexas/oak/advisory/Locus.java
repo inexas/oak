@@ -2,6 +2,10 @@ package com.inexas.oak.advisory;
 
 import com.inexas.exception.NotImplementedException;
 
+/**
+ * The Locus object is a record of a position in the input file: file name, line
+ * number and column.
+ */
 public interface Locus {
 
 	public class Base implements Locus {

@@ -48,8 +48,8 @@ class OakToAstVisitor extends OakBaseListener {
 			constant = new ConstantNode(ctx, text.substring(1, text.length() - 1));
 			break;
 
-		case OakLexer.DateLiteral:
-			constant = ConstantNode.toDate(ctx, text.substring(1, text.length() - 1));
+		case OakLexer.DateTimeLiteral:
+			constant = ConstantNode.toDate(ctx, text.substring(1, text.length()));
 			break;
 
 		case OakLexer.True:
@@ -177,6 +177,11 @@ class OakToAstVisitor extends OakBaseListener {
 			node = new ValuePairNode(ctx, name, stack.pop());
 			stack.push(node);
 		} else {
+			if(childCount != 2) {
+				for(int i = 0; i < childCount; i++) {
+					System.out.println(ctx.getChild(i).getText());
+				}
+			}
 			assert childCount == 2 : "Count should be 2 but is " + childCount;
 			// Object, array or boolean short cut...
 			final ParseTree child = ctx.getChild(1);

@@ -212,12 +212,13 @@ public class ToStringVisitor extends OakVisitor.Base {
 			string = "null";
 		} else {
 			if(type.isTemporal) {
+				tb.append('@');
 				if(type == DataType.date) {
 					string = ConstantNode.dateFormatter.format((Temporal)value);
 				} else if(type == DataType.time) {
-					string = ConstantNode.timeFormatter.format((Temporal)value);
+					string = ConstantNode.timeFormatterSecs.format((Temporal)value);
 				} else {
-					string = ConstantNode.dateTimeFormatter.format((Temporal)value);
+					string = ConstantNode.dateTimeFormatterSecs.format((Temporal)value);
 				}
 			} else if(type == DataType.text) {
 				final TextBuilder valueAsString = new TextBuilder();

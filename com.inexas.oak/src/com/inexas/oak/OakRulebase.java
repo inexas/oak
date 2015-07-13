@@ -5,7 +5,7 @@ import com.inexas.exception.InexasRuntimeException;
 import com.inexas.util.Cardinality;
 
 /**
- * This file contains the hard-coded rules for transforming an Oak Grammar file
+ * This file contains the hard-coded rules for transforming an Oak Dialect file
  * into an OP tree structure.
  */
 public class OakRulebase {
@@ -71,9 +71,9 @@ public class OakRulebase {
 
 			// Objects...
 
-			final ObjectRule grammar = new ObjectRule(
-					"Grammar",
-					Grammar.class,
+			final ObjectRule dialect = new ObjectRule(
+					"Dialect",
+					Dialect.class,
 					true);
 
 			final ObjectRule object = new ObjectRule(
@@ -98,7 +98,7 @@ public class OakRulebase {
 
 			// Relations...
 
-			grammar.setRelations(
+			dialect.setRelations(
 					relate(key, Cardinality.ONE_ONE),
 					relate(object, Cardinality.ONE_MANY, map),
 					relate(property, Cardinality.ONE_MANY, map),
@@ -124,7 +124,7 @@ public class OakRulebase {
 					relate(key, Cardinality.ONE_ONE),
 					relate(value, Cardinality.ZERO_MANY));
 
-			setRules(key, clazz, root, cardinality, collection, type, member, object, property, grammar);
+			setRules(key, clazz, root, cardinality, collection, type, member, object, property, dialect);
 		} catch(final Exception e) {
 			throw new InexasRuntimeException("Error building OakRulebase", e);
 		}

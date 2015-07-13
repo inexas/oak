@@ -7,13 +7,13 @@ import com.inexas.oak.advisory.*;
 import com.inexas.util.*;
 
 /**
- * Visit a Grammar tree and output a Rulebase and a Visitor interface.
+ * Visit a Dialect tree and output a Rulebase and a Visitor interface.
  */
-public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
+public class GenerateSourceDialectVisitor extends DialectVisitor.Base {
 	/**
 	 * In the first pass we just collect all the Object and Property Rules
 	 */
-	private class FirstPassVisitor extends GrammarVisitor.Base {
+	private class FirstPassVisitor extends DialectVisitor.Base {
 		/**
 		 * {@inheritDoc}
 		 */
@@ -48,12 +48,12 @@ public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
 	private final List<ObjectRule> objects = new ArrayList<>();
 	private final List<PropertyRule> properties = new ArrayList<>();
 	private final List<Relation> relations = new ArrayList<>();
-	private String grammarKey;
+	private String dialectKey;
 	private FileWriter writer;
 	private String indent = "";
 	private List<String> visitorsList;
 
-	public GenerateSourceGrammarVisitor(Advisory advisory) {
+	public GenerateSourceDialectVisitor(Advisory advisory) {
 		this.advisory = advisory;
 	}
 
@@ -80,11 +80,11 @@ public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void enter(Grammar grammar) {
+	public void enter(Dialect dialect) {
 		// First pass visitor collects all the elements
-		grammar.accept(new FirstPassVisitor());
-		grammarKey = grammar.key;
-		visitorsList = grammar.visitorsList;
+		dialect.accept(new FirstPassVisitor());
+		dialectKey = dialect.key;
+		visitorsList = dialect.visitorsList;
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
 
 	private void writeRulebase(String sourceDirectory, String packageName) {
 
-		final String className = grammarKey + "Rulebase";
+		final String className = dialectKey + "Rulebase";
 
 		final String path = FileU.ROOT + '/' + sourceDirectory + '/'
 				+ packageName.replace('.', '/') + '/' + className + ".java";
@@ -148,7 +148,7 @@ public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
 
 			indentAppendNewline("private static void setRules(Rule... rules) {");
 			indentMore();
-			indentAppendNewline(grammarKey + "Rulebase.rules = rules;");
+			indentAppendNewline(dialectKey + "Rulebase.rules = rules;");
 			indentLess();
 			indentAppendNewline("}");
 			newline();
@@ -319,7 +319,7 @@ public class GenerateSourceGrammarVisitor extends GrammarVisitor.Base {
 	private void writeVisitor(String sourceDirectory, String packageName) {
 
 		// srcgen/com/inexas/willow/WillowVisitor.java
-		final String interfaceName = grammarKey + "Visitor";
+		final String interfaceName = dialectKey + "Visitor";
 
 		final String path = FileU.ROOT + '/' + sourceDirectory + '/'
 				+ packageName.replace('.', '/') + '/' + interfaceName + ".java";
