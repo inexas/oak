@@ -1,4 +1,4 @@
-Dialect { // Identifies type of file, in this case: Dialect
+Dialect {
 	key: OakTest;
 	
 	Object [{
@@ -7,7 +7,7 @@ Dialect { // Identifies type of file, in this case: Dialect
 		 * of Properties
 		 */
 		key: Dialect;
-		class: "com.inexas.oak.Dialect";
+		class: "com.inexas.oak.DialectAst";
 		root;
 		
 		Member [{ // The list of membership rules
@@ -27,7 +27,7 @@ Dialect { // Identifies type of file, in this case: Dialect
 		
 	}, {
 		/**
-		 * Define a Object as a key, class and a list of 1 or more Members
+		 * Define an Object as a key, class and a list of 1 or more Members
 		 */
 		key: Object;
 		class: "com.inexas.oak.Objet";

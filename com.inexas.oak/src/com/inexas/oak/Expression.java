@@ -9,12 +9,12 @@ public class Expression {
 
 	public Expression(String string) {
 		oak = new Oak(string);
-		rootNode = oak.processExpression();
+		rootNode = oak.toExpression();
 	}
 
 	public Expression(File file) {
 		oak = new Oak(file);
-		rootNode = oak.processExpression();
+		rootNode = oak.toExpression();
 	}
 
 	public Expression(ExpressionNode node) {

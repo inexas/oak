@@ -58,7 +58,22 @@ public class Advisory {
 
 	private final String sourceName;
 	private final List<Advice> items = new ArrayList<>();
-	private boolean hasErrors;
+
+	/**
+	 * @return the errorCount
+	 */
+	public int getErrorCount() {
+		return errorCount;
+	}
+
+	/**
+	 * @return the warningCount
+	 */
+	public int getWarningCount() {
+		return warningCount;
+	}
+
+	private int errorCount, warningCount;
 	private final List<Pair<Object, Locus>> register = new ArrayList<>();
 
 	public Advisory(String sourceName) {
@@ -98,14 +113,14 @@ public class Advisory {
 	 * @return True if at least one error has been reported.
 	 */
 	public boolean hasErrors() {
-		return hasErrors;
+		return errorCount > 0;
 	}
 
 	/**
 	 * @return True if there are no errors or warnings.
 	 */
 	public boolean isEmpty() {
-		return items.isEmpty();
+		return errorCount == 0 && warningCount == 0;
 	}
 
 	public void sort() {
@@ -136,7 +151,9 @@ public class Advisory {
 		final Advice item = new Advice(line, column, false, message);
 		items.add(item);
 		if(isError) {
-			this.hasErrors = true;
+			this.errorCount++;
+		} else {
+			this.warningCount++;
 		}
 		System.err.println("ERROR> " + item.toString());
 	}

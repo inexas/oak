@@ -3,12 +3,18 @@ package com.inexas.oak;
 import static com.inexas.oak.CollectionType.*;
 import com.inexas.util.Cardinality;
 
+/**
+ * A Relation defines the relationship between an object
+ * 
+ * @author kwhittingham
+ *
+ */
 public class Relation {
 	final Rule subject;
 	/**
 	 * The cardinality of Objects is defined simply in the Relation.
 	 *
-	 * An Property's cardinality depends on the subject. If the Property is a
+	 * A Property's cardinality depends on the subject. If the Property is a
 	 * element rather than an array then it may be optional so the subject could
 	 * be defined as a 0..1: optional element, 1..1 mandatory array, 0..*
 	 * optional array or 1..*: mandatory array.

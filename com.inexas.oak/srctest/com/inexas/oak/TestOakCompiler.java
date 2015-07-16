@@ -4,11 +4,11 @@ import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.Test;
 import com.inexas.exception.InexasRuntimeException;
-import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.advisory.OakException;
 import com.inexas.util.FileU;
 
 /**
- * This runs a test but also rebuilds the oakd files.
+ * This runs a test but also rebuilds the Oak dialect files.
  */
 public class TestOakCompiler {
 
@@ -21,43 +21,22 @@ public class TestOakCompiler {
 	}
 
 	private Dialect doTest(Oak oak, boolean write, String packageName) {
-		Dialect result = null;
-
-		// Transform to Dialect tree...
-		result = (Dialect)oak.processTransform(OakRulebase.rules);
-		final Advisory advisory = oak.getAdvisory();
-
-		// Convert to Rulebase...
-		if(advisory.isEmpty() && write && result != null) {
-			final GenerateSourceDialectVisitor visitor = new GenerateSourceDialectVisitor(
-					advisory);
-			result.accept(visitor);
-			if(advisory.isEmpty()) {
-				visitor.write("srcgen", packageName);
+		try {
+			final Dialect result = oak.toDialect();
+			if(write) {
+				result.write("srcgentest", packageName);
 			}
-		}
-
-		if(!advisory.isEmpty()) {
-			System.out.println(advisory);
+			return result;
+		} catch(final OakException e) {
+			System.out.println(e.getAdvisory());
 			fail("Compiler errors");
+			return null;
 		}
-
-		return result;
 	}
 
 	@Test
 	public void testOak() {
-		final File file = new File(FileU.DATA + "oak/OakTest.oakd");
-		if(!file.exists()) {
-			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
-		}
-
-		doTest(new Oak(file), true, "com.inexas.oak");
-	}
-
-	@Test
-	public void testWillow() {
-		final File file = new File(FileU.DATATEST + "oak/OakTest.oakd");
+		final File file = new File(FileU.DATATEST + "oak/OakTest.dialect");
 		if(!file.exists()) {
 			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
 		}
@@ -81,7 +60,7 @@ public class TestOakCompiler {
 				+ "  key:G;\n"
 				+ "  Object {\n"
 				+ "    key:O;\n"
-				+ "    class:\"com.inexas.oak.TestTemplate\";\n"
+				+ "    class:\"com.inexas.oak.TestObject\";\n"
 				+ "    root;\n"
 				+ "    Member {\n"
 				+ "      key:p;\n"

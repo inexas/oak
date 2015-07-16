@@ -7,11 +7,11 @@ import com.inexas.oak.advisory.*;
 import com.inexas.util.*;
 
 /**
- * Visit an Oak 'Node structure' using list of rules (rulebase) to transform it
- * into a hierarchical 'Constructor model' where the nodes map to constructors
- * for Template Objects. For example the transformation might generate a
- * workflow constructor model of Process, Activity and Artifact constructors.
- * This model can be used to parse source files that define workflows.
+ * Visit an Oak 'Node structure' using list of rules to transform it into a
+ * hierarchical 'Constructor model' where the nodes map to constructors for
+ * Template Objects. For example the transformation might generate a workflow
+ * constructor model of Process, Activity and Artifact constructors. This model
+ * can be used to parse source files that define workflows.
  *
  * todo Add a verifier class, check for at least one Property/Object
  */
@@ -86,7 +86,7 @@ public class Transformer extends OakVisitor.Base {
 			}
 			if(result == null) {
 				advisory.reportError
-				(node, "'" + name + "' is not a valid child, expecting: " + getExpected());
+						(node, "'" + name + "' is not a valid child, expecting: " + getExpected());
 			}
 
 			return result;
@@ -522,7 +522,7 @@ public class Transformer extends OakVisitor.Base {
 					value = node.path;
 					break;
 
-					// $CASES-OMITTED$
+				// $CASES-OMITTED$
 				default:
 					// !todo React to bad types
 					throw new ImplementMeException(rule.dataType.name());
@@ -559,7 +559,7 @@ public class Transformer extends OakVisitor.Base {
 				value = node.getValue();
 				break;
 
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				// !todo Implement default and other values
@@ -582,7 +582,7 @@ public class Transformer extends OakVisitor.Base {
 				value = node.cardinality;
 				break;
 
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				throw new ImplementMeException();
@@ -637,4 +637,5 @@ public class Transformer extends OakVisitor.Base {
 	private void pop() {
 		state = state.previousInChain;
 	}
+
 }

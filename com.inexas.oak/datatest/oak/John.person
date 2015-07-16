@@ -1,0 +1,10 @@
+Person {
+	userId: john;
+	Email [{
+		text: "john@work.com";
+		isHome: false;
+	},{
+		text: "john@home.com";
+		isHome: true;
+	}]
+}

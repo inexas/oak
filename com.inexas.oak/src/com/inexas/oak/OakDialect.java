@@ -8,7 +8,9 @@ import com.inexas.util.Cardinality;
  * This file contains the hard-coded rules for transforming an Oak Dialect file
  * into an OP tree structure.
  */
-public class OakRulebase {
+public class OakDialect {
+	public static Dialect dialect;
+
 	private static Relation relate(PropertyRule rule, Cardinality cardinality) {
 		return new Relation(rule, cardinality);
 	}
@@ -18,15 +20,19 @@ public class OakRulebase {
 	}
 
 	private static void setRules(Rule... rules) {
-		OakRulebase.rules = rules;
+		OakDialect.dialect = new Dialect("Dialect", rules);
 	}
-
-	public static Rule[] rules;
 
 	public static String[] visitorList = {};
 
 	static {
 		try {
+			/**
+			 * KW: After trying visitors I don't like the idea too much because
+			 * there are lots of little problems. For example ActionDefs don't
+			 * get visited but the modifiers do. Similarly the visitor can't be
+			 * initialized properly.
+			 */
 
 			// Properties...
 
@@ -59,21 +65,15 @@ public class OakRulebase {
 					"value",
 					DataType.ANY);
 
-			/**
-			 * KW: After trying visitors I don't like the idea too much because
-			 * there are lots of little problems. For example ActionDefs don't
-			 * get visited but the modifiers do. Similarly the visitor can't be
-			 * initialized properly.
-			 */
 			final PropertyRule visitors = new PropertyRule(
 					"visitors",
 					DataType.text);
 
 			// Objects...
 
-			final ObjectRule dialect = new ObjectRule(
+			final ObjectRule dialectAst = new ObjectRule(
 					"Dialect",
-					Dialect.class,
+					DialectNode.class,
 					true);
 
 			final ObjectRule object = new ObjectRule(
@@ -98,7 +98,7 @@ public class OakRulebase {
 
 			// Relations...
 
-			dialect.setRelations(
+			dialectAst.setRelations(
 					relate(key, Cardinality.ONE_ONE),
 					relate(object, Cardinality.ONE_MANY, map),
 					relate(property, Cardinality.ONE_MANY, map),
@@ -124,9 +124,9 @@ public class OakRulebase {
 					relate(key, Cardinality.ONE_ONE),
 					relate(value, Cardinality.ZERO_MANY));
 
-			setRules(key, clazz, root, cardinality, collection, type, member, object, property, dialect);
+			setRules(key, clazz, root, cardinality, collection, type, member, object, property, dialectAst);
 		} catch(final Exception e) {
-			throw new InexasRuntimeException("Error building OakRulebase", e);
+			throw new InexasRuntimeException("Error building OakDialect", e);
 		}
 	}
 

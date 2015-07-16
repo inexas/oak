@@ -9,7 +9,7 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void enter(Dialect dialect) {
+		public void enter(DialectNode dialect) {
 			// Nothing to do
 		}
 
@@ -17,7 +17,7 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void exit(Dialect dialect) {
+		public void exit(DialectNode dialect) {
 			// Nothing to do
 		}
 
@@ -76,12 +76,12 @@ public interface DialectVisitor {
 	/**
 	 * @param dialect
 	 */
-	void enter(Dialect dialect);
+	void enter(DialectNode dialect);
 
 	/**
 	 * @param dialect
 	 */
-	void exit(Dialect dialect);
+	void exit(DialectNode dialect);
 
 	/**
 	 * @param object

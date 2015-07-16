@@ -20,9 +20,12 @@ public class Property extends Locus.Base implements Keyed {
 		this.key = key;
 		if("expression".equals(type)) {
 			this.type = DataType.ANY;
+		} else if("boolean".equals(type)) {
+			this.type = DataType.bool;
 		} else {
 			try {
-				this.type = DataType.valueOf(type);
+				// Default type is text
+				this.type = type == null ? DataType.text : DataType.valueOf(type);
 			} catch(final IllegalArgumentException e) {
 				// !todo Implement me
 				throw new ImplementMeException("Invalid data type: " + type);

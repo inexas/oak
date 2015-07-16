@@ -28,7 +28,7 @@ public class ToStringDialectVisitor implements DialectVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void enter(Dialect dialect) {
+	public void enter(DialectNode dialect) {
 		startObject("Dialect", dialect.key);
 	}
 
@@ -36,7 +36,7 @@ public class ToStringDialectVisitor implements DialectVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void exit(Dialect dialect) {
+	public void exit(DialectNode dialect) {
 		endObject();
 	}
 

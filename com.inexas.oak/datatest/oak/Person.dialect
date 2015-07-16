@@ -1,0 +1,38 @@
+Dialect {
+	key: Person;
+	
+	Object [{
+		key: Person;
+		class: "com.inexas.oak.examples.Person";
+		root;
+		
+		Member [{
+			key: userId;
+		}, {
+			key: Email;
+			cardinality: 0..*;
+			collection: list;
+		}]
+		
+	}, {
+		key: Email;
+		class: "com.inexas.oak.examples.Email";
+		
+		Member [{
+			key: text;
+		}, {
+			key: isHome;
+		}]
+	}]
+		
+	Property [{
+		key: userId;
+		type: identifier;
+	}, {
+		key: text;
+		type: text;
+	}, {
+		key: isHome;
+		type: boolean;
+	}]
+}

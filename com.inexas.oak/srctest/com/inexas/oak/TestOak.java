@@ -14,7 +14,7 @@ public class TestOak {
 
 	private void doPrettyTest(String expected, String toTest) {
 		final Oak oak = new Oak(toTest);
-		oak.processOak();
+		oak.toAst();
 		checkParsingErrors(oak);
 		final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
 		oak.accept(toStringVisitor);
@@ -32,7 +32,7 @@ public class TestOak {
 
 	private void doTest(String expected, String toTest) {
 		final Oak oak = new Oak(toTest);
-		oak.processOak();
+		oak.toAst();
 		checkParsingErrors(oak);
 		final ToStringVisitor toStringVisitor = new ToStringVisitor(false);
 		// toStringVisitor.setTracing(true);
@@ -183,7 +183,7 @@ public class TestOak {
 	@Test(expected = TadRuntimeException.class)
 	public void testFunctionsNotLoaded() {
 		final Oak oak = new Oak("a:abs(-3);");
-		oak.processOak();
+		oak.toAst();
 	}
 
 	@Test
