@@ -3,7 +3,7 @@ package com.inexas.oak;
 import java.lang.reflect.*;
 import java.util.*;
 import com.inexas.exception.*;
-import com.inexas.oak.advisory.OakConstructorException;
+import com.inexas.oak.advisory.OakRuntimeException;
 import com.inexas.util.*;
 
 public class ObjectRule extends Rule {
@@ -30,7 +30,7 @@ public class ObjectRule extends Rule {
 		this.isRoot = isRoot;
 	}
 
-	public Object construct(Object[] parameters) throws OakConstructorException {
+	public Object construct(Object[] parameters) throws OakRuntimeException {
 		final Object result;
 
 		try {
@@ -41,10 +41,10 @@ public class ObjectRule extends Rule {
 			}
 		} catch(final InvocationTargetException e) {
 			final Throwable cause = e.getCause();
-			if(cause instanceof OakConstructorException) {
-				throw (OakConstructorException)cause;
+			if(cause instanceof OakRuntimeException) {
+				throw (OakRuntimeException)cause;
 			}
-			throw new InexasRuntimeException("Error constructing Object: " + e.getMessage(), e);
+			throw new InexasRuntimeException("Error constructing " + name + ": " + e.getMessage(), e);
 		} catch(final Exception e) {
 			throw new InexasRuntimeException("Error constructing " + name + ": " + e.getMessage(), e);
 		}
@@ -223,7 +223,7 @@ public class ObjectRule extends Rule {
 				constructor = templateClass.getConstructor(parameterTypes);
 				constructor.setAccessible(true);
 			} catch(final NoSuchMethodException e1) {
-				throw new Exception("No constructor or constructor method. Implement...\n\t"
+				throw new Exception("Missing constructor or factory method. Implement...\n\t"
 						+ getConstructorName(templateClass, parameterTypes)
 						+ "\n...or...\n\t"
 						+ getStaticConstructorName(templateClass, parameterTypes)

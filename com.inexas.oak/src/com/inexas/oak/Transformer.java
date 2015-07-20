@@ -165,7 +165,7 @@ public class Transformer extends OakVisitor.Base {
 						result = objectRule.construct(parameters);
 						templates.add(new Pair<>(node, result));
 						advisory.associate(node, result);
-					} catch(final OakConstructorException e) {
+					} catch(final OakRuntimeException e) {
 						advisory.reportError(
 								node, "Error constructing " + objectRule.name + ": " + e.getMessage());
 						result = null;
@@ -260,9 +260,11 @@ public class Transformer extends OakVisitor.Base {
 						objectCount = map.size();
 
 						if(!relation.subjectIsObject) {
-							final PropertyRule property = (PropertyRule)relation.subject;
-							if(!property.isValid(map)) {
-								advisory.reportError(node, "Invalid value: " + object.toString());
+							try {
+								final PropertyRule property = (PropertyRule)relation.subject;
+								property.validate(map);
+							} catch(final OakException e) {
+								advisory.reportError(node, e.getMessage());
 							}
 						}
 					} else if(object instanceof Collection) {
@@ -272,18 +274,22 @@ public class Transformer extends OakVisitor.Base {
 						objectCount = collection.size();
 
 						if(!relation.subjectIsObject) {
-							final PropertyRule property = (PropertyRule)relation.subject;
-							if(!property.isValid(collection)) {
-								advisory.reportError(node, "Invalid value: " + object.toString());
+							try {
+								final PropertyRule property = (PropertyRule)relation.subject;
+								property.validate(collection);
+							} catch(final OakException e) {
+								advisory.reportError(node, e.getMessage());
 							}
 						}
 					} else {
 						objectCount = 1;
 
 						if(!child.subjectIsObject) {
-							final PropertyRule property = (PropertyRule)child.subject;
-							if(!property.isValid(object)) {
-								advisory.reportError(node, "Invalid value: " + object.toString());
+							try {
+								final PropertyRule property = (PropertyRule)child.subject;
+								property.validate(object);
+							} catch(final OakException e) {
+								advisory.reportError(node, e.getMessage());
 							}
 						}
 					}
@@ -516,7 +522,7 @@ public class Transformer extends OakVisitor.Base {
 				final Object value;
 				switch(rule.dataType) {
 				case identifier:
-					// !todo Check no switches: /asdf/
+					// todo Check no switches: /asdf/
 				case path:
 				case ANY: // For cases line Constraint/value
 					value = node.path;

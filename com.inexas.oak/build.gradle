@@ -1,11 +1,24 @@
 /**
  * build.gradle for Oak
+ * 
+ * ANTLR
+ * =====
+ * The out of the box plugin for ANTLR doesn't do what I want it to do.
+ * The Eclipse plugin generates a proper package for the lexer and parser
+ * files but the Gradle plugin drops them in the root. I guess the only
+ * way around this is to build my own ANTLR plugin which is probably not
+ * many lines of code but I need to understand Gradle better first. The
+ * source for such a plugin is on GitHub melix/antlr4-gradle-plugin
+ * 
+ * In the meantime I'll generate the files in Eclipse and use those in
+ * the Gradle build knowing that it won't work on it's own.
  */
 
 // I n c l u d e   p l u g i n s
 
 apply plugin: 'eclipse'				// To be able to create an Eclipse project
 apply plugin: 'java'
+// apply plugin: 'antlr'			// See note on ANTLR above
 apply plugin: 'project-report'		// For lots of reports .../build/reports/project/
 									// Gradle info, see  dependencies, properties, tasks
 apply plugin: 'maven'				// Build pom.xml, move artifacts to OSS
@@ -17,7 +30,7 @@ def PROJECT_NAME = 'Oak'
 def PROJECT_NAME_LOWER = 'oak'
 def PROJECT_VENDOR = 'Inexas'
 def PROJECT_GROUP = 'com.inexas'
-def PROJECT_VERSION = '0.1.1'
+def PROJECT_VERSION = '0.1.2'
 def PROJECT_DESCRIPTION = 'Oak - Better than JSON, much better than XML'
 def PROJECT_URL = 'http://www.inexas.org'
 def PROJECT_JAVA_VERSION = '1.8'
@@ -31,7 +44,7 @@ sourceCompatibility = PROJECT_JAVA_VERSION
 archivesBaseName = PROJECT_NAME_LOWER
 
 
-defaultTasks 'compileTestJava'	
+defaultTasks 'tasks'	
 
 test {
 	enableAssertions true
@@ -76,6 +89,9 @@ sourceSets {
 		java {
 			srcDir 'srctest'
 		}
+		java {
+			srcDir 'srcgentest'
+		}
 	}
 }
 
@@ -92,7 +108,8 @@ jar {
 }
 
 dependencies {
-	compile 'com.inexas:util:0.1.0'
+	//antlr "org.antlr:antlr4:4.5"
+	compile 'com.inexas:util:0.1.1'
 	compile 'com.inexas:tad:0.1.0'
 	compile 'org.antlr:antlr4-runtime:4.5'
 	compile 'org.apache.commons:commons-lang3:3.3.2'

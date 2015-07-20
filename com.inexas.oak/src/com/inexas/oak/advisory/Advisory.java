@@ -1,5 +1,6 @@
 package com.inexas.oak.advisory;
 
+import java.io.File;
 import java.util.*;
 import com.inexas.util.*;
 
@@ -52,32 +53,27 @@ public class Advisory {
 		 */
 		@Override
 		public String toString() {
-			return sourceName + ':' + (line == 0 ? "" : Integer.toString(line)) + ' ' + message;
+			return (isError ? "ERROR> " : "WARNING> ")
+					+ sourceName + ':' + (line == 0 ? "" : Integer.toString(line))
+					+ ' ' + message;
 		}
 	}
 
 	private final String sourceName;
 	private final List<Advice> items = new ArrayList<>();
 
-	/**
-	 * @return the errorCount
-	 */
-	public int getErrorCount() {
-		return errorCount;
-	}
-
-	/**
-	 * @return the warningCount
-	 */
-	public int getWarningCount() {
-		return warningCount;
-	}
-
 	private int errorCount, warningCount;
 	private final List<Pair<Object, Locus>> register = new ArrayList<>();
+	private final String string;
 
-	public Advisory(String sourceName) {
-		this.sourceName = sourceName;
+	public Advisory(String string) {
+		this.sourceName = "(String)";
+		this.string = string;
+	}
+
+	public Advisory(File file) {
+		this.sourceName = file.getName();
+		string = null;
 	}
 
 	public void reportError(Object object, String message) {
@@ -103,6 +99,20 @@ public class Advisory {
 
 	public void reportWarning(Locus locus, String message) {
 		add(locus.getLine(), locus.getColumn(), false, message);
+	}
+
+	/**
+	 * @return the errorCount
+	 */
+	public int getErrorCount() {
+		return errorCount;
+	}
+
+	/**
+	 * @return the warningCount
+	 */
+	public int getWarningCount() {
+		return warningCount;
 	}
 
 	public void associate(Locus locus, Object object) {
@@ -134,10 +144,14 @@ public class Advisory {
 	public String toString() {
 		final String result;
 		if(items.isEmpty()) {
-			result = "";
+			result = "<No errors>";
 		} else {
 			sort();
 			final TextBuilder tb = new TextBuilder();
+			if(string != null) {
+				tb.append(string);
+				tb.newline();
+			}
 			for(final Advice item : items) {
 				tb.append(item.toString());
 				tb.newline();
@@ -148,14 +162,13 @@ public class Advisory {
 	}
 
 	private void add(int line, int column, boolean isError, String message) {
-		final Advice item = new Advice(line, column, false, message);
+		final Advice item = new Advice(line, column, isError, message);
 		items.add(item);
 		if(isError) {
 			this.errorCount++;
 		} else {
 			this.warningCount++;
 		}
-		System.err.println("ERROR> " + item.toString());
 	}
 
 	private Locus lookup(Object object) {

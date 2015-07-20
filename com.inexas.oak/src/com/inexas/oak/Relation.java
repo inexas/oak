@@ -5,7 +5,7 @@ import com.inexas.util.Cardinality;
 
 /**
  * A Relation defines the relationship between an object
- * 
+ *
  * @author kwhittingham
  *
  */
@@ -29,7 +29,7 @@ public class Relation {
 	final boolean subjectIsObject;
 
 	/**
-	 * Object --- m..n ---> Property
+	 * Object --- m..n ---&gt; Property
 	 *
 	 * Note that the collection is always a list for Properties.
 	 *
@@ -50,7 +50,10 @@ public class Relation {
 	}
 
 	/**
-	 * For root Object only
+	 * For root Object only.
+	 *
+	 * @param subject
+	 *            The root object.
 	 */
 	public Relation(ObjectRule subject) {
 		assert subject.isRoot();

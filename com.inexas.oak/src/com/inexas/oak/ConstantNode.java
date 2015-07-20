@@ -101,6 +101,9 @@ public class ConstantNode extends ExpressionNode {
 
 	/**
 	 * For null only
+	 *
+	 * @param context
+	 *            The current context.
 	 */
 	public ConstantNode(ParserRuleContext context) {
 		super(context);
@@ -250,9 +253,6 @@ public class ConstantNode extends ExpressionNode {
 		return value;
 	}
 
-	/**
-	 * @return
-	 */
 	public Object getInteger() {
 		// !todo Implement me
 		throw new ImplementMeException();

@@ -1,18 +1,18 @@
 package com.inexas.oak;
 
 import java.io.File;
-import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.advisory.*;
 
 public class Expression {
 	private final Oak oak;
 	private final ExpressionNode rootNode;
 
-	public Expression(String string) {
+	public Expression(String string) throws OakException {
 		oak = new Oak(string);
 		rootNode = oak.toExpression();
 	}
 
-	public Expression(File file) {
+	public Expression(File file) throws OakException {
 		oak = new Oak(file);
 		rootNode = oak.toExpression();
 	}
@@ -22,9 +22,6 @@ public class Expression {
 		this.rootNode = node;
 	}
 
-	/**
-	 * @return
-	 */
 	public Advisory getAdvisory() {
 		return oak.getAdvisory();
 	}

@@ -1,4 +1,4 @@
-// Created by Oak: 16JUL15 14:54:07
+// Created by Oak: 20JUL15 11:05:44
 package com.inexas.oak;
 
 import static com.inexas.oak.CollectionType.*;

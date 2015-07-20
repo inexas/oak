@@ -84,6 +84,7 @@ public class ToStringVisitor extends OakVisitor.Base {
 	@Override
 	public void exit(ObjectPairNode node) {
 		tb.indentLess();
+		tb.indent();
 		tb.append('}');
 		tb.newline();
 	}

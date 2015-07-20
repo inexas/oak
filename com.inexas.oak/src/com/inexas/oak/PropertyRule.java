@@ -1,17 +1,24 @@
 package com.inexas.oak;
 
 import java.util.*;
+import com.inexas.oak.advisory.OakException;
 
 public class PropertyRule extends Rule {
 	final DataType dataType;
 
-	public PropertyRule(String name, DataType dataType, Constraint... constraints) {
+	public PropertyRule(String name, DataType dataType, Constraint... constraints) throws OakException {
 		super(name, constraints);
 
 		assert Character.isLowerCase(name.charAt(0)) : "Not a property name: " + name;
 		assert dataType != null;
 
 		this.dataType = dataType;
+
+		if(constraints != null) {
+			for(final Constraint constraint : constraints) {
+				constraint.setDataType(dataType);
+			}
+		}
 	}
 
 	/**
@@ -45,57 +52,27 @@ public class PropertyRule extends Rule {
 		return result;
 	}
 
-	public boolean isValid(Map<String, Object> map) {
-		boolean result;
-
-		if(constraints == null) {
-			result = true;
-		} else {
-			result = true;
+	public void validate(Map<String, Object> map) throws OakException {
+		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
-				if(!constraint.isValid(map)) {
-					result = false;
-					break;
-				}
+				constraint.validate(map);
 			}
 		}
-
-		return result;
 	}
 
-	public boolean isValid(Collection<Object> collection) {
-		boolean result;
-
-		if(constraints == null) {
-			result = true;
-		} else {
-			result = true;
+	public void isValid(Collection<Object> collection) throws OakException {
+		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
-				if(!constraint.isValid(collection)) {
-					result = false;
-					break;
-				}
+				constraint.validate(collection);
 			}
 		}
-
-		return result;
 	}
 
-	public boolean isValid(Object object) {
-		boolean result;
-
-		if(constraints == null) {
-			result = true;
-		} else {
-			result = true;
+	public void validate(Object object) throws OakException {
+		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
-				if(!constraint.isValid(object)) {
-					result = false;
-					break;
-				}
+				constraint.validate(object);
 			}
 		}
-
-		return result;
 	}
 }

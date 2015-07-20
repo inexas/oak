@@ -20,7 +20,7 @@ public class FunctionRegister implements Tad {
 		try {
 			final Method method = Math.class.getMethod("abs", long.class);
 			register("abs", method, DataType.integer, true, DataType.integer);
-			// !todo Add rest of Math
+			// todo Add rest of Math
 		} catch(final Exception e) {
 			throw new InexasRuntimeException("Error loading function", e);
 		}
@@ -69,8 +69,8 @@ public class FunctionRegister implements Tad {
 
 			case integer:
 				valid = type == Long.class || type == long.class
-						|| type == Double.class || type == double.class
-						|| type == BigDecimal.class;
+				|| type == Double.class || type == double.class
+				|| type == BigDecimal.class;
 				break;
 			case precision:
 				valid = type == BigDecimal.class;

@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.Test;
 import com.inexas.exception.InexasRuntimeException;
-import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.advisory.*;
 import com.inexas.util.FileU;
 
 /**
@@ -12,12 +12,9 @@ import com.inexas.util.FileU;
  */
 public class TestOakCompiler {
 
-	private void doStringBasedTest(String string) {
+	private void doStringBasedTest(String string) throws OakException {
 		final Object root = doTest(new Oak(string), false, "com.inexas.oak");
 		assertTrue(root instanceof Dialect);
-		// final String got = rule.toString(false);
-		// final String exp = string.replaceAll(" ", "");
-		// assertEquals(exp, got);
 	}
 
 	private Dialect doTest(Oak oak, boolean write, String packageName) {
@@ -35,7 +32,7 @@ public class TestOakCompiler {
 	}
 
 	@Test
-	public void testOak() {
+	public void testOak() throws OakException {
 		final File file = new File(FileU.DATATEST + "oak/OakTest.dialect");
 		if(!file.exists()) {
 			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
@@ -45,7 +42,7 @@ public class TestOakCompiler {
 	}
 
 	@Test
-	public void testObject() {
+	public void testObject() throws OakException {
 		// doStringBasedTest(""
 		// + "Dialect {"
 		// + "  key:G;"
@@ -73,9 +70,8 @@ public class TestOakCompiler {
 				+ "    key:p;\n"
 				+ "    type:identifier;\n"
 				+ "    Constraint{\n"
-				+ "      key:choice;\n"
+				+ "      type:choice;\n"
 				+ "      value[\"a\",\"b\"]\n"
-				+ "      value:2*3;\n"
 				+ "    }\n"
 				+ "  }, {\n"
 				+ "    key:q;\n"
@@ -83,4 +79,25 @@ public class TestOakCompiler {
 				+ "  }]\n"
 				+ "}\n");
 	}
+
+	// !todo Test Members when the referenced Property is missing
+	// !todo Test Throwing OakCtorExcep catching it and turning it a normal
+	// exception
+
+	@Test
+	public void testAntlrRecognisedError() {
+		try {
+			final Oak oak = new Oak("meaningOfLife:42;\n§");
+			oak.toAst();
+			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			oak.accept(toStringVisitor);
+			System.out.println(toStringVisitor.toString());
+		} catch(final OakException e) {
+			final Advisory advisory = e.getAdvisory();
+			assertEquals(1, advisory.getErrorCount());
+			assertEquals(0, advisory.getWarningCount());
+			assertTrue(advisory.hasErrors());
+		}
+	}
+
 }

@@ -7,7 +7,7 @@ public interface OakVisitor {
 
 		/**
 		 * Enable/disable tracing. Note that asserts must be enabled too.
-		 * 
+		 *
 		 * @param tracing
 		 *            True: tracing will be enabled.
 		 */
@@ -256,12 +256,12 @@ public interface OakVisitor {
 	/**
 	 * Encountered: "name [ obj1 { ...}, obj1 {...}, ...]". It will be followed
 	 * by one more more ObjectNodes
+	 *
+	 * @param node
+	 *            The Node being entered.
 	 */
 	void enter(ObjectArrayPairNode node);
 
-	/**
-	 * @param node
-	 */
 	void exit(ObjectArrayPairNode node);
 
 	void visit(PathNode node);

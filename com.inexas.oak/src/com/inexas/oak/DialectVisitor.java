@@ -65,6 +65,7 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 *
 		 * @throws OakException
+		 *             Thrown if parsing error encountered.
 		 */
 		@Override
 		public void visit(Constraint constraint) throws OakException {
@@ -73,44 +74,25 @@ public interface DialectVisitor {
 
 	}
 
-	/**
-	 * @param dialect
-	 */
 	void enter(DialectNode dialect);
 
-	/**
-	 * @param dialect
-	 */
 	void exit(DialectNode dialect);
 
-	/**
-	 * @param object
-	 */
 	void enter(Objet object);
 
-	/**
-	 * @param object
-	 */
 	void exit(Objet object);
 
-	/**
-	 * @param member
-	 */
 	void visit(Member member);
 
-	/**
-	 * @param property
-	 */
 	void enter(Property property);
 
-	/**
-	 * @param property
-	 */
 	void exit(Property property);
 
 	/**
 	 * @param constraint
+	 *            The Constraint being visited.
 	 * @throws OakException
+	 *             Thrown if parsing error encountered.
 	 */
 	void visit(Constraint constraint) throws OakException;
 

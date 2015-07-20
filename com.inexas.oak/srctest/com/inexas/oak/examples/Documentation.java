@@ -12,37 +12,43 @@ package com.inexas.oak.examples;
 
 import java.io.File;
 import com.inexas.oak.*;
-import com.inexas.oak.advisory.*;
+import com.inexas.oak.advisory.OakException;
 
 public class Documentation {
 
 	public static void main(String[] args) {
-		example();
+		processString();
+		toStringExample();
+		toObjectTreeExample();
 	}
 
 	public static void processString() {
-		final Oak oak = new Oak("meaningOfLife:42;");
-		oak.toAst();
-		final Advisory advisory = oak.getAdvisory();
-		if(advisory.hasErrors()) {
-			System.err.println(advisory);
-		} else {
+		try {
+			final Oak oak = new Oak("meaningOfLife:42;");
+			oak.toAst();
 			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
+		} catch(final OakException e) {
+			System.err.println(e.getAdvisory().toString());
+			e.printStackTrace();
 		}
 	}
 
 	public static void toStringExample() {
-		final Oak oak = new Oak("meaningOfLife:42;");
-		oak.toAst();
-		// todo Check for errors
-		final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
-		oak.accept(toStringVisitor);
-		System.out.println(toStringVisitor.toString());
+		try {
+			final Oak oak = new Oak("meaningOfLife:42;");
+			oak.toAst();
+			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			oak.accept(toStringVisitor);
+			System.out.println(toStringVisitor.toString());
+		} catch(final OakException e) {
+			System.err.println(e.getAdvisory().toString());
+			e.printStackTrace();
+		}
 	}
 
-	public static void example() {
+	public static void toObjectTreeExample() {
 		try {
 			// Create a Person dialect...
 			final Oak personDialectOak = new Oak(new File("datatest/oak/Person.dialect"));

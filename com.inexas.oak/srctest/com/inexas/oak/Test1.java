@@ -10,10 +10,8 @@
 
 package com.inexas.oak;
 
-
 /**
  * @author kwhittingham
- *
  */
 public class Test1 {
 	String key1;

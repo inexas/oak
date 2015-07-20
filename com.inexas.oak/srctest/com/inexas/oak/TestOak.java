@@ -3,16 +3,16 @@ package com.inexas.oak;
 import static org.junit.Assert.*;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.junit.Test;
-import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.advisory.*;
 import com.inexas.tad.*;
 
 public class TestOak {
 
-	private void doTest(String toTest) {
+	private void doTest(String toTest) throws OakException {
 		doTest(toTest, toTest);
 	}
 
-	private void doPrettyTest(String expected, String toTest) {
+	private void doPrettyTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
 		oak.toAst();
 		checkParsingErrors(oak);
@@ -30,7 +30,7 @@ public class TestOak {
 		assertEquals(expected, got);
 	}
 
-	private void doTest(String expected, String toTest) {
+	private void doTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
 		oak.toAst();
 		checkParsingErrors(oak);
@@ -57,7 +57,7 @@ public class TestOak {
 	}
 
 	@Test
-	public void testPairs() {
+	public void testPairs() throws OakException {
 		doTest("a:1;");
 		doTest("a:true;", "a;");
 		doTest("a:true;");
@@ -83,13 +83,13 @@ public class TestOak {
 	}
 
 	@Test
-	public void testObjects() {
+	public void testObjects() throws OakException {
 		doTest("a{b:1;}");
 		doTest("a{b:1;c:2;d:3;}");
 	}
 
 	@Test
-	public void testArrays() {
+	public void testArrays() throws OakException {
 		doTest("a[1]");
 		doTest("a[1,2]");
 		doTest("a[1,3,\"b\",4]");
@@ -99,7 +99,7 @@ public class TestOak {
 	}
 
 	@Test
-	public void testPretty() {
+	public void testPretty() throws OakException {
 		doPrettyTest("a [\n\t1, 2, 3\n]\n", "a[1,2,3]");
 		doPrettyTest("a [\n"
 				+ "\t1, 2, 3, 4, 5, 6, 7, 8, 9, 0,\n"
@@ -119,14 +119,14 @@ public class TestOak {
 	}
 
 	@Test
-	public void testPrettyObjectArray() {
+	public void testPrettyObjectArray() throws OakException {
 		doPrettyTest("a [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t\tc: 3;\n\t}\n]\n",
 				"a[{a:1;},{b:2;c:3;}]");
 	}
 
 	@Test
-	public void testExpressions() {
-		// !todo Collapsing (changing 1+1->2) should be optional
+	public void testExpressions() throws OakException {
+		// todo Collapsing (changing 1+1->2) should be optional
 		// Plus
 		doTest("a:2;", "a:1+1;");
 		doTest("a:7;", "a:1+1+5;");
@@ -181,13 +181,13 @@ public class TestOak {
 	}
 
 	@Test(expected = TadRuntimeException.class)
-	public void testFunctionsNotLoaded() {
+	public void testFunctionsNotLoaded() throws OakException {
 		final Oak oak = new Oak("a:abs(-3);");
 		oak.toAst();
 	}
 
 	@Test
-	public void testFunctionsLoaded() {
+	public void testFunctionsLoaded() throws OakException {
 		final FunctionRegister register = new FunctionRegister();
 		register.loadMath();
 		Context.attach(register);
@@ -196,17 +196,22 @@ public class TestOak {
 	}
 
 	@Test
-	public void testDate() {
+	public void testDate() throws OakException {
 		doTest("a:@2012/12/12;", "a: @2012/12/12;");
 	}
 
 	@Test
-	public void testTime() {
+	public void testTime() throws OakException {
 		doTest("a:@01:02:00;", "a: @01:02;");
 	}
 
 	@Test
-	public void testDateTime() {
+	public void testDateTime() throws OakException {
 		doTest("a:@2012/12/12 10:20:39;", "a: @2012/12/12 10:20:39;");
+	}
+
+	@Test
+	public void testText() throws OakException {
+		doTest("a:\"a\nc\";", "a: \"a\nc\";");
 	}
 }

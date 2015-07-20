@@ -35,9 +35,13 @@ class GenerateSourceDialectVisitor extends DialectVisitor.Base {
 		 */
 		@Override
 		public void exit(Property property) {
-			final String key = property.key;
-			final Rule rule = new PropertyRule(key, property.type, property.constraints);
-			rules.put(key, rule);
+			try {
+				final String key = property.key;
+				final Rule rule = new PropertyRule(key, property.type, property.constraints);
+				rules.put(key, rule);
+			} catch(final OakException e) {
+				advisory.reportError(property, e.getMessage());
+			}
 		}
 	}
 
@@ -83,10 +87,9 @@ class GenerateSourceDialectVisitor extends DialectVisitor.Base {
 				relation = new Relation(property, member.cardinality);
 			} else {
 				final ObjectRule object = (ObjectRule)subject;
-				relation = new Relation(
-						object,
-						member.cardinality,
-						member.collectionType);
+				final CollectionType collection = member.collectionType == null
+						? CollectionType.list : member.collectionType;
+				relation = new Relation(object, member.cardinality, collection);
 			}
 			relations.add(relation);
 		}

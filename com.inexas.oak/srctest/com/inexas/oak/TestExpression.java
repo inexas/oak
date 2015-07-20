@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.Date;
 import org.junit.*;
 import com.inexas.exception.*;
-import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.advisory.*;
 import com.inexas.tad.Context;
 
 public class TestExpression {
@@ -119,7 +119,7 @@ public class TestExpression {
 						soFarSoGood = parameterType == Long.class || parameterType == long.class;
 						break;
 
-						// $CASES-OMITTED$
+					// $CASES-OMITTED$
 					default:
 						throw new UnexpectedException("register: ");
 					}
@@ -143,7 +143,7 @@ public class TestExpression {
 		Context.detach(functionRegister);
 	}
 
-	private void doTest(String expected, String toTest) {
+	private void doTest(String expected, String toTest) throws OakException {
 		final Expression expression = new Expression(toTest);
 		checkParsingErrors(expression);
 
@@ -156,7 +156,8 @@ public class TestExpression {
 		assertEquals(expected, got);
 	}
 
-	private void doTest(String toTest, boolean isStatic, String optimised, String evaluated) {
+	private void doTest(String toTest, boolean isStatic, String optimised, String evaluated)
+			throws OakException {
 		final Expression expression = new Expression(toTest);
 		checkParsingErrors(expression);
 
@@ -186,7 +187,7 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testInteger() {
+	public void testInteger() throws OakException {
 		// Unary..
 		doTest("" + 2, "+2");
 		doTest("" + -2, "-2");
@@ -241,7 +242,7 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testDecimal() {
+	public void testDecimal() throws OakException {
 		// Test type conversion
 		doTest("6.0", "4.0+2");
 		doTest("6.0", "4+2.0");
@@ -287,18 +288,18 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testPrecision() {
+	public void testPrecision() throws OakException {
 		/*
 		 * !todo There are three dimensions to BigDecimals: the scale: how many
 		 * numbers after the decimal point, the rounding: how the number is
 		 * rounded and the precision: how many decimal digits in all are used to
 		 * specify the number
-		 * 
+		 *
 		 * 0s21.34 the 's' specifies a BigDecimal
-		 * 
+		 *
 		 * 0s<2,3,HALF_UP>23.45 could be used to specify scale, precision,
 		 * rounding
-		 * 
+		 *
 		 * Number(2, 3, "HALF_UP", 23.45) or like that
 		 */
 		doTest("1.234567890123456789", "0s1.234567890123456789");
@@ -306,7 +307,7 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testBoolean() {
+	public void testBoolean() throws OakException {
 		// Literals...
 		doTest("true", "true");
 		doTest("false", "false");
@@ -328,7 +329,7 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testString() {
+	public void testString() throws OakException {
 		// Literal...
 		doTest("\"abc\"", "\"abc\"");
 
@@ -343,12 +344,12 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testNull() {
+	public void testNull() throws OakException {
 		doTest("null", "null");
 	}
 
 	@Test
-	public void testFunctions() {
+	public void testFunctions() throws OakException {
 		doTest("1", "primitive(1)");
 		doTest("isStatic()", true, "\"x\"", "\"x\"");
 		doTest("notStatic()", false, "notStatic()", "\"x\"");
@@ -370,21 +371,21 @@ public class TestExpression {
 	}
 
 	@Test
-	public void testDates() {
+	public void testDates() throws OakException {
 		doTest("@12:15:00", "@12:15:00");
 		doTest("@2012/4/30 02:05:06", "@2012/4/30 02:05:06");
 		doTest("@2012/4/30", "@2012/4/30");
 	}
 
 	@Test
-	public void testPrecedence() {
+	public void testPrecedence() throws OakException {
 		doTest("17", "2+3*5");
 		doTest("11", "2*3+5");
 		doTest("25", "(2+3)*5");
 	}
 
 	@Test
-	public void test() {
+	public void test() throws OakException {
 		doTest("1.0", "minus(2, 1)");
 	}
 

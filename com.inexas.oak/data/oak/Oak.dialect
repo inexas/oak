@@ -87,7 +87,7 @@ Dialect {
 		class: "com.inexas.oak.Constraint";
 		
 		Member [{
-			key: key;
+			key: type;
 			cardinality: 1..1;
 		}, {
 			key: value;
@@ -101,7 +101,7 @@ Dialect {
 		type: identifier;
 	}, {
 		key: root;
-		type: bool;
+		type: boolean;
 	}, {
 		key: cardinality;
 		type: cardinality;
@@ -109,7 +109,7 @@ Dialect {
 		key: collection;
 		type: identifier;
 		Constraint {
-			key: choice;
+			type: choice;
 			value [ set, map, list ]
 		}
 	}, {

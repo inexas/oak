@@ -39,8 +39,7 @@ public class Oak {
 	 *             file.
 	 */
 	public Oak(File file) throws OakException {
-		final String name = file.getName();
-		advisory = new Advisory(name);
+		advisory = new Advisory(file);
 		if(file.isFile()) {
 			try(final Reader reader = new java.io.FileReader(file)) {
 				final ANTLRInputStream inputStream = new ANTLRInputStream(reader);
@@ -51,7 +50,7 @@ public class Oak {
 				advisory.reportError("Error reading file: " + e.getMessage());
 			}
 		} else {
-			advisory.reportError(name + " is not a file");
+			advisory.reportError(file.getName() + " is not a file");
 		}
 
 		if(advisory.hasErrors()) {
@@ -72,7 +71,7 @@ public class Oak {
 	 *             file.
 	 */
 	public Oak(String string) throws OakException {
-		advisory = new Advisory(string == null ? "<null string>" : "String: '" + string + '\'');
+		advisory = new Advisory(string);
 
 		if(string == null || string.trim().length() == 0) {
 			advisory.reportError("Null or empty string");
@@ -94,18 +93,19 @@ public class Oak {
 	 * Return the parsed input as an Abstract Syntax Tree.
 	 *
 	 * @return The root Node of the parsed Abstract Syntax Tree.
+	 * @throws OakException
+	 *             Thrown on parsing errors.
 	 */
-	public Node toAst() {
-		if(rootNode == null) {
+	public Node toAst() throws OakException {
+		if(rootNode == null && !advisory.hasErrors()) {
 			final ParserRuleContext ruleContext = parser.oak();
 			final ParseTreeWalker walker = new ParseTreeWalker();
 			final OakToAstVisitor visitor = new OakToAstVisitor();
 			walker.walk(visitor, ruleContext);
-			rootNode = visitor.getRoot();
-
 			if(advisory.hasErrors()) {
 				throw new OakException(advisory);
 			}
+			rootNode = visitor.getRoot();
 		}
 
 		return rootNode;
@@ -117,8 +117,10 @@ public class Oak {
 	 *
 	 * @return The root Node of the parsed Abstract Syntax Tree or null if
 	 *         errors have been encountered.
+	 * @throws OakException
+	 *             Thrown on parsing errors.
 	 */
-	public ExpressionNode toExpression() {
+	public ExpressionNode toExpression() throws OakException {
 		final ParserRuleContext ruleContext = parser.expression();
 		final ParseTreeWalker walker = new ParseTreeWalker();
 		final OakToAstVisitor visitor = new OakToAstVisitor();
@@ -138,9 +140,13 @@ public class Oak {
 	 *
 	 * @param dialect
 	 *            The dialect to apply to the transformation.
+	 * @param <T>
+	 *            The type of the root of the object tree.
 	 * @return The root of the output object tree.
+	 * @throws OakException
+	 *             Thrown on parsing errors.
 	 */
-	public <T> T toObjectTree(Dialect dialect) {
+	public <T> T toObjectTree(Dialect dialect) throws OakException {
 		return toObjectTree(dialect.rules);
 	}
 
@@ -150,6 +156,8 @@ public class Oak {
 	 *
 	 * @param dialect
 	 *            The dialect to apply to the transformation.
+	 * @param <T>
+	 *            The type of the root of the object tree.
 	 * @return The root of the output object tree.
 	 */
 	public <T> T toObjectTree(Class<?> dialect) {
@@ -167,8 +175,10 @@ public class Oak {
 	 * Parse the input and extract an Oak Dialect form it.
 	 *
 	 * @return The root of the output object tree.
+	 * @throws OakException
+	 *             Thrown on parsing errors.
 	 */
-	public Dialect toDialect() {
+	public Dialect toDialect() throws OakException {
 		final Dialect result;
 
 		dialectAst = toObjectTree(OakDialect.dialect.rules);
@@ -238,7 +248,7 @@ public class Oak {
 		return visitor.toString();
 	}
 
-	private <T> T toObjectTree(Rule[] rules) {
+	private <T> T toObjectTree(Rule[] rules) throws OakException {
 		toAst();
 		final Transformer visitor = new Transformer(rules, null, advisory);
 		accept(visitor);
@@ -271,9 +281,6 @@ public class Oak {
 			parser.addErrorListener(errorListener);
 		} catch(final Exception e) {
 			advisory.reportError(e.getMessage());
-			throw new OakException(advisory);
-		}
-		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
 	}

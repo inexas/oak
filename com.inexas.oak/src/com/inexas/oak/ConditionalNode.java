@@ -17,6 +17,15 @@ public class ConditionalNode extends ExpressionNode {
 	 * operands of numeric type, or second and third operands of type boolean,
 	 * or second and third operands that are each of either reference type or
 	 * the null type. All other cases result in a compile-time error.
+	 *
+	 * @param context
+	 *            The ANTRL context.
+	 * @param falseValue
+	 *            As in condition ? trueValue : falseValue.
+	 * @param trueValue
+	 *            As in condition ? trueValue : falseValue.
+	 * @param condition
+	 *            As in condition ? trueValue : falseValue.
 	 */
 	public ConditionalNode(
 			ParserRuleContext context,
@@ -62,7 +71,7 @@ public class ConditionalNode extends ExpressionNode {
 				}
 				break;
 
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throwInvalidTypes();
 				type = null;

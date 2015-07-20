@@ -117,11 +117,11 @@ public class OakDialect {
 
 			property.setRelations(
 					relate(key, Cardinality.ONE_ONE),
-					relate(type, Cardinality.ONE_ONE),
+					relate(type, Cardinality.ZERO_ONE),
 					relate(constraint, Cardinality.ZERO_MANY, list));
 
 			constraint.setRelations(
-					relate(key, Cardinality.ONE_ONE),
+					relate(type, Cardinality.ONE_ONE),
 					relate(value, Cardinality.ZERO_MANY));
 
 			setRules(key, clazz, root, cardinality, collection, type, member, object, property, dialectAst);

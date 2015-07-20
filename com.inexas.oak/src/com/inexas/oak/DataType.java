@@ -32,52 +32,63 @@ public enum DataType {
 		this.javaClass = javaClass;
 	}
 
-	public void toString(TextBuilder result, String indent) {
-		result.append(indent);
-		result.append(name());
-	}
-
 	public Object parse(String value) {
 		Object result = null;
 		switch(this) {
 		case ANY:
 			// !todo Implement me
 			throw new ImplementMeException();
-
+	
 		case NULL:
 			// result is already null
 			break;
-
+	
 		case bool:
 			result = Boolean.valueOf(value);
 			break;
-
+	
 		case cardinality:
 			result = Cardinality.newInstance(value);
 			break;
-
+	
 		case date:
 		case datetime:
 		case time:
 			result = DateU.parseDateTimeStandard(value);
 			break;
-
+	
 		case decimal:
 		case precision:
 			result = new BigDecimal(value);
 			break;
-
+	
 		case identifier:
 		case path:
 		case text:
 			result = value;
 			break;
-
+	
 		case integer:
 			result = new Long(value);
 			break;
 		}
-
+	
 		return result;
+	}
+
+	public void toString(TextBuilder result, String indent) {
+		result.append(indent);
+		result.append(toString());
+	}
+
+	/**
+	 * This returns the same as name() expect for booleans where it returns
+	 * "boolean" instead of "bool".
+	 *
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		return this == bool ? "boolean" : name();
 	}
 }

@@ -54,12 +54,14 @@ public abstract class ExpressionNode extends Node {
 	 * An expression is static if it always returns the same value. For example:
 	 * "1 + 2" will always return the same value, but "today()" will not.
 	 *
-	 * @return true if this node will always return the same value
+	 * @return True if this node will always return the same value
 	 */
 	abstract boolean isStatic();
 
 	/**
-	 * Calculate the the value of this expression
+	 * Evaluate the the value of this expression.
+	 *
+	 * @return The evaluated value of the expression.
 	 */
 	public abstract ConstantNode evaluate();
 
