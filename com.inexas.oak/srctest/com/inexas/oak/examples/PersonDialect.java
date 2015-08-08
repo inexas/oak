@@ -1,9 +1,10 @@
 // Created by Oak: 18JUL15 19:12:23
 package com.inexas.oak.examples;
 
-import static com.inexas.oak.CollectionType.*;
-import com.inexas.oak.*;
+import static com.inexas.oak.dialect.CollectionType.list;
 import com.inexas.exception.InexasRuntimeException;
+import com.inexas.oak.DataType;
+import com.inexas.oak.dialect.*;
 import com.inexas.util.Cardinality;
 
 public class PersonDialect {

@@ -7,6 +7,7 @@ import java.util.Date;
 import org.junit.*;
 import com.inexas.exception.*;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.ast.*;
 import com.inexas.tad.Context;
 
 public class TestExpression {

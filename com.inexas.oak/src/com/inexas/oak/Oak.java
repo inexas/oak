@@ -7,6 +7,10 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.ast.*;
+import com.inexas.oak.ast.ToStringVisitor;
+import com.inexas.oak.dialect.*;
+import com.inexas.tad.Context;
 
 public class Oak {
 	private class MyErrorListener extends BaseErrorListener {
@@ -17,7 +21,7 @@ public class Oak {
 				int line, int column,
 				String message,
 				RecognitionException e) {
-			advisory.reportError(line, column, message);
+			advisory.error(line, column, message);
 		}
 	}
 
@@ -38,21 +42,25 @@ public class Oak {
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
+	@SuppressWarnings("deprecation")
 	public Oak(File file) throws OakException {
 		advisory = new Advisory(file);
+		Context.pushAttach(advisory);
+
 		if(file.isFile()) {
 			try(final Reader reader = new java.io.FileReader(file)) {
 				final ANTLRInputStream inputStream = new ANTLRInputStream(reader);
 				process(inputStream);
 			} catch(final FileNotFoundException e) {
-				advisory.reportError("File not found");
+				advisory.error("File not found");
 			} catch(final IOException e) {
-				advisory.reportError("Error reading file: " + e.getMessage());
+				advisory.error("Error reading file: " + e.getMessage());
 			}
 		} else {
-			advisory.reportError(file.getName() + " is not a file");
+			advisory.error(file.getName() + " is not a file");
 		}
 
+		Context.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -70,20 +78,23 @@ public class Oak {
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
+	@SuppressWarnings("deprecation")
 	public Oak(String string) throws OakException {
 		advisory = new Advisory(string);
+		Context.pushAttach(advisory);
 
 		if(string == null || string.trim().length() == 0) {
-			advisory.reportError("Null or empty string");
+			advisory.error("Null or empty string");
 		} else {
 			try(final InputStream stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8))) {
 				final ANTLRInputStream inputStream = new ANTLRInputStream(stream);
 				process(inputStream);
 			} catch(final IOException e) {
-				advisory.reportError("IO error: " + e.getMessage());
+				advisory.error("IO error: " + e.getMessage());
 			}
 		}
 
+		Context.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -96,16 +107,21 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
+	@SuppressWarnings("deprecation")
 	public Node toAst() throws OakException {
+		Context.pushAttach(advisory);
+
 		if(rootNode == null && !advisory.hasErrors()) {
 			final ParserRuleContext ruleContext = parser.oak();
 			final ParseTreeWalker walker = new ParseTreeWalker();
 			final OakToAstVisitor visitor = new OakToAstVisitor();
 			walker.walk(visitor, ruleContext);
-			if(advisory.hasErrors()) {
-				throw new OakException(advisory);
-			}
 			rootNode = visitor.getRoot();
+		}
+
+		Context.detach(advisory);
+		if(advisory.hasErrors()) {
+			throw new OakException(advisory);
 		}
 
 		return rootNode;
@@ -120,13 +136,17 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
+	@SuppressWarnings("deprecation")
 	public ExpressionNode toExpression() throws OakException {
+		Context.pushAttach(advisory);
+
 		final ParserRuleContext ruleContext = parser.expression();
 		final ParseTreeWalker walker = new ParseTreeWalker();
 		final OakToAstVisitor visitor = new OakToAstVisitor();
 		walker.walk(visitor, ruleContext);
 		rootNode = visitor.getRoot();
 
+		Context.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -159,16 +179,32 @@ public class Oak {
 	 * @param <T>
 	 *            The type of the root of the object tree.
 	 * @return The root of the output object tree.
+	 * @throws OakException
+	 *             Thrown if parsing error encountered.
 	 */
-	public <T> T toObjectTree(Class<?> dialect) {
+	@SuppressWarnings("deprecation")
+	public <T> T toObjectTree(Class<?> dialect) throws OakException {
+		T result;
+
+		Context.pushAttach(advisory);
+
 		try {
 			final Field field = dialect.getDeclaredField("dialect");
 			final Rule[] rules = ((Dialect)field.get(null)).rules;
-			return toObjectTree(rules);
+			result = toObjectTree(rules);
 		} catch(final Exception e) {
-			throw new RuntimeException("Can't read rules from: " + dialect.getName()
-					+ ", missing: 'public static Dialect dialect;'.", e);
+			advisory.error(
+					"Cannot access 'public static Dialect dialect;' in "
+							+ "dialect file: " + e.getMessage());
+			result = null;
 		}
+
+		Context.detach(advisory);
+		if(advisory.hasErrors()) {
+			throw new OakException(advisory);
+		}
+
+		return result;
 	}
 
 	/**
@@ -178,33 +214,27 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
+	@SuppressWarnings("deprecation")
 	public Dialect toDialect() throws OakException {
 		final Dialect result;
 
+		Context.pushAttach(advisory);
+
 		dialectAst = toObjectTree(OakDialect.dialect.rules);
 		if(dialectAst != null) {
-			final GenerateSourceDialectVisitor visitor;
-			visitor = new GenerateSourceDialectVisitor(advisory);
+			final GenerateSourceDialectVisitor visitor = new GenerateSourceDialectVisitor();
 			dialectAst.accept(visitor);
 			result = visitor.getDialect();
 		} else {
 			result = null;
 		}
 
+		Context.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
 
 		return result;
-	}
-
-	/**
-	 * Retrieve the error message Advisory.
-	 *
-	 * @return The error message Advisory.
-	 */
-	public Advisory getAdvisory() {
-		return advisory;
 	}
 
 	/**
@@ -214,20 +244,39 @@ public class Oak {
 	 *
 	 * @param visitor
 	 *            The visitor to send around the AST.
+	 * @throws OakException
+	 *             Thrown if a syntax error is reported.
 	 */
-	public void accept(OakVisitor visitor) {
+	@SuppressWarnings("deprecation")
+	public void accept(OakAstVisitor visitor) throws OakException {
+
 		if(!advisory.isEmpty()) {
 			System.err.println(advisory);
-			throw new InexasRuntimeException("Source file had error messages");
+			throw new InexasRuntimeException("Source file had error messages: " + advisory.getFirstError());
 		}
 
 		if(rootNode == null) {
 			throw new InexasRuntimeException("Call processOak() first");
 		}
 
+		Context.pushAttach(advisory);
 		visitor.enter(this);
 		rootNode.accept(visitor);
 		visitor.exit(this);
+
+		Context.detach(advisory);
+		if(advisory.hasErrors()) {
+			throw new OakException(advisory);
+		}
+	}
+
+	/**
+	 * Retrieve the error message Advisory.
+	 *
+	 * @return The error message Advisory.
+	 */
+	public Advisory getAdvisory() {
+		return advisory;
 	}
 
 	/**
@@ -243,20 +292,28 @@ public class Oak {
 
 	@Override
 	public String toString() {
-		final ToStringVisitor visitor = new ToStringVisitor(true);
-		accept(visitor);
-		return visitor.toString();
+		try {
+			final ToStringVisitor visitor = new ToStringVisitor(true);
+			accept(visitor);
+			return visitor.toString();
+		} catch(final OakException e) {
+			final String error = advisory.getFirstError();
+			return "Oak containing error: " + (error == null ? "No error messages" : error);
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private <T> T toObjectTree(Rule[] rules) throws OakException {
+		T result;
+
 		toAst();
-		final Transformer visitor = new Transformer(rules, null, advisory);
-		accept(visitor);
-		if(advisory.hasErrors()) {
-			throw new OakException(advisory);
+		if(!advisory.hasErrors()) {
+			final Transformer visitor = new Transformer(rules, null);
+			accept(visitor);
+			result = (T)visitor.getRoot();
+		} else {
+			result = null;
 		}
-		@SuppressWarnings("unchecked")
-		final T result = (T)visitor.getRoot();
 		return result;
 	}
 
@@ -280,7 +337,7 @@ public class Oak {
 			parser.removeErrorListeners(); // Remove ConsoleErrorListener
 			parser.addErrorListener(errorListener);
 		} catch(final Exception e) {
-			advisory.reportError(e.getMessage());
+			advisory.error(e.getMessage());
 			throw new OakException(advisory);
 		}
 	}

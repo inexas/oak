@@ -33,7 +33,7 @@ Dialect {
 		class: "com.inexas.oak.Objet";
 		
 		Member [{
-			key: key;
+			key: key;	
 		}, {
 			key: class;
 			cardinality: 0..1;
@@ -54,8 +54,13 @@ Dialect {
 		class: "com.inexas.oak.Member";
 		
 		Member [{
-			key: key;
-			cardinality: 1..1;
+			key: key;			// Either a key of an Object...
+			cardinality: 0..1;
+		}, {
+			key: Property;		// ..or an in-line property
+								// Can't enforce OR here so it's done in the
+								// Member class
+			cardinality: 0..1;
 		}, {
 			key: cardinality;
 			cardinality: 0..1;

@@ -21,7 +21,11 @@ Dialect {
 		Member [{
 			key: text;
 		}, {
-			key: isHome;
+			Property {
+				key: isHome;
+			}
+			cardinality: 1..1;
+			collection: singleton;
 		}]
 	}]
 		
@@ -31,8 +35,5 @@ Dialect {
 	}, {
 		key: text;
 		type: text;
-	}, {
-		key: isHome;
-		type: boolean;
 	}]
 }

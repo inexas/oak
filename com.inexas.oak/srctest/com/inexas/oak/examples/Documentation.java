@@ -11,8 +11,10 @@
 package com.inexas.oak.examples;
 
 import java.io.File;
-import com.inexas.oak.*;
+import com.inexas.oak.Oak;
 import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.ast.ToStringVisitor;
+import com.inexas.oak.dialect.Dialect;
 
 public class Documentation {
 

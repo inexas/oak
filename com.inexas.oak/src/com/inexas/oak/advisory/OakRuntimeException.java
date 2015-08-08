@@ -1,6 +1,6 @@
 package com.inexas.oak.advisory;
 
-public class OakRuntimeException extends Exception {
+public class OakRuntimeException extends RuntimeException {
 	private static final long serialVersionUID = -4974707918231194628L;
 
 	public OakRuntimeException(String message, Exception cause) {

@@ -2,6 +2,7 @@ package com.inexas.oak;
 
 import java.io.File;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.ast.*;
 
 public class Expression {
 	private final Oak oak;

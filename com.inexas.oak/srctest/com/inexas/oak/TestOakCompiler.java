@@ -5,6 +5,8 @@ import java.io.File;
 import org.junit.Test;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.ast.ToStringVisitor;
+import com.inexas.oak.dialect.Dialect;
 import com.inexas.util.FileU;
 
 /**

@@ -2,9 +2,10 @@ package com.inexas.oak.advisory;
 
 import java.io.File;
 import java.util.*;
+import com.inexas.tad.Tad;
 import com.inexas.util.*;
 
-public class Advisory {
+public class Advisory implements Tad {
 	public class Advice implements Comparable<Advice> {
 		public final String message;
 		public final int line, column;
@@ -76,29 +77,42 @@ public class Advisory {
 		string = null;
 	}
 
-	public void reportError(Object object, String message) {
-		final Locus locus = lookup(object);
-		if(locus == null) {
-			reportError(message);
-		} else {
-			add(locus.getLine(), locus.getColumn(), true, message);
-		}
+	/**
+	 * Report an error.
+	 *
+	 * @param message
+	 *            The error message.
+	 */
+	public void error(String message) {
+		report(null, message, true);
 	}
 
-	public void reportError(Locus locus, String message) {
-		add(locus.getLine(), locus.getColumn(), true, message);
+	/**
+	 * Report an error.
+	 *
+	 * @param object
+	 *            The object in which this error is being reported.
+	 * @param message
+	 *            The error message.
+	 */
+	public void error(Object object, String message) {
+		report(object, message, true);
 	}
 
-	public void reportError(String message) {
-		add(0, 0, true, message);
-	}
-
-	public void reportError(int line, int column, String message) {
+	public void error(int line, int column, String message) {
 		add(line, column, true, message);
 	}
 
-	public void reportWarning(Locus locus, String message) {
-		add(locus.getLine(), locus.getColumn(), false, message);
+	/**
+	 * Report an warning.
+	 *
+	 * @param object
+	 *            The object in which this error is being reported.
+	 * @param message
+	 *            The error message.
+	 */
+	public void warning(Object object, String message) {
+		report(object, message, false);
 	}
 
 	/**
@@ -113,6 +127,21 @@ public class Advisory {
 	 */
 	public int getWarningCount() {
 		return warningCount;
+	}
+
+	/**
+	 * @return The first error message or null if the Advistory contains no
+	 *         errors.
+	 */
+	public String getFirstError() {
+		String result = null;
+		for(final Advice advice : items) {
+			if(advice.isError) {
+				result = advice.message;
+				break;
+			}
+		}
+		return result;
 	}
 
 	public void associate(Locus locus, Object object) {
@@ -161,6 +190,15 @@ public class Advisory {
 		return result;
 	}
 
+	private void report(Object object, String message, boolean isError) {
+		final Locus locus = lookup(object);
+		if(locus == null) {
+			add(0, 0, true, message);
+		} else {
+			add(locus.getLine(), locus.getColumn(), isError, message);
+		}
+	}
+
 	private void add(int line, int column, boolean isError, String message) {
 		final Advice item = new Advice(line, column, isError, message);
 		items.add(item);
@@ -172,12 +210,22 @@ public class Advisory {
 	}
 
 	private Locus lookup(Object object) {
-		Locus result = null;
-		for(final Pair<Object, Locus> pair : register) {
-			if(pair.object1 == object) {
-				result = pair.object2;
+		Locus result;
+
+		if(object == null) {
+			result = null;
+		} else if(object instanceof Locus) {
+			result = (Locus)object;
+		} else {
+			result = null;
+			for(final Pair<Object, Locus> pair : register) {
+				if(pair.object1 == object) {
+					result = pair.object2;
+					break;
+				}
 			}
 		}
+
 		return result;
 	}
 

@@ -8,7 +8,9 @@ Dialect {
 		Member [{
 			key: key1;
 		}, {
-			key: key2;
+			Property {
+				key: key2;
+			}
 			cardinality: 0..1;
 		}]
 	}
@@ -16,9 +18,6 @@ Dialect {
 	Property [{
 		key: key1;
 		type: identifier;
-	}, {
-		key: key2;
-		type: boolean;
 	}]
 
 }

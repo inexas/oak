@@ -3,12 +3,7 @@ package com.inexas.oak.path;
 import com.inexas.exception.UnsupportedException;
 
 public interface Navigable {
-
-	String getPath();
-
 	/**
-	 * Return the parent of this element.
-	 *
 	 * Typically implemented as:
 	 *
 	 * <pre>
@@ -32,6 +27,13 @@ public interface Navigable {
 	 * }
 	 * </pre>
 	 *
+	 * @return The path as a String, e.g. /My/Object/Path
+	 */
+	String getPath();
+
+	/**
+	 * Return the parent of this element.
+	 *
 	 * @param <T>
 	 *            A object that extends Navigable.
 	 * @return Parent or null if the element is the root element.
@@ -40,6 +42,14 @@ public interface Navigable {
 
 	/**
 	 * Return the root element of this element tree.
+	 *
+	 * Typically implemented as:
+	 *
+	 * <pre>
+	 * &#064;SuppressWarnings(&quot;unchecked&quot;)
+	 * final T result = parent == null ? (T)this : parent.getParent();
+	 * return result;
+	 * </pre>
 	 *
 	 * @param <T>
 	 *            A object that extends Navigable.

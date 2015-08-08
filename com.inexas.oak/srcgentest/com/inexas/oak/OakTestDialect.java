@@ -1,8 +1,9 @@
-// Created by Oak: 20JUL15 11:05:44
+// Created by Oak: 07AUG15 12:40:25
 package com.inexas.oak;
 
-import static com.inexas.oak.CollectionType.*;
+import static com.inexas.oak.dialect.CollectionType.*;
 import com.inexas.oak.*;
+import com.inexas.oak.dialect.*;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.util.Cardinality;
 
