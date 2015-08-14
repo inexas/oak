@@ -4,7 +4,7 @@ import java.time.temporal.Temporal;
 import com.inexas.oak.DataType;
 import com.inexas.util.TextBuilder;
 
-public class ToStringVisitor extends OakAstVisitor.Base {
+public class AstToStringVisitor extends AstVisitor.Base {
 	public static String[] operatorToString = new String[OakLexer.Usr + 1];
 	static {
 		operatorToString[OakLexer.Plus] = "+";
@@ -43,7 +43,7 @@ public class ToStringVisitor extends OakAstVisitor.Base {
 	private State currentState;
 	private boolean spacer;
 
-	public ToStringVisitor(boolean pretty) {
+	public AstToStringVisitor(boolean pretty) {
 		tb = new TextBuilder(pretty);
 	}
 

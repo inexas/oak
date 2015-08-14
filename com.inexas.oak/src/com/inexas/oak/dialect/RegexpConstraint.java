@@ -2,7 +2,7 @@ package com.inexas.oak.dialect;
 
 import java.util.regex.*;
 import com.inexas.oak.DataType;
-import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.template.Constraint;
 import com.inexas.util.TextBuilder;
 
 /**
@@ -12,26 +12,26 @@ import com.inexas.util.TextBuilder;
 public class RegexpConstraint extends Constraint {
 	public final static String KEY = "regexp";
 
-	public RegexpConstraint(Object... regexps) throws OakException {
+	public RegexpConstraint(Object... regexps) {
 		super(regexps);
 		if(regexps.length == 0) {
-			throw new OakException(
-					"Regular expression (regexp) Constraints need at least one regular expression");
-		}
-
-		for(final Object regexp : regexps) {
-			if(regexp == null) {
-				throw new OakException("Cannot use <null> as a regular expression");
-			}
-			if(regexp instanceof String) {
-				final String string = (String)regexp;
-				try {
-					Pattern.compile(string);
-				} catch(final Exception e) {
-					throw new OakException("Error compiling regular expression: " + string);
+			error("Regular expression (regexp) Constraints need at least one regular expression");
+		} else {
+			for(final Object regexp : regexps) {
+				if(regexp == null) {
+					error("Cannot use <null> as a regular expression");
+				} else {
+					if(regexp instanceof String) {
+						final String string = (String)regexp;
+						try {
+							Pattern.compile(string);
+						} catch(final Exception e) {
+							error("Error compiling regular expression: " + string);
+						}
+					} else {
+						error("Constraint value not a string: " + regexp.toString());
+					}
 				}
-			} else {
-				throw new OakException("Constraint value not a string: " + regexp.toString());
 			}
 		}
 	}
@@ -96,7 +96,7 @@ public class RegexpConstraint extends Constraint {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void validate(Object value) throws OakException {
+	public void validate(Object value) {
 		boolean matched = false;
 
 		final String valueAsString = (String)value;
@@ -115,12 +115,12 @@ public class RegexpConstraint extends Constraint {
 			tb.append(value == null ? "<null>" : value.toString());
 			tb.append(", should have be one of: ");
 			valuesToTextArray(tb);
-			throw new OakException(tb.toString());
+			error(tb.toString());
 		}
 	}
 
 	@Override
-	void setDataType(DataType dataType) throws OakException {
+	public void setDataType(DataType dataType) {
 		this.dataType = dataType;
 
 		final Class<?> expectedClass;
@@ -128,18 +128,16 @@ public class RegexpConstraint extends Constraint {
 		if(dataType == DataType.text) {
 			expected = DataType.text.toString();
 			expectedClass = String.class;
-		} else {
-			throw new OakException(
-					"Regular expressions cannot be applied to " + dataType.name() + " properties");
-		}
 
-		for(final Object value : values) {
-			if(value.getClass() != expectedClass) {
-				throw new OakException("Invalid data type for value: " + value + ", expected " + expected);
+			for(final Object value : values) {
+				if(value.getClass() != expectedClass) {
+					error("Invalid data type for value: " + value + ", expected " + expected);
+				}
 			}
+
+			this.dataType = dataType;
+		} else {
+			error("Regular expressions cannot be applied to " + dataType.name() + " properties");
 		}
-
-		this.dataType = dataType;
 	}
-
 }

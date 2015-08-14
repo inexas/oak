@@ -15,7 +15,7 @@ public class ValuePairNode extends PairNode {
 	}
 
 	@Override
-	public void accept(OakAstVisitor visitor) {
+	public void accept(AstVisitor visitor) {
 		assert visitor.enterEveryNode(this);
 		visitor.enter(this);
 		node.accept(visitor);
@@ -29,10 +29,10 @@ public class ValuePairNode extends PairNode {
 		final Class<?> clazz = node.getClass();
 		if(clazz == ConstantNode.class) {
 			final ConstantNode constant = (ConstantNode)node;
-			result = constant.getString();
+			result = constant.getTextValue();
 		} else if(clazz == ExpressionNode.class) {
 			final ConstantNode constant = ((ExpressionNode)node).evaluate();
-			result = constant.getString();
+			result = constant.getTextValue();
 		} else if(clazz == PathNode.class) {
 			result = ((PathNode)node).toString();
 		} else {
@@ -79,10 +79,10 @@ public class ValuePairNode extends PairNode {
 		final Class<?> clazz = node.getClass();
 		if(clazz == ConstantNode.class) {
 			final ConstantNode constant = (ConstantNode)node;
-			result = constant.getBoolean();
+			result = constant.getBooleanValue();
 		} else if(clazz == ExpressionNode.class) {
 			final ConstantNode constant = ((ExpressionNode)node).evaluate();
-			result = constant.getBoolean();
+			result = constant.getBooleanValue();
 		} else {
 			throw new InexasRuntimeException("Invalid node type: " + clazz.getName());
 		}

@@ -30,7 +30,7 @@ public class UnaryNode extends ExpressionNode {
 		switch(operator) {
 		case OakLexer.Minus:
 		case OakLexer.Plus:
-			if(!(type == DataType.integer || type == DataType.decimal || type == DataType.precision)) {
+			if(!(type == DataType.integer || type == DataType.decimal || type == DataType.INTEGER)) {
 				throw new InexasRuntimeException("Invalid data type for +/- (should be numeric): "
 						+ type);
 			}
@@ -77,7 +77,7 @@ public class UnaryNode extends ExpressionNode {
 				result = new ConstantNode(context, -((Number)value).doubleValue());
 				break;
 
-			case precision:
+			case INTEGER:
 				result = new ConstantNode(context, ((BigDecimal)value).negate());
 				break;
 
@@ -96,7 +96,7 @@ public class UnaryNode extends ExpressionNode {
 			break;
 
 		default:
-			throw new RuntimeException("Invalid operator: " + ToStringVisitor.operatorToString[operator]);
+			throw new RuntimeException("Invalid operator: " + AstToStringVisitor.operatorToString[operator]);
 		}
 
 		return result;
@@ -113,7 +113,7 @@ public class UnaryNode extends ExpressionNode {
 	}
 
 	@Override
-	public void accept(OakAstVisitor visitor) {
+	public void accept(AstVisitor visitor) {
 		assert visitor.enterEveryNode(this);
 		visitor.enter(this);
 		operand.accept(visitor);

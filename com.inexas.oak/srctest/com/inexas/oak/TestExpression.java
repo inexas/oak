@@ -13,8 +13,7 @@ import com.inexas.tad.Context;
 public class TestExpression {
 	private final static FunctionRegister functionRegister = new FunctionRegister();
 
-	@SuppressWarnings("unused")
-	private static class TestMethods {
+	public static class TestMethods {
 		public static String notStatic() {
 			return "x";
 		}
@@ -71,7 +70,7 @@ public class TestExpression {
 			register(true, DataType.integer, "echo", DataType.integer);
 			register(true, DataType.decimal, "primitive", DataType.decimal);
 			register(true, DataType.decimal, "echo", DataType.decimal);
-			register(true, DataType.precision, "echo", DataType.precision);
+			register(true, DataType.INTEGER, "echo", DataType.INTEGER);
 			register(true, DataType.bool, "primitive", DataType.bool);
 			register(true, DataType.bool, "echo", DataType.bool);
 			register(true, DataType.text, "echo", DataType.text);
@@ -108,7 +107,7 @@ public class TestExpression {
 						soFarSoGood = parameterType == Date.class;
 						break;
 
-					case precision:
+					case INTEGER:
 						soFarSoGood = parameterType == BigDecimal.class;
 						break;
 
@@ -357,7 +356,7 @@ public class TestExpression {
 
 		doTest("1", "echo(1)");
 		doTest("1.0", "echo(1.0)");
-		doTest("12.34", "echo(0s12.34)");
+		// todo Test DECIMAL etc. doTest("12.34", "echo(0d12.34)");
 		doTest("true", "echo(true)");
 		doTest("\"abc\"", "echo(\"abc\")");
 

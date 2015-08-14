@@ -1,13 +1,15 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
-import com.inexas.util.*;
+import com.inexas.oak.DataType;
+import com.inexas.util.TextBuilder;
 
 /**
  * Visits a Dialect AST and produces a String version of it that will transform
  * back into the original source.
  *
- * todo Print out arrays of objects as arrays todo Insert a line break between
- * type changes
+ * todo Print out arrays of objects as arrays
+ *
+ * todo Insert a line break between type changes
  */
 public class ToStringVisitor implements DialectVisitor {
 	private final TextBuilder tb;
@@ -28,7 +30,7 @@ public class ToStringVisitor implements DialectVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void enter(DialectNode dialect) {
+	public void enter(Dialect dialect) {
 		startObject("Dialect", dialect.key);
 	}
 
@@ -36,7 +38,7 @@ public class ToStringVisitor implements DialectVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void exit(DialectNode dialect) {
+	public void exit(Dialect dialect) {
 		endObject();
 	}
 
@@ -51,7 +53,7 @@ public class ToStringVisitor implements DialectVisitor {
 		tb.append("class:");
 		tb.space();
 		tb.append('"');
-		tb.append(object.templateClass);
+		tb.append(object.templateClass.getName());
 		tb.append('"');
 		tb.append(';');
 		tb.newline();
@@ -75,33 +77,15 @@ public class ToStringVisitor implements DialectVisitor {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void visit(Member member) {
+	public void enter(Member member) {
 		startObject("Member", member.key);
+	}
 
-		if(Character.isUpperCase(member.key.charAt(0))) {
-			// Subject is an Object
-			// todo Find more robust way of doing this
-			final Cardinality cardinality = member.cardinality;
-			if(cardinality != Cardinality.ONE_MANY) {
-				tb.indent();
-				tb.append("cardinality:");
-				tb.space();
-				tb.append(member.cardinality.toString());
-				tb.append(';');
-				tb.newline();
-			}
-
-			final CollectionType collection = member.collectionType;
-			if(collection != CollectionType.list) {
-				tb.indent();
-				tb.append("collection:");
-				tb.space();
-				tb.append(collection.name());
-				tb.append(';');
-				tb.newline();
-			}
-		}
-
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void exit(Member member) {
 		endObject();
 	}
 
@@ -112,12 +96,14 @@ public class ToStringVisitor implements DialectVisitor {
 	public void enter(Property property) {
 		startObject("Property", property.key);
 
-		tb.indent();
-		tb.append("type:");
-		tb.space();
-		tb.append(property.type.name());
-		tb.append(';');
-		tb.newline();
+		if(property.type != DataType.text) {
+			tb.indent();
+			tb.append("type:");
+			tb.space();
+			tb.append(property.type.name());
+			tb.append(';');
+			tb.newline();
+		}
 	}
 
 	/**

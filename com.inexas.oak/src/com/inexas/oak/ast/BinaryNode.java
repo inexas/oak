@@ -1,17 +1,19 @@
 package com.inexas.oak.ast;
 
-import java.math.BigDecimal;
+import java.math.*;
 import java.util.Date;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.oak.*;
+import com.inexas.oak.DataType;
 
 public class BinaryNode extends ExpressionNode {
 	private class Converter {
 		private String lhsString, rhsString;
 		private int lhsInteger, rhsInteger;
+		private BigInteger lhsBigInteger, rhsBigInteger;
 		private double lhsDecimal, rhsDecimal;
-		private BigDecimal lhsPrecision, rhsPrecision;
+		// !todo Handle BigDecimal throughout file
+		private BigDecimal lhsBigDecimal, rhsBigDecimal;
 		private boolean lhsBoolean, rhsBoolean;
 		private Date lhsDate, rhsDate;
 
@@ -49,14 +51,19 @@ public class BinaryNode extends ExpressionNode {
 				rhsInteger = ((Long)rhsValue).intValue();
 				break;
 
+			case INTEGER:
+				lhsBigInteger = toBigInteger(lhsValue);
+				rhsBigInteger = toBigInteger(lhsValue);
+				break;
+
 			case decimal:
 				lhsDecimal = ((Number)lhsValue).doubleValue();
 				rhsDecimal = ((Number)rhsValue).doubleValue();
 				break;
 
-			case precision:
-				lhsPrecision = toPrecision(lhsValue);
-				rhsPrecision = toPrecision(lhsValue);
+			case DECIMAL:
+				lhsBigDecimal = toBigDecimal(lhsValue);
+				rhsBigDecimal = toBigDecimal(lhsValue);
 				break;
 
 			case text:
@@ -64,20 +71,39 @@ public class BinaryNode extends ExpressionNode {
 				rhsString = rhsValue == null ? null : rhsValue.toString();
 				break;
 
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("Converter: " + resultType);
 			}
 		}
 
-		private BigDecimal toPrecision(Object value) {
+		private BigInteger toBigInteger(Object value) {
+			final BigInteger result;
+
+			final Class<?> clazz = value.getClass();
+			if(clazz == Integer.class) {
+				result = BigInteger.valueOf(((Integer)value).intValue());
+			} else if(clazz == Double.class) {
+				// ?todo Warn on rounding
+				result = BigInteger.valueOf(((Double)value).intValue());
+			} else {
+				assert clazz == BigInteger.class;
+				result = (BigInteger)value;
+			}
+
+			return result;
+		}
+
+		private BigDecimal toBigDecimal(Object value) {
 			final BigDecimal result;
 
 			final Class<?> clazz = value.getClass();
 			if(clazz == Integer.class) {
-				result = new BigDecimal(((Integer)value).intValue());
+				result = BigDecimal.valueOf(((Integer)value).intValue());
 			} else if(clazz == Double.class) {
-				result = new BigDecimal(((Double)value).doubleValue());
+				result = BigDecimal.valueOf(((Double)value).intValue());
+			} else if(clazz == BigInteger.class) {
+				result = new BigDecimal((BigInteger)value);
 			} else {
 				assert clazz == BigDecimal.class;
 				result = (BigDecimal)value;
@@ -98,29 +124,24 @@ public class BinaryNode extends ExpressionNode {
 			ExpressionNode lhsNode) {
 		super(context);
 
+		assert DataType.integer.bit == 0x0001 && DataType.INTEGER.bit == 0x0002
+				&& DataType.decimal.bit == 0x0004 && DataType.DECIMAL.bit == 0x0008;
+
 		this.operator = operator;
 		this.lhsNode = lhsNode;
 		this.rhsNode = rhsNode;
 		final DataType lhsType = lhsNode.getType();
 		final DataType rhsType = rhsNode.getType();
-		assert DataType.integer.bit == 1 && DataType.decimal.bit == 2 && DataType.precision.bit == 4;
 		final int lhsTypeBit = lhsType.bit;
 		final int rhsTypeBit = rhsType.bit;
 		final int combinedType = lhsTypeBit | rhsTypeBit;
 
-		if(combinedType < 8) {
+		if(combinedType <= DataType.DECIMAL.bit) {
 			// Both numeric
 			commonType = lhsTypeBit > rhsTypeBit ? lhsType : rhsType;
 		} else if(lhsTypeBit == rhsTypeBit) {
 			// Both the same type
-			if(lhsType == DataType.NULL) {
-				// null = null
-				throwInvalidTypes();
-			}
 			commonType = lhsType;
-		} else if((combinedType & DataType.NULL.bit) > 1) {
-			// At least one side is null
-			commonType = rhsType == DataType.NULL ? lhsType : rhsType;
 		} else {
 			throwInvalidTypes();
 			commonType = null;
@@ -132,7 +153,7 @@ public class BinaryNode extends ExpressionNode {
 			if(combinedType == DataType.text.bit) {
 				// Concatenate strings
 				resultType = DataType.text;
-			} else if(combinedType <= 4) {
+			} else if(combinedType <= DataType.DECIMAL.bit) {
 				// Need number (x) number,..
 				resultType = commonType;
 			} else {
@@ -144,7 +165,7 @@ public class BinaryNode extends ExpressionNode {
 		case OakLexer.Minus:
 		case OakLexer.Multiply:
 		case OakLexer.Divide:
-			if(combinedType <= 4) {
+			if(combinedType <= DataType.DECIMAL.bit) {
 				// Need number (x) number,..
 				resultType = commonType;
 			} else {
@@ -155,10 +176,9 @@ public class BinaryNode extends ExpressionNode {
 
 		case OakLexer.Eq:
 		case OakLexer.Ne:
-			if(((combinedType & DataType.NULL.bit) == DataType.NULL.bit)
-					|| (combinedType == DataType.text.bit) || (combinedType <= 4)) {
-				// At least one of the two are null or both strings or both
-				// numbers
+			if((combinedType <= DataType.DECIMAL.bit)
+					|| combinedType == DataType.text.bit
+					|| combinedType == DataType.bool.bit) {
 				resultType = DataType.bool;
 			} else {
 				throwInvalidTypes();
@@ -170,7 +190,7 @@ public class BinaryNode extends ExpressionNode {
 		case OakLexer.Lte:
 		case OakLexer.Gte:
 		case OakLexer.Gt:
-			if((combinedType == DataType.text.bit) || (combinedType <= 4)) {
+			if((combinedType == DataType.text.bit) || (combinedType <= DataType.DECIMAL.bit)) {
 				// Both strings or both numbers
 				resultType = DataType.bool;
 			} else {
@@ -234,16 +254,19 @@ public class BinaryNode extends ExpressionNode {
 			case integer:
 				result = new ConstantNode(lhsContext, converter.lhsInteger + converter.rhsInteger);
 				break;
+			case INTEGER:
+				result = new ConstantNode(lhsContext, converter.lhsBigInteger.add(converter.rhsBigInteger));
+				break;
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal + converter.rhsDecimal);
 				break;
-			case precision:
-				result = new ConstantNode(lhsContext, converter.lhsPrecision.add(converter.rhsPrecision));
+			case DECIMAL:
+				result = new ConstantNode(lhsContext, converter.lhsBigDecimal.add(converter.rhsBigDecimal));
 				break;
 			case text:
 				result = new ConstantNode(lhsContext, converter.lhsString + converter.rhsString);
 				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -254,15 +277,20 @@ public class BinaryNode extends ExpressionNode {
 			case integer:
 				result = new ConstantNode(lhsContext, converter.lhsInteger - converter.rhsInteger);
 				break;
+			case INTEGER:
+				result = new ConstantNode(
+						lhsContext,
+						converter.lhsBigInteger.subtract(converter.rhsBigInteger));
+				break;
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal - converter.rhsDecimal);
 				break;
-			case precision:
+			case DECIMAL:
 				result = new ConstantNode(
 						lhsContext,
-						converter.lhsPrecision.subtract(converter.rhsPrecision));
+						converter.lhsBigDecimal.subtract(converter.rhsBigDecimal));
 				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -273,15 +301,20 @@ public class BinaryNode extends ExpressionNode {
 			case integer:
 				result = new ConstantNode(lhsContext, converter.lhsInteger * converter.rhsInteger);
 				break;
+			case INTEGER:
+				result = new ConstantNode(
+						lhsContext,
+						converter.lhsBigInteger.multiply(converter.rhsBigInteger));
+				break;
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal * converter.rhsDecimal);
 				break;
-			case precision:
+			case DECIMAL:
 				result = new ConstantNode(
 						lhsContext,
-						converter.lhsPrecision.multiply(converter.rhsPrecision));
+						converter.lhsBigDecimal.multiply(converter.rhsBigDecimal));
 				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -292,13 +325,18 @@ public class BinaryNode extends ExpressionNode {
 			case integer:
 				result = new ConstantNode(lhsContext, converter.lhsInteger / converter.rhsInteger);
 				break;
+			case INTEGER:
+				result = new ConstantNode(
+						lhsContext, converter.lhsBigInteger.divide(converter.rhsBigInteger));
+				break;
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal / converter.rhsDecimal);
 				break;
-			case precision:
-				result = new ConstantNode(lhsContext, converter.lhsPrecision.divide(converter.rhsPrecision));
+			case DECIMAL:
+				result = new ConstantNode(
+						lhsContext, converter.lhsBigDecimal.divide(converter.rhsBigDecimal));
 				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -324,7 +362,7 @@ public class BinaryNode extends ExpressionNode {
 			case bool:
 				result = new ConstantNode(lhsContext, converter.lhsBoolean ^ converter.rhsBoolean);
 				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -347,15 +385,15 @@ public class BinaryNode extends ExpressionNode {
 			case integer:
 				result = new ConstantNode(lhsContext, converter.lhsInteger < converter.rhsInteger);
 				break;
+			case INTEGER:
+				result = new ConstantNode(
+						lhsContext,
+						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) < 0);
+				break;
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal < converter.rhsDecimal);
 				break;
-			case precision:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsPrecision.compareTo(converter.rhsPrecision) < 0);
-				break;
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -369,12 +407,12 @@ public class BinaryNode extends ExpressionNode {
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal <= converter.rhsDecimal);
 				break;
-			case precision:
+			case INTEGER:
 				result = new ConstantNode(
 						lhsContext,
-						converter.lhsPrecision.compareTo(converter.rhsPrecision) <= 0);
+						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) <= 0);
 				break;
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -388,12 +426,12 @@ public class BinaryNode extends ExpressionNode {
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal >= converter.rhsDecimal);
 				break;
-			case precision:
+			case INTEGER:
 				result = new ConstantNode(
 						lhsContext,
-						converter.lhsPrecision.compareTo(converter.rhsPrecision) >= 0);
+						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) >= 0);
 				break;
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -407,12 +445,12 @@ public class BinaryNode extends ExpressionNode {
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal > converter.rhsDecimal);
 				break;
-			case precision:
+			case INTEGER:
 				result = new ConstantNode(
 						lhsContext,
-						converter.lhsPrecision.compareTo(converter.rhsPrecision) > 0);
+						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) > 0);
 				break;
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -426,8 +464,9 @@ public class BinaryNode extends ExpressionNode {
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal == converter.rhsDecimal);
 				break;
-			case precision:
-				result = new ConstantNode(lhsContext, converter.lhsPrecision.equals(converter.rhsPrecision));
+			case INTEGER:
+				result = new ConstantNode(
+						lhsContext, converter.lhsBigInteger.equals(converter.rhsBigInteger));
 				break;
 			case bool:
 				result = new ConstantNode(lhsContext, converter.lhsBoolean == converter.rhsBoolean);
@@ -438,7 +477,7 @@ public class BinaryNode extends ExpressionNode {
 			case text:
 				result = new ConstantNode(lhsContext, converter.lhsString.equals(converter.rhsString));
 				break;
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -452,10 +491,10 @@ public class BinaryNode extends ExpressionNode {
 			case decimal:
 				result = new ConstantNode(lhsContext, converter.lhsDecimal != converter.rhsDecimal);
 				break;
-			case precision:
+			case INTEGER:
 				result = new ConstantNode(
 						lhsContext,
-						!converter.lhsPrecision.equals(converter.rhsPrecision));
+						!converter.lhsBigInteger.equals(converter.rhsBigInteger));
 				break;
 			case bool:
 				result = new ConstantNode(lhsContext, converter.lhsBoolean != converter.rhsBoolean);
@@ -466,7 +505,7 @@ public class BinaryNode extends ExpressionNode {
 			case text:
 				result = new ConstantNode(lhsContext, !converter.lhsString.equals(converter.rhsString));
 				break;
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -482,7 +521,7 @@ public class BinaryNode extends ExpressionNode {
 
 		default:
 			throw new RuntimeException("Operator not handled: "
-					+ ToStringVisitor.operatorToString[operator]);
+					+ AstToStringVisitor.operatorToString[operator]);
 		}
 
 		result.coerce(resultType);
@@ -501,7 +540,7 @@ public class BinaryNode extends ExpressionNode {
 	}
 
 	@Override
-	public void accept(OakAstVisitor visitor) {
+	public void accept(AstVisitor visitor) {
 		assert visitor.enterEveryNode(this);
 		visitor.enter(this);
 		lhsNode.accept(visitor);

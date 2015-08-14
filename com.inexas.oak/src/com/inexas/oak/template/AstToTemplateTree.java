@@ -1,29 +1,28 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
 import java.lang.reflect.*;
 import java.util.*;
 import com.inexas.exception.*;
-import com.inexas.oak.Oak;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.ast.*;
+import com.inexas.oak.dialect.*;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
 /**
- * Visit an Oak 'Node structure' using list of rules to transform it into a
- * hierarchical 'Constructor model' where the nodes map to constructors for
- * Template Objects. For example the transformation might generate a workflow
- * model.
+ * Visit an AST using list of rules to transform it into a template
+ * tree. For example the transformation might generate a workflow model.
  *
  * Strategy. We're sent around an Oak AST. We process the input depth first and
  * as we go down a level by entering an object, we push the existing state onto
- * a stack and create a new one. Then we object and property we encounter are
- * added to the state as we exit the state we use the state we've created to
+ * a stack and create a new one. Then, every object and property we encounter
+ * are added to the state as we exit the state we use the state we've created to
  * create a new Object.
  *
  * todo Add a verifier class, check for at least one Property/Object
  */
-public class Transformer extends OakAstVisitor.Base {
+public class AstToTemplateTree extends AstVisitor.Base {
 	private class State {
 		/** The type of object we are current parsing */
 		final String context;
@@ -31,8 +30,8 @@ public class Transformer extends OakAstVisitor.Base {
 		/** This maintains the stack in a linked list */
 		final State previousInChain;
 
-		/** The Rule for this context */
-		final Relation relation;
+		/** The Rule for this state */
+		final Relationship relation;
 
 		/** Set true if we have encountered an error while parsing this block */
 		boolean seenError;
@@ -51,8 +50,12 @@ public class Transformer extends OakAstVisitor.Base {
 				// Root Object
 				relation = rootMap.get(context);
 				if(relation == null) {
-					error(node, "No such root object: " + context
-							+ ", expected: " + StringU.stringify(rootMap.values()));
+					final TextBuilder tb = new TextBuilder();
+					for(final Relationship relationship : rootMap.values()) {
+						tb.delimit();
+						tb.append(relationship.subjectKey);
+					}
+					error(node, "No such root object: '" + context + "', expected: " + tb.toString());
 				}
 			} else {
 				if(state.relation == null) {
@@ -83,12 +86,12 @@ public class Transformer extends OakAstVisitor.Base {
 					+ (seenError ? " ERROR" : "");
 		}
 
-		Relation getChildRelation(Node node, String name) {
-			final Relation result;
+		Relationship getChildRelation(Node node, String name) {
+			final Relationship result;
 
 			if(relation.subjectIsObject) {
 				final ObjectRule object = (ObjectRule)relation.subject;
-				result = object.getRelation(name);
+				result = object.getRelationship(name);
 			} else {
 				result = null;
 			}
@@ -101,10 +104,10 @@ public class Transformer extends OakAstVisitor.Base {
 			return result;
 		}
 
-		void add(Node node, Relation childRelation, Object child) {
+		void add(Node node, Relationship childRelation, Object child) {
 
 			if(!seenError) {
-				final String name = childRelation.subjectName;
+				final String name = childRelation.subjectKey;
 				switch(childRelation.collection) {
 				case list:
 					@SuppressWarnings("unchecked")
@@ -181,7 +184,7 @@ public class Transformer extends OakAstVisitor.Base {
 						templates.add(new Pair<>(node, result));
 						advisory.associate(node, result);
 					} catch(final OakException e) {
-						error(node, "Error constructing " + objectRule.name + ": " + e.getMessage());
+						error(node, "Error constructing " + objectRule.key + ": " + e.getMessage());
 						result = null;
 					}
 				}
@@ -225,7 +228,7 @@ public class Transformer extends OakAstVisitor.Base {
 					result = node.asBoolean();
 					break;
 
-				case ANY:
+				case any:
 					result = node.asAny();
 					break;
 
@@ -233,7 +236,7 @@ public class Transformer extends OakAstVisitor.Base {
 				case time:
 				case datetime:
 				case decimal:
-				case precision:
+				case INTEGER:
 					// $CASES-OMITTED$
 				default:
 					// !todo Implement me
@@ -260,8 +263,8 @@ public class Transformer extends OakAstVisitor.Base {
 				assert relation.subjectIsObject;
 
 				final Map<String, Object> unprocessedChildren = new HashMap<>(contents);
-				for(final Relation child : ((ObjectRule)relation.subject).getRelations()) {
-					final String name = child.subjectName;
+				for(final Relationship child : ((ObjectRule)relation.subject).getRelationships()) {
+					final String name = child.subjectKey;
 					final Object object = unprocessedChildren.remove(name);
 
 					// Check the cardinality...
@@ -274,12 +277,8 @@ public class Transformer extends OakAstVisitor.Base {
 						objectCount = map.size();
 
 						if(!relation.subjectIsObject) {
-							try {
-								final PropertyRule property = (PropertyRule)relation.subject;
-								property.validate(map);
-							} catch(final OakException e) {
-								error(node, e.getMessage());
-							}
+							final PropertyRule property = (PropertyRule)relation.subject;
+							property.validateMap(map);
 						}
 					} else if(object instanceof Collection) {
 						// Either a List or a Set
@@ -288,30 +287,20 @@ public class Transformer extends OakAstVisitor.Base {
 						objectCount = collection.size();
 
 						if(!relation.subjectIsObject) {
-							try {
-								final PropertyRule property = (PropertyRule)relation.subject;
-								property.validate(collection);
-							} catch(final OakException e) {
-								error(node, e.getMessage());
-							}
+							final PropertyRule property = (PropertyRule)relation.subject;
+							property.validateObject(collection);
 						}
 					} else {
 						objectCount = 1;
 
 						if(!child.subjectIsObject) {
-							try {
-								final PropertyRule property = (PropertyRule)child.subject;
-								property.validate(object);
-							} catch(final OakException e) {
-								error(node, e.getMessage());
-							}
+							final PropertyRule property = (PropertyRule)child.subject;
+							property.validateObject(object);
 						}
 					}
 					final Cardinality cardinality = child.cardinality;
 					if(!cardinality.isValidCardinality(objectCount)) {
-						error(
-								node,
-								"Need " + cardinality + " " + name + "(s)" + " in " + context);
+						error(node, "Need " + cardinality + " " + name + "(s)" + " in " + context);
 					}
 				}
 
@@ -326,7 +315,7 @@ public class Transformer extends OakAstVisitor.Base {
 
 		private String getExpected() {
 			final String[] childNames = ((ObjectRule)relation.subject).getChildNames();
-			return childNames.length == 0 ? "no child elements" : StringU.stringify(childNames);
+			return childNames.length == 0 ? "no child elements" : StringU.toDelimitedString(childNames);
 		}
 
 		/**
@@ -337,7 +326,7 @@ public class Transformer extends OakAstVisitor.Base {
 		 * @param relationName
 		 * @return The best guess relationName
 		 */
-		private Relation getBestGuess(String relationName) {
+		private Relationship getBestGuess(String relationName) {
 			// todo Implement something that makes sense
 			return null;
 		}
@@ -345,25 +334,24 @@ public class Transformer extends OakAstVisitor.Base {
 	}
 
 	private State state;
-	private final Map<String, Relation> rootMap = new HashMap<>();
+	private final Map<String, Relationship> rootMap = new HashMap<>();
 	private Object root;
 
 	private final List<Pair<Locus, Object>> templates = new ArrayList<>();
 	private final String[] visitors;
 	private final Advisory advisory;
 
-	public Transformer(Rule[] rules, String[] visitors) {
+	public AstToTemplateTree(Rule[] rules, String[] visitors) {
 		advisory = Context.get(Advisory.class);
 
 		for(final Rule rule : rules) {
-			// Find the root...
+			// Find the possible root(s)...
 			if(rule instanceof ObjectRule) {
 				final ObjectRule objectRule = (ObjectRule)rule;
 				if(objectRule.isRoot()) {
-
 					// Got the root,
-					final Relation relation = new Relation(objectRule);
-					if(rootMap.put(objectRule.name, relation) != null) {
+					final Relationship relation = new Relationship(objectRule);
+					if(rootMap.put(objectRule.key, relation) != null) {
 						throw new InexasRuntimeException("Two root objects with same name");
 					}
 				}
@@ -379,6 +367,10 @@ public class Transformer extends OakAstVisitor.Base {
 	@Override
 	public void exit(Oak oak) {
 		if(!advisory.hasErrors() && visitors != null) {
+			// Send any visitors around...
+
+			// ?todo If we are going to support visitors properly we need to do
+			// a better job here with error handling.
 			for(final String checkerClassName : visitors) {
 				try {
 					final Class<?> checkerClass = Class.forName(checkerClassName);
@@ -405,24 +397,20 @@ public class Transformer extends OakAstVisitor.Base {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "MyObject [{ key:a; }, { key:b; }, { key:c; }]"...
+
 	@Override
 	public void enter(ObjectArrayPairNode node) {
 		push(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void exit(ObjectArrayPairNode node) {
 		if(state.seenError) {
 			pop();
 		} else {
-			final Relation relation = state.relation;
-			final Object object = state.contents.get(relation.subjectName);
+			final Relationship relation = state.relation;
+			final Object object = state.contents.get(relation.subjectKey);
 			pop();
 			if(object instanceof Map) {
 				@SuppressWarnings("unchecked")
@@ -439,56 +427,42 @@ public class Transformer extends OakAstVisitor.Base {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void enter(ObjectNode node) {
 		push(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void exit(ObjectNode node) {
 		popObject(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "MyObject { key:a; }"...
+
 	@Override
 	public void enter(ObjectPairNode node) {
 		push(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void exit(ObjectPairNode node) {
 		popObject(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "myProperty: 42;"...
+
 	@Override
 	public void enter(ValuePairNode node) {
 		push(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void exit(ValuePairNode node) {
 		if(state.seenError) {
 			pop();
 		} else {
-			final Relation relation = state.relation;
-			final Object value = state.contents.get(relation.subjectName);
+			final Relationship relation = state.relation;
+			final Object value = state.contents.get(relation.subjectKey);
 			pop();
 			if(value != null) {
 				if(value instanceof List) {
@@ -503,25 +477,21 @@ public class Transformer extends OakAstVisitor.Base {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "myProperty[ 1, 2, 3 ]"...
+
 	@Override
 	public void enter(ValueArrayPairNode node) {
 		push(node);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void exit(ValueArrayPairNode node) {
 		if(state.seenError) {
 			pop();
 		} else {
-			final Relation relation = state.relation;
+			final Relationship relation = state.relation;
 			@SuppressWarnings("unchecked")
-			final List<Object> values = (List<Object>)state.contents.get(relation.subjectName);
+			final List<Object> values = (List<Object>)state.contents.get(relation.subjectKey);
 			pop();
 			for(final Object value : values) {
 				state.add(node, relation, value);
@@ -529,36 +499,31 @@ public class Transformer extends OakAstVisitor.Base {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "myProperty: /abc/def;"...
+
 	@Override
 	public void visit(PathNode node) {
 		if(!state.seenError) {
 			final PropertyRule rule = (PropertyRule)state.relation.subject;
+			// ?todo Why might rule be null here?
 			if(rule != null) {
-				final Object value;
-				switch(rule.dataType) {
-				case identifier:
-					// todo Check no switches: /asdf/
-				case path:
-				case ANY: // For cases line Constraint/value
-					value = node.path;
-					break;
-
-					// $CASES-OMITTED$
-				default:
-					// !todo React to bad types
-					throw new ImplementMeException(rule.dataType.name());
+				final Object value = node.path;
+				if(rule.dataType == DataType.identifier
+						|| rule.dataType == DataType.path
+						|| rule.dataType == DataType.any) {
+					state.add(node, state.relation, value);
+				} else {
+					advisory.error(node,
+							"Wrong data type; expected path but got: " + rule.dataType
+							+ " '" + (value == null ? "null" : value.toString()));
+					state.add(node, state.relation, null);
 				}
-				state.add(node, state.relation, value);
 			}
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
+	// E.g. "myProperty: 42;"...
+
 	@Override
 	public void visit(ConstantNode node) {
 		if(state.relation != null) {
@@ -566,9 +531,19 @@ public class Transformer extends OakAstVisitor.Base {
 			final Object value;
 			switch(rule.dataType) {
 			case identifier:
+				value = node.getIdentifierValue();
+				break;
+
 			case path:
+				value = node.getPathValue();
+				break;
+
 			case text:
-				value = node.getString();
+				value = node.getTextValue();
+				break;
+
+			case INTEGER:
+				value = node.getBigInteger();
 				break;
 
 			case integer:
@@ -576,14 +551,14 @@ public class Transformer extends OakAstVisitor.Base {
 				break;
 
 			case bool:
-				value = node.getBoolean();
+				value = node.getBooleanValue();
 				break;
 
-			case ANY:
+			case any:
 				value = node.getValue();
 				break;
 
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				// !todo Implement default and other values
@@ -606,7 +581,7 @@ public class Transformer extends OakAstVisitor.Base {
 				value = node.cardinality;
 				break;
 
-			// $CASES-OMITTED$
+				// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				throw new ImplementMeException();
@@ -632,7 +607,7 @@ public class Transformer extends OakAstVisitor.Base {
 	private void popObject(Node node) {
 		if(state.valid(node)) {
 			final Object object = state.toObject(node);
-			final Relation relation = state.relation;
+			final Relationship relation = state.relation;
 			pop();
 			if(object != null) {
 				if(state == null) {
@@ -665,4 +640,5 @@ public class Transformer extends OakAstVisitor.Base {
 	private void error(Object locus, String message) {
 		advisory.error(locus, message);
 	}
+
 }

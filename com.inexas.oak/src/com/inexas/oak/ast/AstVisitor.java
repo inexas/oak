@@ -2,8 +2,8 @@ package com.inexas.oak.ast;
 
 import com.inexas.oak.Oak;
 
-public interface OakAstVisitor {
-	public class Base implements OakAstVisitor {
+public interface AstVisitor {
+	public class Base implements AstVisitor {
 		private boolean tracing = false;
 		private String indent = "";
 

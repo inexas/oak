@@ -13,8 +13,8 @@ package com.inexas.oak.examples;
 import java.io.File;
 import com.inexas.oak.Oak;
 import com.inexas.oak.advisory.OakException;
-import com.inexas.oak.ast.ToStringVisitor;
-import com.inexas.oak.dialect.Dialect;
+import com.inexas.oak.ast.AstToStringVisitor;
+import com.inexas.oak.dialect.Rulebase;
 
 public class Documentation {
 
@@ -28,7 +28,7 @@ public class Documentation {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;");
 			oak.toAst();
-			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
 		} catch(final OakException e) {
@@ -41,7 +41,7 @@ public class Documentation {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;");
 			oak.toAst();
-			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
 		} catch(final OakException e) {
@@ -54,7 +54,7 @@ public class Documentation {
 		try {
 			// Create a Person dialect...
 			final Oak personDialectOak = new Oak(new File("datatest/oak/Person.dialect"));
-			final Dialect personDialect = personDialectOak.toDialect();
+			final Rulebase personDialect = personDialectOak.toDialect();
 
 			// Parse a person file...
 			final Oak personOak = new Oak(new File("datatest/oak/John.person"));
@@ -63,8 +63,8 @@ public class Documentation {
 
 			// Write and use the Java dialect files...
 			personDialect.write("srctest", "com.inexas.oak.examples");
-			final Person john = personOak.toObjectTree(PersonDialect.class);
-			System.out.println(john.toString());
+//			final Person john = personOak.toObjectTree(PersonDialect.class);
+//			System.out.println(john.toString());
 		} catch(final OakException e) {
 			System.out.println(e.getAdvisory());
 		}

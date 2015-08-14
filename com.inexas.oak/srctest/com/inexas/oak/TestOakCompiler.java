@@ -5,8 +5,8 @@ import java.io.File;
 import org.junit.Test;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.advisory.*;
-import com.inexas.oak.ast.ToStringVisitor;
-import com.inexas.oak.dialect.Dialect;
+import com.inexas.oak.ast.AstToStringVisitor;
+import com.inexas.oak.dialect.Rulebase;
 import com.inexas.util.FileU;
 
 /**
@@ -16,12 +16,12 @@ public class TestOakCompiler {
 
 	private void doStringBasedTest(String string) throws OakException {
 		final Object root = doTest(new Oak(string), false, "com.inexas.oak");
-		assertTrue(root instanceof Dialect);
+		assertTrue(root instanceof Rulebase);
 	}
 
-	private Dialect doTest(Oak oak, boolean write, String packageName) {
+	private Rulebase doTest(Oak oak, boolean write, String packageName) {
 		try {
-			final Dialect result = oak.toDialect();
+			final Rulebase result = oak.toDialect();
 			if(write) {
 				result.write("srcgentest", packageName);
 			}
@@ -59,26 +59,25 @@ public class TestOakCompiler {
 				+ "  key:G;\n"
 				+ "  Object {\n"
 				+ "    key:O;\n"
-				+ "    class:\"com.inexas.oak.TestObject\";\n"
+				+ "    class:\"com.inexas.oak.dialect.TestObject\";\n"
 				+ "    root;\n"
 				+ "    Member {\n"
-				+ "      key:p;\n"
+				+ "      Property {\n"
+				+ "        key:p;\n"
+				+ "        type:identifier;\n"
+				+ "        Constraint{\n"
+				+ "          type:choice;\n"
+				+ "          value[\"a\",\"b\"]\n"
+				+ "        }\n"
+				+ "      }\n"
 				+ "    }\n"
 				+ "    Member {\n"
-				+ "      key:q;\n"
+				+ "      Property {\n"
+				+ "        key:q;\n"
+				+ "        type:identifier;\n"
+				+ "      }\n"
 				+ "    }\n"
 				+ "  }\n"
-				+ "  Property [{\n"
-				+ "    key:p;\n"
-				+ "    type:identifier;\n"
-				+ "    Constraint{\n"
-				+ "      type:choice;\n"
-				+ "      value[\"a\",\"b\"]\n"
-				+ "    }\n"
-				+ "  }, {\n"
-				+ "    key:q;\n"
-				+ "    type:identifier;\n"
-				+ "  }]\n"
 				+ "}\n");
 	}
 
@@ -91,7 +90,7 @@ public class TestOakCompiler {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;\n§");
 			oak.toAst();
-			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
 		} catch(final OakException e) {

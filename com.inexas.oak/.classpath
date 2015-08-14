@@ -6,11 +6,7 @@
 			<attribute name="ignore_optional_problems" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="srcgentest">
-		<attributes>
-			<attribute name="ignore_optional_problems" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="src" path="srcgentest"/>
 	<classpathentry kind="src" path="srctest"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry exported="true" kind="con" path="org.springsource.ide.eclipse.gradle.classpathcontainer"/>

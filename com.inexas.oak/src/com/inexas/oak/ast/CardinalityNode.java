@@ -14,7 +14,7 @@ public class CardinalityNode extends Node {
 	}
 
 	@Override
-	public void accept(OakAstVisitor visitor) {
+	public void accept(AstVisitor visitor) {
 		assert visitor.enterEveryNode(this);
 		visitor.visit(this);
 		assert visitor.exitEveryNode(this);

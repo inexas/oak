@@ -17,7 +17,7 @@ public class ArrayNode extends Node {
 	}
 
 	@Override
-	public void accept(OakAstVisitor visitor) {
+	public void accept(AstVisitor visitor) {
 		throw new UnexpectedException("accept: ");
 		// visitor.enter(this);
 		// boolean delimit = false;

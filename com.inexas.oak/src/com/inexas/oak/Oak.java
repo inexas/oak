@@ -3,13 +3,14 @@ package com.inexas.oak;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import com.inexas.exception.InexasRuntimeException;
+import com.inexas.exception.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.ast.*;
-import com.inexas.oak.ast.ToStringVisitor;
 import com.inexas.oak.dialect.*;
+import com.inexas.oak.template.*;
 import com.inexas.tad.Context;
 
 public class Oak {
@@ -21,14 +22,14 @@ public class Oak {
 				int line, int column,
 				String message,
 				RecognitionException e) {
-			advisory.error(line, column, message);
+			advisory.error(line, column, "Syntax error: " + message);
 		}
 	}
 
 	private final Advisory advisory;
 	private OakParser parser;
 	private Node rootNode;
-	private DialectNode dialectAst;
+	private Dialect dialectAst;
 
 	/**
 	 * Construct an Oak process that will parse a file. The constructor parses
@@ -42,7 +43,6 @@ public class Oak {
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
-	@SuppressWarnings("deprecation")
 	public Oak(File file) throws OakException {
 		advisory = new Advisory(file);
 		Context.pushAttach(advisory);
@@ -78,7 +78,6 @@ public class Oak {
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
-	@SuppressWarnings("deprecation")
 	public Oak(String string) throws OakException {
 		advisory = new Advisory(string);
 		Context.pushAttach(advisory);
@@ -107,16 +106,17 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
-	@SuppressWarnings("deprecation")
 	public Node toAst() throws OakException {
 		Context.pushAttach(advisory);
 
 		if(rootNode == null && !advisory.hasErrors()) {
 			final ParserRuleContext ruleContext = parser.oak();
-			final ParseTreeWalker walker = new ParseTreeWalker();
-			final OakToAstVisitor visitor = new OakToAstVisitor();
-			walker.walk(visitor, ruleContext);
-			rootNode = visitor.getRoot();
+			if(!advisory.hasErrors()) {
+				final ParseTreeWalker walker = new ParseTreeWalker();
+				final AntlrToAstVisitor visitor = new AntlrToAstVisitor();
+				walker.walk(visitor, ruleContext);
+				rootNode = visitor.getRoot();
+			}
 		}
 
 		Context.detach(advisory);
@@ -136,13 +136,12 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
-	@SuppressWarnings("deprecation")
 	public ExpressionNode toExpression() throws OakException {
 		Context.pushAttach(advisory);
 
 		final ParserRuleContext ruleContext = parser.expression();
 		final ParseTreeWalker walker = new ParseTreeWalker();
-		final OakToAstVisitor visitor = new OakToAstVisitor();
+		final AntlrToAstVisitor visitor = new AntlrToAstVisitor();
 		walker.walk(visitor, ruleContext);
 		rootNode = visitor.getRoot();
 
@@ -166,7 +165,7 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
-	public <T> T toObjectTree(Dialect dialect) throws OakException {
+	public <T> T toObjectTree(Rulebase dialect) throws OakException {
 		return toObjectTree(dialect.rules);
 	}
 
@@ -182,7 +181,6 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown if parsing error encountered.
 	 */
-	@SuppressWarnings("deprecation")
 	public <T> T toObjectTree(Class<?> dialect) throws OakException {
 		T result;
 
@@ -190,12 +188,23 @@ public class Oak {
 
 		try {
 			final Field field = dialect.getDeclaredField("dialect");
-			final Rule[] rules = ((Dialect)field.get(null)).rules;
-			result = toObjectTree(rules);
-		} catch(final Exception e) {
+			final Rule[] rules = ((Rulebase)field.get(null)).rules;
+			try {
+				result = toObjectTree(rules);
+			} catch(final OakException e) {
+				result = null;
+			} catch(final Exception e) {
+				// !todo Implement me
+				throw new ImplementMeException();
+			}
+		} catch(final NoSuchFieldException
+				| SecurityException
+				| IllegalArgumentException
+				| IllegalAccessException e) {
 			advisory.error(
-					"Cannot access 'public static Dialect dialect;' in "
-							+ "dialect file: " + e.getMessage());
+					"Cannot access field 'public static Dialect dialect;' in: "
+							+ dialect.getName()
+							+ " because: " + e.getMessage());
 			result = null;
 		}
 
@@ -214,17 +223,17 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown on parsing errors.
 	 */
-	@SuppressWarnings("deprecation")
-	public Dialect toDialect() throws OakException {
-		final Dialect result;
+	public Rulebase toDialect() throws OakException {
+		final Rulebase result;
 
 		Context.pushAttach(advisory);
 
-		dialectAst = toObjectTree(OakDialect.dialect.rules);
+		dialectAst = toObjectTree(OakDialect.rulebase.rules);
 		if(dialectAst != null) {
-			final GenerateSourceDialectVisitor visitor = new GenerateSourceDialectVisitor();
-			dialectAst.accept(visitor);
-			result = visitor.getDialect();
+			result = getDialect();
+			// final AstToRulesVisitor visitor = new AstToRulesVisitor();
+			// dialectAst.accept(visitor);
+			// result = visitor.getDialect();
 		} else {
 			result = null;
 		}
@@ -247,8 +256,7 @@ public class Oak {
 	 * @throws OakException
 	 *             Thrown if a syntax error is reported.
 	 */
-	@SuppressWarnings("deprecation")
-	public void accept(OakAstVisitor visitor) throws OakException {
+	public void accept(AstVisitor visitor) throws OakException {
 
 		if(!advisory.isEmpty()) {
 			System.err.println(advisory);
@@ -293,7 +301,7 @@ public class Oak {
 	@Override
 	public String toString() {
 		try {
-			final ToStringVisitor visitor = new ToStringVisitor(true);
+			final AstToStringVisitor visitor = new AstToStringVisitor(true);
 			accept(visitor);
 			return visitor.toString();
 		} catch(final OakException e) {
@@ -308,7 +316,7 @@ public class Oak {
 
 		toAst();
 		if(!advisory.hasErrors()) {
-			final Transformer visitor = new Transformer(rules, null);
+			final AstToTemplateTree visitor = new AstToTemplateTree(rules, null);
 			accept(visitor);
 			result = (T)visitor.getRoot();
 		} else {
@@ -342,4 +350,48 @@ public class Oak {
 		}
 	}
 
+	/*
+	 * The following methods do a depth first visit of the Dialect AST to create
+	 * the rule base.
+	 */
+	private Rulebase getDialect() {
+
+		// Get all the objects first in case of forward references...
+		final Collection<Objet> objects = dialectAst.objectMap.values();
+		final Map<String, ObjectRule> objectMap = new HashMap<>();
+		for(final Objet object : objects) {
+			final String key = object.key;
+			final ObjectRule rule = new ObjectRule(key, object.templateClass, object.isRoot);
+			objectMap.put(key, rule);
+		}
+
+		// Process all the object members...
+		for(final Objet object : objects) {
+			int index = 0;
+			final Relationship[] relationships = new Relationship[object.members.size()];
+			for(final Member member : object.members) {
+				final Rule rule;
+				if(member.key == null) {
+					// It's a Property...
+					final Property property = member.property;
+					rule = new PropertyRule(property.key, property.type, property.constraints);
+				} else {
+					// It's an Object
+					rule = objectMap.get(member.key);
+				}
+				final Relationship relationship = new Relationship(
+						rule,
+						member.cardinality,
+						member.collectionType);
+				relationships[index++] = relationship;
+			}
+
+			final ObjectRule rule = objectMap.get(object.key);
+			rule.setRelationships(relationships);
+		}
+
+		return new Rulebase(
+				dialectAst.key,
+				objectMap.values().toArray(new ObjectRule[objectMap.size()]));
+	}
 }

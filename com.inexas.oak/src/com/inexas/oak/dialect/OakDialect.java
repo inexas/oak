@@ -3,137 +3,162 @@ package com.inexas.oak.dialect;
 import static com.inexas.oak.dialect.CollectionType.*;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.DataType;
+import com.inexas.oak.template.*;
 import com.inexas.util.Cardinality;
 
 /**
  * This file contains the hard-coded rules for transforming an Oak Dialect file
- * into an OP tree structure.
+ * into a tree structure in the target dialect.
  */
 public class OakDialect {
-	public static Dialect dialect;
+	public static Rulebase rulebase;
 
-	private static Relation relate(PropertyRule rule, Cardinality cardinality) {
-		return new Relation(rule, cardinality);
+	private static Relationship relate(PropertyRule rule, Cardinality cardinality) {
+		return new Relationship(rule, cardinality);
 	}
 
-	private static Relation relate(ObjectRule key, Cardinality cardinality) {
-		return new Relation(key, cardinality, singleton);
+	private static Relationship relate(ObjectRule key, Cardinality cardinality) {
+		return new Relationship(key, cardinality, singleton);
 	}
 
-	private static Relation relate(ObjectRule key, Cardinality cardinality, CollectionType collection) {
-		return new Relation(key, cardinality, collection);
+	private static Relationship relate(ObjectRule key, Cardinality cardinality, CollectionType collection) {
+		return new Relationship(key, cardinality, collection);
 	}
 
-	private static void setRules(Rule... rules) {
-		OakDialect.dialect = new Dialect("Dialect", rules);
+	private static void setRules(ObjectRule... rules) {
+		OakDialect.rulebase = new Rulebase("Dialect", rules);
 	}
 
 	public static String[] visitorList = {};
 
 	static {
 		try {
-			/**
-			 * KW: After trying visitors I don't like the idea too much because
-			 * there are lots of little problems. For example ActionDefs don't
-			 * get visited but the modifiers do. Similarly the visitor can't be
-			 * initialized properly.
-			 */
+			final ObjectRule _Dialect = new ObjectRule(
+					"Dialect",
+					Dialect.class,
+					true);
 
-			// Properties...
+			final PropertyRule _Dialect_visitor = new PropertyRule(
+					"visitor",
+					DataType.text);
 
-			final PropertyRule key = new PropertyRule(
+			final PropertyRule _Dialect_key = new PropertyRule(
 					"key",
 					DataType.identifier);
 
-			final PropertyRule clazz = new PropertyRule(
-					"class",
-					DataType.text);
-
-			final PropertyRule root = new PropertyRule(
-					"root",
-					DataType.bool);
-
-			final PropertyRule cardinality = new PropertyRule(
-					"cardinality",
-					DataType.cardinality);
-
-			final PropertyRule collection = new PropertyRule(
-					"collection",
-					DataType.identifier,
-					new com.inexas.oak.dialect.ChoiceConstraint("set", "map", "list"));
-
-			final PropertyRule type = new PropertyRule(
-					"type",
-					DataType.identifier);
-
-			final PropertyRule value = new PropertyRule(
-					"value",
-					DataType.ANY);
-
-			final PropertyRule visitors = new PropertyRule(
-					"visitors",
-					DataType.text);
-
-			// Objects...
-
-			final ObjectRule dialectAst = new ObjectRule(
-					"Dialect",
-					DialectNode.class,
-					true);
-
-			final ObjectRule object = new ObjectRule(
+			final ObjectRule _Object = new ObjectRule(
 					"Object",
 					Objet.class,
 					false);
 
-			final ObjectRule member = new ObjectRule(
+			final PropertyRule _Object_key = new PropertyRule(
+					"key",
+					DataType.identifier);
+
+			final PropertyRule _Object_class = new PropertyRule(
+					"class",
+					DataType.text);
+
+			final PropertyRule _Object_root = new PropertyRule(
+					"root",
+					DataType.bool);
+
+			final ObjectRule _Member = new ObjectRule(
 					"Member",
 					Member.class,
 					false);
 
-			final ObjectRule property = new ObjectRule(
+			final PropertyRule _Member_key = new PropertyRule(
+					"key",
+					DataType.identifier);
+
+			final PropertyRule _Member_cardinality = new PropertyRule(
+					"cardinality",
+					DataType.cardinality);
+
+			final PropertyRule _Member_collection = new PropertyRule(
+					"collection",
+					DataType.identifier,
+					new ChoiceConstraint("list", "map", "set"));
+
+			final ObjectRule _Property = new ObjectRule(
 					"Property",
 					Property.class,
 					false);
 
-			final ObjectRule constraint = new ObjectRule(
+			final PropertyRule _Property_key = new PropertyRule(
+					"key",
+					DataType.identifier);
+
+			// @formatter:off
+			final PropertyRule _Property_type =new PropertyRule(
+					"type",
+					DataType.identifier,
+					new ChoiceConstraint(
+							"text",			"identifier",	"path",
+							"boolean",
+							"integer",		"INTEGER",		"decimal",		"DECIMAL",
+							"cardinality",
+							"date",			"time",			"datetime",
+							"any"));
+			// @formatter:on
+
+			final ObjectRule _Constraint = new ObjectRule(
 					"Constraint",
 					Constraint.class,
 					false);
 
-			// Relations...
+			final PropertyRule _Constraint_type = new PropertyRule(
+					"type",
+					DataType.identifier,
+					new ChoiceConstraint("choice", "regexp"));
 
-			dialectAst.setRelations(
-					relate(key, Cardinality.ONE_ONE),
-					relate(object, Cardinality.ONE_MANY, map),
-					relate(property, Cardinality.ONE_MANY, map),
-					relate(visitors, Cardinality.ZERO_MANY));
+			final PropertyRule _Constraint_value = new PropertyRule(
+					"value",
+					DataType.any);
 
-			object.setRelations(
-					relate(key, Cardinality.ONE_ONE),
-					relate(clazz, Cardinality.ONE_ONE),
-					relate(root, Cardinality.ZERO_ONE),
-					relate(member, Cardinality.ONE_MANY, list));
+			_Dialect.setRelationships(
+					relate(_Dialect_key, Cardinality.ONE_ONE),
+					relate(_Object, Cardinality.ONE_MANY, map),
+					relate(_Dialect_visitor, Cardinality.ZERO_MANY));
 
-			member.setRelations(
-					relate(key, Cardinality.ZERO_ONE),
-					relate(property, Cardinality.ZERO_ONE),
-					relate(cardinality, Cardinality.ZERO_ONE),
-					relate(collection, Cardinality.ZERO_ONE));
+			_Object.setRelationships(
+					relate(_Object_key, Cardinality.ONE_ONE),
+					relate(_Object_class, Cardinality.ONE_ONE),
+					relate(_Object_root, Cardinality.ZERO_ONE),
+					relate(_Member, Cardinality.ONE_MANY, list));
 
-			property.setRelations(
-					relate(key, Cardinality.ONE_ONE),
-					relate(type, Cardinality.ZERO_ONE),
-					relate(constraint, Cardinality.ZERO_MANY, list));
+			_Member.setRelationships(
+					relate(_Member_key, Cardinality.ZERO_ONE),
+					relate(_Property, Cardinality.ZERO_ONE),
+					relate(_Member_cardinality, Cardinality.ZERO_ONE),
+					relate(_Member_collection, Cardinality.ZERO_ONE));
 
-			constraint.setRelations(
-					relate(type, Cardinality.ONE_ONE),
-					relate(value, Cardinality.ZERO_MANY));
+			_Property.setRelationships(
+					relate(_Property_key, Cardinality.ONE_ONE),
+					relate(_Property_type, Cardinality.ZERO_ONE),
+					relate(_Constraint, Cardinality.ZERO_MANY, list));
 
-			setRules(key, clazz, root, cardinality, collection, type, member, object, property, dialectAst);
+			_Constraint.setRelationships(
+					relate(_Constraint_type, Cardinality.ONE_ONE),
+					relate(_Constraint_value, Cardinality.ZERO_MANY));
+
+			setRules(
+					// _Object_class,
+					// _Object_root,
+					// _Member_cardinality,
+					// _Member_collection,
+					// _Property_type,
+					// _Constraint_type,
+					// _Constraint_value,
+					// _Dialect_visitor,
+					_Dialect,
+					_Object,
+					_Member,
+					_Property,
+					_Constraint);
 		} catch(final Exception e) {
 			throw new InexasRuntimeException("Error building OakDialect", e);
 		}
 	}
-
 }

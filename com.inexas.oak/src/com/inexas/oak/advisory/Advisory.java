@@ -68,7 +68,7 @@ public class Advisory implements Tad {
 	private final String string;
 
 	public Advisory(String string) {
-		this.sourceName = "(String)";
+		this.sourceName = "(String input)";
 		this.string = string;
 	}
 

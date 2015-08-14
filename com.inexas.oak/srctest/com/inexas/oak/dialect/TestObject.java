@@ -1,4 +1,4 @@
-package com.inexas.oak;
+package com.inexas.oak.dialect;
 
 public class TestObject {
 	String p;

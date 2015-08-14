@@ -1,9 +1,8 @@
 package com.inexas.oak.dialect;
 
-import java.math.BigDecimal;
-import com.inexas.exception.UnexpectedException;
+import java.math.*;
 import com.inexas.oak.DataType;
-import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.template.Constraint;
 import com.inexas.util.*;
 
 /**
@@ -13,10 +12,10 @@ import com.inexas.util.*;
 public class ChoiceConstraint extends Constraint {
 	public final static String KEY = "choice";
 
-	public ChoiceConstraint(Object... options) throws OakException {
+	public ChoiceConstraint(Object... options) {
 		super(options);
 		if(options == null || options.length <= 0) {
-			throw new OakException("Choice constraint must have at least two options");
+			error("Choice constraint must have at least two options");
 		}
 	}
 
@@ -24,7 +23,7 @@ public class ChoiceConstraint extends Constraint {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void validate(Object value) throws OakException {
+	public void validate(Object value) {
 		boolean found = false;
 
 		for(final Object option : values) {
@@ -38,9 +37,9 @@ public class ChoiceConstraint extends Constraint {
 			final TextBuilder tb = new TextBuilder(true);
 			tb.append("Invalid value for choice constraint: '");
 			tb.append(value == null ? "<null>" : value.toString());
-			tb.append(", should have be one of: ");
+			tb.append(", should have been one of: ");
 			valuesToTextArray(tb);
-			throw new OakException(tb.toString());
+			error(tb.toString());
 		}
 	}
 
@@ -96,7 +95,7 @@ public class ChoiceConstraint extends Constraint {
 	}
 
 	@Override
-	void setDataType(DataType dataType) throws OakException {
+	public void setDataType(DataType dataType) {
 		this.dataType = dataType;
 
 		final Class<?> expectedClass;
@@ -114,14 +113,18 @@ public class ChoiceConstraint extends Constraint {
 			expectedClass = Long.class;
 			break;
 
+		case INTEGER:
+			expected = DataType.INTEGER.toString();
+			expectedClass = BigInteger.class;
+			break;
+
 		case decimal:
 			expected = DataType.decimal.toString();
 			expectedClass = Double.class;
 			break;
 
-		case precision:
-			// todo Might want to accept integer and decimals
-			expected = DataType.precision.toString();
+		case DECIMAL:
+			expected = DataType.INTEGER.toString();
 			expectedClass = BigDecimal.class;
 			break;
 
@@ -130,22 +133,20 @@ public class ChoiceConstraint extends Constraint {
 			expectedClass = Cardinality.class;
 			break;
 
-		case ANY:
-		case NULL:
-		case bool:
-		case date:
-		case time:
-		case datetime:
-			throw new OakException("Choice with " + dataType.name() + " does not make sense");
-
+			// $CASES-OMITTED$
 		default:
-			throw new UnexpectedException("Type: " + dataType.name());
+			error("Choice with " + dataType.name() + " does not make sense");
+			expected = null;
+			expectedClass = null;
+			break;
 		}
 
-		for(final Object value : values) {
-			if(value != null) {
-				if(value.getClass() != expectedClass) {
-					throw new OakException("Invalid data type for value: " + value + ", expected " + expected);
+		if(expectedClass != null) {
+			for(final Object value : values) {
+				if(value != null) {
+					if(value.getClass() != expectedClass) {
+						error("Invalid data type for value: " + value + ", expected " + expected);
+					}
 				}
 			}
 		}

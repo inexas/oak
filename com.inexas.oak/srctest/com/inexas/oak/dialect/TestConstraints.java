@@ -10,10 +10,12 @@
 
 package com.inexas.oak.dialect;
 
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.Assert.*;
+import org.junit.*;
 import com.inexas.oak.DataType;
-import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.template.Constraint;
+import com.inexas.tad.Context;
 
 /**
  * @author kwhittingham
@@ -21,45 +23,68 @@ import com.inexas.oak.advisory.OakException;
  */
 public class TestConstraints {
 
-	@Test(expected = OakException.class)
-	public void testRegexpNoValues() throws OakException {
-		@SuppressWarnings("unused")
-		final Constraint constraint = new RegexpConstraint();
+	/**
+	 * @return
+	 */
+	private String getFirstMessage() {
+		final Advisory advisory = Context.get(Advisory.class);
+		return advisory.getFirstError();
 	}
 
-	@Test(expected = OakException.class)
-	public void testRegexpNonStringValues() throws OakException {
-		@SuppressWarnings("unused")
-		final Constraint constraint = new RegexpConstraint("a", new Integer(2), "c");
+	@Before
+	public void setUp() {
+		final Advisory advisory = new Advisory("Unit test");
+		Context.attach(advisory);
+	}
+
+	@SuppressWarnings("deprecation")
+	@After
+	public void tearDown() {
+		Context.detachAll();
 	}
 
 	@Test
-	public void testRegexp1() throws OakException {
+	public void testRegexpNoValues() {
+		final Constraint constraint = new RegexpConstraint();
+		assertNotNull(constraint);
+	}
+
+	@Test
+	public void testRegexpNonStringValues() {
+		final Constraint constraint = new RegexpConstraint("a", new Integer(2), "c");
+		assertNotNull(constraint);
+		assertTrue(getFirstMessage().indexOf("Constraint value not a string") >= 0);
+	}
+
+	@Test
+	public void testRegexp1() {
 		final Constraint constraint = new RegexpConstraint("b", "a+");
 		constraint.validate("b");
 		constraint.validate("aaaa");
-	}
-
-	@Test(expected = OakException.class)
-	public void testRegexp2() throws OakException {
-		final Constraint constraint = new RegexpConstraint("b", "a+");
-		constraint.validate("bb");
+		assertNull(getFirstMessage());
 	}
 
 	@Test
-	public void testRegexpSingleValueToString() throws OakException {
+	public void testRegexp2() {
+		final Constraint constraint = new RegexpConstraint("b", "a+");
+		constraint.validate("bb");
+		assertTrue(getFirstMessage().indexOf("Invalid value") >= 0);
+	}
+
+	@Test
+	public void testRegexpSingleValueToString() {
 		final Constraint constraint = new RegexpConstraint("a");
 		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n", constraint.toString());
 	}
 
 	@Test
-	public void testRegexpMultiValueToString() throws OakException {
+	public void testRegexpMultiValueToString() {
 		final Constraint constraint = new RegexpConstraint("a", "b");
 		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n", constraint.toString());
 	}
 
 	@Test
-	public void constraintToString() throws OakException {
+	public void constraintToString() {
 		final Constraint constraint = new ChoiceConstraint("a\n\\\tb", "b", null);
 		final String expected = "Constraint {\n"
 				+ "\ttype: choice;\n"

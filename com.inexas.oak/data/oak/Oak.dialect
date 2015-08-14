@@ -3,47 +3,50 @@ Dialect {
 	
 	Object [{
 		/**
-		 * Define the Dialect as a key, a Map of Objects and a Map
-		 * of Properties
+		 * Dialect is the root object.
 		 */
 		key: Dialect;
-		class: "com.inexas.oak.DialectAst";
+		class: "com.inexas.oak.template.Dialect";
 		root;
 		
 		Member [{ // The list of membership rules
-			key: key;
+			Property { key: key; type: identifier; }
 		}, {
 			key: Object;
 			cardinality: 1..*;
 			collection: map;
 		}, {
-			key: Property;
-			cardinality: 1..*;
-			collection: map;
-		}, {
-			key: visitors;
+			/**
+			 * KW: After trying visitors I don't like the idea too much because
+			 * there are lots of little problems. For example ActionDefs don't
+			 * get visited but the modifiers do. Similarly the visitor can't be
+			 * initialized properly.
+			 */
+			Property { key: visitor; }
 			cardinality: 0..*;
 		}]
 		
 	}, {
 		/**
-		 * Define an Object as a key, class and a list of 1 or more Members
+		 * Object
 		 */
 		key: Object;
-		class: "com.inexas.oak.Objet";
+		class: "com.inexas.oak.template.Objet";
 		
 		Member [{
-			key: key;	
+			Property { key: key; type: identifier; }
 		}, {
-			key: class;
-			cardinality: 0..1;
+			Property { key: class; type: identifier; }
 		}, {
-			key: root;
+			/**
+			 * The 'root' property tells Oak that this Object can be at
+			 * the root. Default is false.
+			 */
+			Property { key: root; type: boolean; }
 			cardinality: 0..1;
 		}, {
 			key: Member;
 			cardinality: 1..*;
-			collection: list;
 		}]
 		
 	}, {
@@ -51,84 +54,83 @@ Dialect {
 		 * Define a Member as a key, cardinality and optional collection type
 		 */
 		key: Member;
-		class: "com.inexas.oak.Member";
+		class: "com.inexas.oak.template.Member";
 		
 		Member [{
-			key: key;			// Either a key of an Object...
+			// Either a key of an Object...
+			Property { key: key; type: identifier; }
 			cardinality: 0..1;
 		}, {
-			key: Property;		// ..or an in-line property
-								// Can't enforce OR here so it's done in the
-								// Member class
+			// ..or an in-line property
+			// Can't enforce 'OR' here so it's done in 
+			// Member.java
+			key: Property;
 			cardinality: 0..1;
 		}, {
-			key: cardinality;
+			Property { key: cardinality; type: cardinality; }
+			// Default is 1..1 for Property, 0..* for Objects 
 			cardinality: 0..1;
 		}, {
-			key: collection;
+			/**
+			 * Default 'list' for cardinalities that require it
+			 */ 
+			Property {
+				key: collection;
+				type: identifier;
+				Constraint {
+					type: choice;
+					value [ list, map, set ]
+				}
+			}
 			cardinality: 0..1;
 		}]
 	}]
 		
 	Object {
 		key: Property;
-		class: "com.inexas.oak.Property";
+		class: "com.inexas.oak.template.Property";
 		
 		Member [{
-			key: key;
-			cardinality: 1..1;
+			Property { key: key; type: identifier; }
 		}, {
-			key: type; // Data type, default text
+			/** Data type, default 'text'. */
+			Property {
+				key: type;
+				type: identifier;
+				Constraint {
+					type: choice;
+					value [
+						text,		identifier,		path,		
+						boolean,		
+						integer,	INTEGER,		decimal,		DECIMAL,	
+						cardinality,
+						date,		time,			datetime,	
+						any		
+					]
+				}
+			}
 			cardinality: 0..1;
 		}, {
-			key: Constraint; // Constraints apply to Property value
-			cardinality: 0..*;
-			collection: list;
+			key: Constraint;
 		}]
 	}
 
 	Object {
 		key: Constraint;
-		class: "com.inexas.oak.Constraint";
+		class: "com.inexas.oak.template.Constraint";
 		
 		Member [{
-			key: type;
-			cardinality: 1..1;
+			Property {
+				key: type;
+				type: identifier;
+				Constraint {
+					type: choice;
+					value [ choice, regexp ]
+				}
+			}
 		}, {
-			key: value;
+			Property { key: value; type: any; }
 			cardinality: 0..*;
-			collection: set;
 		}]
 	}
-
-	Property [{ // The set of Property definitions
-		key: key;
-		type: identifier;
-	}, {
-		key: root;
-		type: boolean;
-	}, {
-		key: cardinality;
-		type: cardinality;
-	}, {
-		key: collection;
-		type: identifier;
-		Constraint {
-			type: choice;
-			value [ set, map, list ]
-		}
-	}, {
-		key: type;
-		type: identifier;
-	}, {
-		key: class;
-		type: text;
-	}, {
-		key: value;
-		type: ANY;
-	}, {
-		key: visitors;
-		type: text;
-	}]
-	
 }

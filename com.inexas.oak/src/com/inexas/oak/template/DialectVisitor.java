@@ -1,4 +1,4 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
 import com.inexas.oak.advisory.OakException;
 
@@ -9,7 +9,7 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void enter(DialectNode dialect) {
+		public void enter(Dialect dialect) {
 			// Nothing to do
 		}
 
@@ -17,7 +17,7 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void exit(DialectNode dialect) {
+		public void exit(Dialect dialect) {
 			// Nothing to do
 		}
 
@@ -41,7 +41,15 @@ public interface DialectVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
-		public void visit(Member member) {
+		public void enter(Member member) {
+			// Nothing to do
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void exit(Member member) {
 			// Nothing to do
 		}
 
@@ -68,21 +76,23 @@ public interface DialectVisitor {
 		 *             Thrown if parsing error encountered.
 		 */
 		@Override
-		public void visit(Constraint constraint) throws OakException {
+		public void visit(Constraint constraint) {
 			// Nothing to do
 		}
 
 	}
 
-	void enter(DialectNode dialect);
+	void enter(Dialect dialect);
 
-	void exit(DialectNode dialect);
+	void exit(Dialect dialect);
 
 	void enter(Objet object);
 
 	void exit(Objet object);
 
-	void visit(Member member);
+	void enter(Member member);
+
+	void exit(Member member);
 
 	void enter(Property property);
 
@@ -94,6 +104,6 @@ public interface DialectVisitor {
 	 * @throws OakException
 	 *             Thrown if parsing error encountered.
 	 */
-	void visit(Constraint constraint) throws OakException;
+	void visit(Constraint constraint);
 
 }

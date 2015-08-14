@@ -70,10 +70,10 @@ public class FunctionRegister implements Tad {
 
 			case integer:
 				valid = type == Long.class || type == long.class
-				|| type == Double.class || type == double.class
-				|| type == BigDecimal.class;
+						|| type == Double.class || type == double.class
+						|| type == BigDecimal.class;
 				break;
-			case precision:
+			case INTEGER:
 				valid = type == BigDecimal.class;
 				break;
 
@@ -81,10 +81,7 @@ public class FunctionRegister implements Tad {
 				valid = true;
 				break;
 
-			case NULL:
-				throw new InexasRuntimeException("Cannot use NULL type in function");
-
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				throw new UnexpectedException("register: ");
 			}

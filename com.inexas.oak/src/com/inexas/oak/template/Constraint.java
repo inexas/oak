@@ -1,21 +1,23 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
 import java.time.*;
 import java.util.*;
 import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.dialect.*;
+import com.inexas.tad.Context;
 import com.inexas.util.*;
 
 public abstract class Constraint extends Locus.Base implements Keyed {
-	protected final Object[] values;
+	public final Object[] values;
 	protected DataType dataType;
 
 	protected Constraint(Object[] values) {
 		this.values = values;
 	}
 
-	public static Constraint newConstraint(String type, List<Object> values) throws OakException {
+	public static Constraint newConstraint(String type, List<Object> values) {
 		final Constraint result;
 
 		final Object[] array = values.toArray();
@@ -29,7 +31,9 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 			break;
 
 		default:
-			throw new OakException("Unrecognised Constraint type: '" + type + '\'');
+			final Advisory advisory = Context.get(Advisory.class);
+			advisory.error("Unrecognised Constraint type: '" + type + '\'');
+			result = null;
 		}
 
 		return result;
@@ -37,7 +41,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 
 	public abstract void toMarkup(TextBuilder tb);
 
-	void accept(DialectVisitor visitor) throws OakException {
+	void accept(DialectVisitor visitor) {
 		visitor.visit(this);
 	}
 
@@ -53,7 +57,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 * @throws OakException
 	 *             Thrown on invalid value.
 	 */
-	void validate(Map<String, Object> map) throws OakException {
+	public void validate(Map<String, Object> map) {
 		for(final Object value : map.values()) {
 			validate(value);
 		}
@@ -75,13 +79,13 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 * @throws OakException
 	 *             Thrown on invalid value.
 	 */
-	void validate(Collection<Object> collection) throws OakException {
+	public void validate(Collection<Object> collection) {
 		for(final Object value : collection) {
 			validate(value);
 		}
 	}
 
-	abstract void validate(Object value) throws OakException;
+	public abstract void validate(Object value);
 
 	/**
 	 * Convert the value(s) to a human readable array and add it to a
@@ -136,7 +140,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 				case cardinality:
 				case decimal:
 				case integer:
-				case precision:
+				case INTEGER:
 				case identifier:
 				case path:
 					tb.append(value.toString());
@@ -176,10 +180,11 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 *
 	 * @param dataType
 	 *            The data type of the property.
-	 * @throws OakException
-	 *             Thrown if there dataType is incompatible with the Constraint
-	 *             or with one or more of the values.
 	 */
-	abstract void setDataType(DataType dataType) throws OakException;
+	public abstract void setDataType(DataType dataType);
 
+	protected void error(String message) {
+		final Advisory advisory = Context.get(Advisory.class);
+		advisory.error(this, message);
+	}
 }

@@ -1,23 +1,20 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
 import java.util.*;
 import com.inexas.oak.advisory.Locus;
 
-public class DialectNode extends Locus.Base {
-	final String key;
-	final Map<String, Objet> objectMap;
-	final Map<String, Property> propertyMap;
-	final List<String> visitorsList;
+public class Dialect extends Locus.Base {
+	public final String key;
+	public final List<String> visitorList;
+	public final Map<String, Objet> objectMap;
 
-	public DialectNode(
+	public Dialect(
 			String key,
 			Map<String, Objet> objectMap,
-			Map<String, Property> propertyMap,
-			List<String> visitorsList) {
+			List<String> visitorList) {
 		this.key = key;
 		this.objectMap = objectMap;
-		this.propertyMap = propertyMap;
-		this.visitorsList = visitorsList;
+		this.visitorList = visitorList;
 	}
 
 	/**
@@ -41,11 +38,6 @@ public class DialectNode extends Locus.Base {
 			objet.accept(visitor);
 		}
 
-		for(final Property property : propertyMap.values()) {
-			property.accept(visitor);
-		}
-
 		visitor.exit(this);
 	}
-
 }

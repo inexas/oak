@@ -2,13 +2,11 @@ package com.inexas.oak.dialect;
 
 
 public abstract class Rule {
-	final String name;
-	final Constraint[] constraints;
+	public final String key;
 
-	protected Rule(String name, Constraint[] constraints) {
-		assert name != null;
+	protected Rule(String key) {
+		assert key != null;
 
-		this.name = name;
-		this.constraints = constraints == null || constraints.length == 0 ? null : constraints;
+		this.key = key;
 	}
 }

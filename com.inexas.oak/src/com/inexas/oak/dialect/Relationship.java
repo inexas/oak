@@ -4,30 +4,42 @@ import static com.inexas.oak.dialect.CollectionType.*;
 import com.inexas.util.Cardinality;
 
 /**
- * A Relation defines the relationship between an object and its members: the
- * name, the cardinality the type of collection
- *
- * @author kwhittingham
- *
+ * A Relationship defines the relationship between an object and its members:
+ * the name, the cardinality the type of collection
  */
-public class Relation {
-	final Rule subject;
+public class Relationship {
 	/**
-	 * The cardinality of Objects is defined simply in the Relation.
+	 * Either a Object or Property which is a member of the containing Object.
+	 */
+
+	public final Rule subject;
+
+	/**
+	 * The key of the Object or Property which is a member of the containing
+	 * Object.
+	 */
+	public final String subjectKey;
+
+	/**
+	 * True if the subject of this Relationship is an Object, false if it's a
+	 * Property-
+	 */
+	public final boolean subjectIsObject;
+
+	/**
+	 * The cardinality of Objects is defined simply in the Relationship.
 	 *
 	 * A Property's cardinality depends on the subject. If the Property is a
 	 * element rather than an array then it may be optional so the subject could
 	 * be defined as a 0..1: optional element, 1..1 mandatory or an array, 0..*,
 	 * 1..*, etc.
 	 */
-	final Cardinality cardinality;
+	public final Cardinality cardinality;
 
 	/**
 	 * Collection types for cardinalities where to > 1 otherwise singleton.
 	 */
-	final CollectionType collection;
-	final String subjectName;
-	final boolean subjectIsObject;
+	public final CollectionType collection;
 
 	/**
 	 * Object --- m..n ---&gt; Property
@@ -39,7 +51,7 @@ public class Relation {
 	 * @param cardinality
 	 *            The cardinality of the relation.
 	 */
-	public Relation(PropertyRule subject, Cardinality cardinality) {
+	public Relationship(PropertyRule subject, Cardinality cardinality) {
 		assert subject != null;
 
 		this.subject = subject;
@@ -47,8 +59,10 @@ public class Relation {
 		// See comment on collection above
 		this.collection = cardinality.to <= 1 ? singleton : list;
 		subjectIsObject = false;
-		subjectName = subject.name;
+		subjectKey = subject.key;
 	}
+
+	// !todo delete unused ctors
 
 	/**
 	 * For root Object only.
@@ -56,20 +70,17 @@ public class Relation {
 	 * @param subject
 	 *            The root object.
 	 */
-	public Relation(ObjectRule subject) {
+	public Relationship(ObjectRule subject) {
 		assert subject.isRoot();
 
 		this.subject = subject;
 		cardinality = Cardinality.ONE_MANY;
 		collection = singleton;
 		subjectIsObject = true;
-		subjectName = subject.name;
+		subjectKey = subject.key;
 	}
 
-	public Relation(
-			ObjectRule subject,
-			Cardinality cardinality,
-			CollectionType collection) {
+	public Relationship(ObjectRule subject, Cardinality cardinality, CollectionType collection) {
 		assert subject != null;
 		assert cardinality != null;
 		assert collection != null;
@@ -84,13 +95,27 @@ public class Relation {
 				this.collection = CollectionType.list;
 			}
 		} else {
+
 			// todo I should probably warn if the cardinality is 0..1 or 1..1
 			// and the collection is not singleton
 			this.collection = collection;
 		}
 
 		subjectIsObject = true;
-		subjectName = subject.name;
+		subjectKey = subject.key;
+	}
+
+	/**
+	 * @param rule
+	 * @param cardinality2
+	 * @param collectionType
+	 */
+	public Relationship(Rule subject, Cardinality cardinality, CollectionType collection) {
+		this.subject = subject;
+		this.subjectKey = subject.key;
+		this.subjectIsObject = subject instanceof ObjectRule;
+		this.cardinality = cardinality;
+		this.collection = collection;
 	}
 
 	/**
@@ -98,6 +123,6 @@ public class Relation {
 	 */
 	@Override
 	public String toString() {
-		return "- " + cardinality.text + " -> " + subjectName;
+		return "- " + cardinality.text + " -> " + subjectKey;
 	}
 }

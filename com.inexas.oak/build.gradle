@@ -110,7 +110,7 @@ jar {
 dependencies {
 	//antlr "org.antlr:antlr4:4.5"
 	compile 'com.inexas:util:0.1.1'
-	compile 'com.inexas:tad:0.1.0'
+	compile 'com.inexas:tad:0.1.1'
 	compile 'org.antlr:antlr4-runtime:4.5'
 	compile 'org.apache.commons:commons-lang3:3.3.2'
 	testCompile 'junit:junit:4.11'

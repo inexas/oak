@@ -51,6 +51,9 @@ class Function {
 		final ConstantNode result;
 
 		try {
+
+			// Prepare the parameters...
+
 			final Class<?>[] parameterTypes = method.getParameterTypes();
 			final Object[] parameters = new Object[argumentCount];
 			for(int i = 0; i < argumentCount; i++) {
@@ -64,20 +67,6 @@ class Function {
 					parameters[i] = argument;
 					break;
 
-				case precision:
-					parameters[i] = argument;
-					break;
-
-				case decimal: {
-					final Class<?> clazz = parameterTypes[i];
-					if(clazz == BigDecimal.class) {
-						parameters[i] = new BigDecimal(((Double)argument).doubleValue());
-					} else {
-						parameters[i] = argument;
-					}
-					break;
-				}
-
 				case integer:
 					final Class<?> clazz = parameterTypes[i];
 					if(clazz == BigDecimal.class) {
@@ -89,6 +78,20 @@ class Function {
 					}
 					break;
 
+				case INTEGER:
+					parameters[i] = argument;
+					break;
+
+				case decimal: {
+					parameters[i] = argument;
+					break;
+				}
+
+				case DECIMAL: {
+					// !todo Implement me
+					throw new ImplementMeException();
+				}
+
 				case text:
 					parameters[i] = argument == null ? null : argument.toString();
 					break;
@@ -99,8 +102,10 @@ class Function {
 				}
 			}
 
+			// Invoke the method
 			final Object returnValue = method.invoke(null, arguments);
 
+			// Process the return type...
 			switch(returnType) {
 			case bool:
 				result = new ConstantNode(context, (Boolean)returnValue);
@@ -114,7 +119,17 @@ class Function {
 				result = new ConstantNode(context, (String)returnValue);
 				break;
 
-			case precision: {
+			case integer: {
+				final Class<?> clazz = returnValue.getClass();
+				if(clazz == Long.class) {
+					result = new ConstantNode(context, (Long)returnValue);
+				} else {
+					result = new ConstantNode(context, ((Number)returnValue).longValue());
+				}
+				break;
+			}
+
+			case INTEGER: {
 				final Class<?> clazz = returnValue.getClass();
 				if(clazz == BigDecimal.class) {
 					result = new ConstantNode(context, (BigDecimal)returnValue);
@@ -136,14 +151,9 @@ class Function {
 				break;
 			}
 
-			case integer: {
-				final Class<?> clazz = returnValue.getClass();
-				if(clazz == Long.class) {
-					result = new ConstantNode(context, (Long)returnValue);
-				} else {
-					result = new ConstantNode(context, ((Number)returnValue).longValue());
-				}
-				break;
+			case DECIMAL: {
+				// !todo Implement me
+				throw new ImplementMeException();
 			}
 
 			// $CASES-OMITTED$

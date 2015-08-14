@@ -17,7 +17,7 @@ public class TestOakProperties {
 		final Oak oak = new Oak(toTest);
 		oak.toAst();
 		checkParsingErrors(oak);
-		final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 		oak.accept(toStringVisitor);
 		final String got = toStringVisitor.toString();
 
@@ -35,7 +35,7 @@ public class TestOakProperties {
 		final Oak oak = new Oak(toTest);
 		oak.toAst();
 		checkParsingErrors(oak);
-		final ToStringVisitor toStringVisitor = new ToStringVisitor(false);
+		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(false);
 		// toStringVisitor.setTracing(true);
 		oak.accept(toStringVisitor);
 		final String got = toStringVisitor.toString();
@@ -112,8 +112,8 @@ public class TestOakProperties {
 
 	@Test
 	public void testPrettyObjectArray() throws OakException {
-		doPrettyTest("a [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t\tc: 3;\n\t}\n]\n",
-				"a[{a:1;},{b:2;c:3;}]");
+		doPrettyTest("A [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t\tc: 3;\n\t}\n]\n",
+				"A[{a:1;},{b:2;c:3;}]");
 	}
 
 	@Test

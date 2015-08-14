@@ -2,18 +2,19 @@ package com.inexas.oak.dialect;
 
 import java.util.*;
 import com.inexas.oak.DataType;
-import com.inexas.oak.advisory.OakException;
+import com.inexas.oak.template.Constraint;
 
 public class PropertyRule extends Rule {
-	final DataType dataType;
+	public final DataType dataType;
+	public final Constraint[] constraints;
 
-	public PropertyRule(String name, DataType dataType, Constraint... constraints) throws OakException {
-		super(name, constraints);
+	public PropertyRule(String name, DataType dataType, Constraint... constraints) {
+		super(name);
 
-		assert Character.isLowerCase(name.charAt(0)) : "Not a property name: " + name;
 		assert dataType != null;
 
 		this.dataType = dataType;
+		this.constraints = constraints == null || constraints.length == 0 ? null : constraints;
 
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
@@ -27,7 +28,7 @@ public class PropertyRule extends Rule {
 	 */
 	@Override
 	public String toString() {
-		return "Property<" + name
+		return "Property<" + key
 				+ ", " + dataType
 				+ '>';
 	}
@@ -40,10 +41,10 @@ public class PropertyRule extends Rule {
 	 * @return True if the candidate data type is compatible with this
 	 *         Property's data type
 	 */
-	boolean isCompatibleDataType(DataType candidate) {
+	public boolean isCompatibleDataType(DataType candidate) {
 		final boolean result;
 
-		if(dataType == DataType.ANY
+		if(dataType == DataType.any
 				|| dataType == DataType.identifier && candidate == DataType.path) {
 			result = true;
 		} else {
@@ -53,27 +54,30 @@ public class PropertyRule extends Rule {
 		return result;
 	}
 
-	public void validate(Map<String, Object> map) throws OakException {
+	public boolean validateMap(Map<String, Object> map) {
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
 				constraint.validate(map);
 			}
 		}
+		return true;
 	}
 
-	public void isValid(Collection<Object> collection) throws OakException {
+	public boolean validateCollection(Collection<Object> collection) {
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
 				constraint.validate(collection);
 			}
 		}
+		return true;
 	}
 
-	public void validate(Object object) throws OakException {
+	public boolean validateObject(Object object) {
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {
 				constraint.validate(object);
 			}
 		}
+		return true;
 	}
 }

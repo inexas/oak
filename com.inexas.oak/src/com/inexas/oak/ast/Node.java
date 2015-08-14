@@ -14,14 +14,7 @@ public abstract class Node implements Locus {
 		this.context = context;
 	}
 
-	@Override
-	public String toString() {
-		final ToStringVisitor visitor = new ToStringVisitor(true);
-		accept(visitor);
-		return visitor.toString();
-	}
-
-	public abstract void accept(OakAstVisitor visitor);
+	public abstract void accept(AstVisitor visitor);
 
 	/**
 	 * {@inheritDoc}
@@ -57,6 +50,13 @@ public abstract class Node implements Locus {
 		final TextBuilder result = new TextBuilder();
 		getPath(result);
 		return result.toString();
+	}
+
+	@Override
+	public String toString() {
+		final AstToStringVisitor visitor = new AstToStringVisitor(true);
+		accept(visitor);
+		return visitor.toString();
 	}
 
 	private void getPath(TextBuilder result) {

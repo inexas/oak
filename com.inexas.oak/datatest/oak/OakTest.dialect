@@ -3,21 +3,20 @@ Dialect {
 	
 	Object {
 		key: Test1;
-		class: "com.inexas.oak.Test1";
+		class: "com.inexas.oak.dialect.Test1";
 		
 		Member [{
-			key: key1;
+			Property {
+				key: key1;
+				type: identifier;
+			}
 		}, {
 			Property {
 				key: key2;
+				type: boolean;
 			}
 			cardinality: 0..1;
 		}]
 	}
-
-	Property [{
-		key: key1;
-		type: identifier;
-	}]
 
 }

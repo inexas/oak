@@ -8,7 +8,7 @@
  * See http://www.inexas.com/license for license details.
  */
 
-package com.inexas.oak;
+package com.inexas.oak.dialect;
 
 /**
  * @author kwhittingham

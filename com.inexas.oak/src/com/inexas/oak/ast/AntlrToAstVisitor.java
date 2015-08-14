@@ -1,9 +1,10 @@
 package com.inexas.oak.ast;
 
 import java.util.Stack;
-import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import com.inexas.exception.UnexpectedException;
+import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.OakParser.ArrayContext;
 import com.inexas.oak.ast.OakParser.CardinalityContext;
 import com.inexas.oak.ast.OakParser.ExpressionContext;
@@ -11,6 +12,7 @@ import com.inexas.oak.ast.OakParser.LiteralContext;
 import com.inexas.oak.ast.OakParser.ObjectContext;
 import com.inexas.oak.ast.OakParser.PairContext;
 import com.inexas.oak.ast.OakParser.PathContext;
+import com.inexas.tad.Context;
 import com.inexas.util.Cardinality;
 
 /**
@@ -18,7 +20,7 @@ import com.inexas.util.Cardinality;
  *
  * @author kwhittingham
  */
-public class OakToAstVisitor extends OakBaseListener {
+public class AntlrToAstVisitor extends OakBaseListener {
 	private final Stack<Node> stack = new Stack<>();
 	/** Set trace to true to send a rule by rule log to stdout */
 	private final boolean trace = false;
@@ -33,7 +35,7 @@ public class OakToAstVisitor extends OakBaseListener {
 	public void exitLiteral(LiteralContext ctx) {
 		final int type = ctx.start.getType();
 		final String text = ctx.getText();
-		final ConstantNode constant;
+		final Node constant;
 		switch(ctx.start.getType()) {
 		case OakLexer.IntegerLiteral: {
 			constant = ConstantNode.toIntegerConstant(ctx, text);
@@ -80,7 +82,7 @@ public class OakToAstVisitor extends OakBaseListener {
 		final int count = ctx.getChildCount();
 		final ExpressionNode node;
 		if(count >= 3 && ctx.getChild(1).getText().charAt(0) == '(') {
-			// Functions...
+			// Functions in the form name(<parameter list>)...
 			final int parameterCount = (count - 2) / 2;
 			final String functionName = ctx.getChild(0).getText();
 			final ExpressionNode[] arguments = new ExpressionNode[parameterCount];
@@ -142,7 +144,8 @@ public class OakToAstVisitor extends OakBaseListener {
 					break;
 
 				default:
-					throw new UnexpectedException("exitExpression: " + operator);
+					error(ctx, "Syntax error");
+					node = null;
 				}
 				break;
 
@@ -155,7 +158,8 @@ public class OakToAstVisitor extends OakBaseListener {
 				break;
 
 			default:
-				throw new UnexpectedException("exitExpression: " + count);
+				error(ctx, "Syntax error");
+				node = null;
 			}
 		}
 
@@ -176,19 +180,16 @@ public class OakToAstVisitor extends OakBaseListener {
 		// | Key Semi
 		final Node node;
 		final int childCount = ctx.getChildCount();
-		final String name = ctx.getChild(0).getText();
 		if(childCount == 4) {
 			// Either an expression, literal or path...
+			final String name = ctx.getChild(0).getText();
 			node = new ValuePairNode(ctx, name, stack.pop());
-			stack.push(node);
-		} else {
-			if(childCount != 2) {
-				for(int i = 0; i < childCount; i++) {
-					System.out.println(ctx.getChild(i).getText());
-				}
-			}
-			assert childCount == 2 : "Count should be 2 but is " + childCount;
-			// Object, array or boolean short cut...
+
+		} else if(childCount == 2) {
+			// ObjectName Body
+			// ArrayName ElementList
+			// BooleanName TrueOrFalse
+			final String name = ctx.getChild(0).getText();
 			final ParseTree child = ctx.getChild(1);
 			if(child instanceof ObjectContext) {
 				node = new ObjectPairNode(ctx, name, (ObjectNode)stack.pop());
@@ -206,8 +207,12 @@ public class OakToAstVisitor extends OakBaseListener {
 			} else {
 				throw new UnexpectedException("exitPair: " + child.getText());
 			}
-			stack.push(node);
+
+		} else {
+			node = new ErrorNode(ctx);
+			error(ctx, "Syntax error");
 		}
+		stack.push(node);
 	}
 
 	@Override
@@ -264,8 +269,13 @@ public class OakToAstVisitor extends OakBaseListener {
 	@Override
 	public void exitCardinality(CardinalityContext ctx) {
 		final String text = ctx.getText();
-		final Cardinality cardinality = Cardinality.newInstance(text);
-		stack.add(new CardinalityNode(ctx, cardinality));
+		Cardinality cardinality;
+		try {
+			cardinality = Cardinality.newInstance(text);
+			stack.add(new CardinalityNode(ctx, cardinality));
+		} catch(final Cardinality.Exception e) {
+			error(ctx, e.getMessage());
+		}
 	}
 
 	/**
@@ -294,6 +304,12 @@ public class OakToAstVisitor extends OakBaseListener {
 
 	private int getOperand(ExpressionContext ctx, int index) {
 		return ((TerminalNode)ctx.getChild(index)).getSymbol().getType();
+	}
+
+	private void error(ParserRuleContext context, String message) {
+		final Token token = context.getStart();
+		final Advisory advisory = Context.get(Advisory.class);
+		advisory.error(token.getLine(), token.getCharPositionInLine() + 1, message);
 	}
 
 }

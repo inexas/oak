@@ -15,7 +15,7 @@ grammar Oak;
 /**
  * This is the root of Oak
  */
-oak : pair;
+oak : pair EOF;
 
 pair
 	:	Key Colon value Semi	// E.g. myKey: 32; 
@@ -148,7 +148,7 @@ Cardinality
 	:	DecimalIntegerLiteral '..' (DecimalIntegerLiteral | '*')
 	;
 
-Exponent: ('e'|'E') '-'? [1-9] Digit* ;
+Exponent: ('e') '-'? [1-9] Digit* ;
 
 
 IntegerLiteral
@@ -193,7 +193,7 @@ fragment Underscores
 	;
 
 fragment HexNumeral
-	:	'0' [xX] HexDigits
+	:	'0' [x] HexDigits
 	;
 
 fragment HexDigits

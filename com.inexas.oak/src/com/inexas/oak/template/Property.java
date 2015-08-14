@@ -1,14 +1,15 @@
-package com.inexas.oak.dialect;
+package com.inexas.oak.template;
 
 import java.util.List;
 import com.inexas.exception.ImplementMeException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Locus;
+import com.inexas.oak.dialect.Keyed;
 
 public class Property extends Locus.Base implements Keyed {
-	final String key;
-	final DataType type;
-	final Constraint[] constraints;
+	public final String key;
+	public final DataType type;
+	public final Constraint[] constraints;
 
 	public Property(String key, String type, List<Constraint> constraints) {
 		this(
@@ -20,7 +21,7 @@ public class Property extends Locus.Base implements Keyed {
 	public Property(String key, String type, Constraint[] constraints) {
 		this.key = key;
 		if("expression".equals(type)) {
-			this.type = DataType.ANY;
+			this.type = DataType.any;
 		} else if("boolean".equals(type)) {
 			this.type = DataType.bool;
 		} else {
@@ -43,7 +44,17 @@ public class Property extends Locus.Base implements Keyed {
 		return key;
 	}
 
-	void accept(DialectVisitor visitor) {
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		final ToStringVisitor visitor = new ToStringVisitor(true);
+		accept(visitor);
+		return visitor.toString();
+	}
+
+	public void accept(DialectVisitor visitor) {
 		visitor.enter(this);
 		if(constraints != null) {
 			for(final Constraint constraint : constraints) {

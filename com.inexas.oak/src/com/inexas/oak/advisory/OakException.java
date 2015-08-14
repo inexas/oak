@@ -5,7 +5,7 @@ public class OakException extends Exception {
 	public final Advisory advisory;
 
 	public OakException(Advisory advisory) {
-		super("Oak processing error, call OakException.getAdvisory()");
+		super(advisory.toString());
 		this.advisory = advisory;
 	}
 
@@ -30,4 +30,19 @@ public class OakException extends Exception {
 	public Advisory getAdvisory() {
 		return advisory;
 	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String toString() {
+		final String result;
+		if(advisory == null) {
+			result = getMessage();
+		} else {
+			result = advisory.toString();
+		}
+		return result;
+	}
+
 }

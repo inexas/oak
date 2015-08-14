@@ -1,32 +1,36 @@
 package com.inexas.oak.dialect;
 
 import java.lang.reflect.*;
+import java.math.*;
 import java.util.*;
-import com.inexas.exception.*;
+import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.*;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
+/**
+ * ObjectRule defines an Object within the Dialect of which it is a member
+ */
 public class ObjectRule extends Rule {
 	private final Class<?> templateClass;
 	private final boolean isRoot;
-	private Relation[] relations;
-	private int relationCount;
+	private Relationship[] relationships;
+	private int relationshipCount;
 	private String[] childNames;
 	private Method constructorMethod;
 	private Constructor<?> constructor;
 	private Boolean hasChildren;
 
-	public ObjectRule(
-			String name,
-			Class<?> templateClass,
-			boolean isRoot,
-			Constraint... constraints) throws Exception {
-		super(name, constraints);
+	public ObjectRule(String name, Class<?> templateClass, boolean isRoot) {
+		super(name);
 
-		assert Character.isUpperCase(name.charAt(0)) : "Not an object name: " + name;
 		assert templateClass != null;
+
+		if(!Character.isUpperCase(name.charAt(0))) {
+			final Advisory advisory = Context.get(Advisory.class);
+			advisory.error(this, "Object names must start with an upper case letter: + '" + name + '\'');
+		}
 
 		this.templateClass = templateClass;
 		this.isRoot = isRoot;
@@ -46,34 +50,34 @@ public class ObjectRule extends Rule {
 			if(cause instanceof OakException) {
 				throw (OakException)cause;
 			}
-			throw new OakRuntimeException("Error constructing " + name + ": " + e.getMessage(), e);
+			throw new OakRuntimeException("Error constructing " + key + ": " + e.getMessage(), e);
 		} catch(final Exception e) {
-			throw new RuntimeException("Error constructing " + name + ": " + e.getMessage(), e);
+			throw new RuntimeException("Error constructing " + key + ": " + e.getMessage(), e);
 		}
 
 		return result;
 	}
 
 	/**
-	 * Return for a Relation given its name.
+	 * Return for a Relationship given its name.
 	 *
-	 * @param relationName
-	 *            The name of the Relation.
-	 * @return The Relation or null if not found.
+	 * @param relationshipName
+	 *            The name of the Relationship.
+	 * @return The Relationship or null if not found.
 	 */
-	public Relation getRelation(String relationName) {
-		Relation result = null;
-		for(int i = 0; i < relationCount; i++) {
-			if(childNames[i].equals(relationName)) {
-				result = relations[i];
+	public Relationship getRelationship(String relationshipName) {
+		Relationship result = null;
+		for(int i = 0; i < relationshipCount; i++) {
+			if(childNames[i].equals(relationshipName)) {
+				result = relationships[i];
 				break;
 			}
 		}
 		return result;
 	}
 
-	public Relation[] getRelations() {
-		return relations;
+	public Relationship[] getRelationships() {
+		return relationships;
 	}
 
 	public Class<?> getTemplateClass() {
@@ -84,8 +88,8 @@ public class ObjectRule extends Rule {
 		return isRoot;
 	}
 
-	public int getRelationCount() {
-		return relationCount;
+	public int getRelationshipCount() {
+		return relationshipCount;
 	}
 
 	public String[] getChildNames() {
@@ -98,8 +102,8 @@ public class ObjectRule extends Rule {
 	public boolean hasChildren() {
 		if(hasChildren == null) {
 			hasChildren = Boolean.FALSE;
-			for(final Relation relation : relations) {
-				if(relation.subjectIsObject) {
+			for(final Relationship relationship : relationships) {
+				if(relationship.subjectIsObject) {
 					hasChildren = Boolean.TRUE;
 					break;
 				}
@@ -108,31 +112,31 @@ public class ObjectRule extends Rule {
 		return hasChildren.booleanValue();
 	}
 
-	public void setRelations(Relation... relations) throws Exception {
-		assert relations != null;
-		relationCount = relations.length;
+	public void setRelationships(Relationship... relationships) {
+		assert relationships != null;
+		relationshipCount = relationships.length;
 
-		if(relationCount == 0) {
+		if(relationshipCount == 0) {
 			error(this, "Object has no valid children");
 		} else {
-			this.relations = relations;
+			this.relationships = relationships;
 
 			// Figure out which constructor/factory method we need...
 
 			// Get the parameter details...
-			final Class<?>[] parameterTypes = new Class<?>[relationCount];
-			childNames = new String[relationCount];
-			for(int i = 0; i < relationCount; i++) {
-				final Relation relation = relations[i];
+			final Class<?>[] parameterTypes = new Class<?>[relationshipCount];
+			childNames = new String[relationshipCount];
+			for(int i = 0; i < relationshipCount; i++) {
+				final Relationship relationship = relationships[i];
 
 				// Parameter name...
-				final String parameterName = relation.subjectName;
+				final String parameterName = relationship.subjectKey;
 				childNames[i] = parameterName;
 
 				// Parameter type...
 				final Class<?> parameterType;
-				if(relation.subjectIsObject) {
-					switch(relation.collection) {
+				if(relationship.subjectIsObject) {
+					switch(relationship.collection) {
 					case list:
 						parameterType = List.class;
 						break;
@@ -146,52 +150,49 @@ public class ObjectRule extends Rule {
 						break;
 
 					case singleton:
-						parameterType = ((ObjectRule)relation.subject).templateClass;
+						parameterType = ((ObjectRule)relationship.subject).templateClass;
 						break;
 
 					default:
-						throw new UnexpectedException("Missing case: " + relation.collection.name());
+						throw new UnexpectedException("Missing case: " + relationship.collection.name());
 					}
 				} else { // It a Property
-					switch(relation.collection) {
+					switch(relationship.collection) {
 					case singleton:
-						final PropertyRule subject = (PropertyRule)relation.subject;
+						final PropertyRule subject = (PropertyRule)relationship.subject;
 						final DataType dataType = subject.dataType;
 						switch(dataType) {
-						case bool:
-							parameterType = Boolean.class;
-							break;
-
-						case cardinality:
-							parameterType = Cardinality.class;
-							break;
-
-						case date:
-						case datetime:
-						case time:
-							parameterType = Date.class;
-							break;
-
 						case identifier:
 						case path:
 						case text:
 							parameterType = String.class;
 							break;
-
 						case integer:
 							parameterType = Long.class;
 							break;
-
-						case ANY:
+						case INTEGER:
+							parameterType = BigInteger.class;
+							break;
+						case decimal:
+							parameterType = Double.class;
+							break;
+						case DECIMAL:
+							parameterType = BigDecimal.class;
+							break;
+						case date:
+						case datetime:
+						case time:
+							parameterType = Date.class;
+							break;
+						case bool:
+							parameterType = Boolean.class;
+							break;
+						case cardinality:
+							parameterType = Cardinality.class;
+							break;
+						case any:
 							parameterType = Object.class;
 							break;
-
-						case precision:
-						case decimal:
-							// !todo Implement me
-							throw new ImplementMeException();
-
-							// $CASES-OMITTED$
 						default:
 							throw new UnexpectedException("Missing case: " + dataType.name());
 						}
@@ -210,11 +211,16 @@ public class ObjectRule extends Rule {
 						break;
 
 					default:
-						throw new UnexpectedException("Missing case: " + relation.collection.name());
+						throw new UnexpectedException("Missing case: " + relationship.collection.name());
 					}
 				}
 				parameterTypes[i] = parameterType;
 			}
+
+			/*
+			 * Check that there is a ctor that we can use, either a normal ctor
+			 * or a static method so that a factory method can be used.
+			 */
 
 			// Look for static constructor method first...
 			try {
@@ -227,23 +233,20 @@ public class ObjectRule extends Rule {
 					constructor = templateClass.getConstructor(parameterTypes);
 					constructor.setAccessible(true);
 				} catch(final NoSuchMethodException e1) {
-					throw new Exception("Missing constructor or factory method. Implement...\n\t"
+					error(this, "Missing constructor or factory method. Implement...\n\t"
 							+ getConstructorName(templateClass, parameterTypes)
 							+ "\n...or...\n\t"
 							+ getStaticConstructorName(templateClass, parameterTypes)
 							+ "\n...in " + templateClass.getName());
 				} catch(final SecurityException e1) {
-					throw new Exception(
+					error(this,
 							"Error accessing " + getConstructorName(templateClass, parameterTypes)
-							+ " in " + templateClass.getName(),
-							e);
+							+ " in " + templateClass.getName() + ' ' + e.getMessage());
 				}
 			} catch(final SecurityException e) {
-				throw new Exception(
-						"Error accessing "
-								+ getStaticConstructorName(templateClass, parameterTypes)
-								+ " in " + templateClass.getName(),
-								e);
+				error(this,
+						"Error accessing " + getStaticConstructorName(templateClass, parameterTypes)
+								+ " in " + templateClass.getName() + ' ' + e.getMessage());
 			}
 		}
 	}
@@ -253,8 +256,8 @@ public class ObjectRule extends Rule {
 	 */
 	@Override
 	public String toString() {
-		return "Rule<" + name
-				+ ", " + (templateClass == null ? "no-class" : templateClass.getSimpleName())
+		return "Rule<" + key
+				+ ", " + (templateClass == null ? "no-template" : templateClass.getSimpleName())
 				+ ", " + (isRoot ? "root" : "non-root")
 				+ '>';
 	}
@@ -283,19 +286,19 @@ public class ObjectRule extends Rule {
 	private void addParameters(Class<?>[] parameterTypes, TextBuilder result) {
 		result.append('(');
 
-		for(int i = 0; i < relationCount; i++) {
+		for(int i = 0; i < relationshipCount; i++) {
 			result.delimit();
 
 			final Class<?> parameterType = parameterTypes[i];
 			final String typeName = parameterType.getSimpleName();
-			final Relation relation = relations[i];
+			final Relationship relationship = relationships[i];
 			final String parameterName = childNames[i];
-			if(relation.collection != CollectionType.singleton) {
+			if(relationship.collection != CollectionType.singleton) {
 				final String dataType;
-				if(relation.subjectIsObject) {
-					dataType = ((ObjectRule)relation.subject).templateClass.getSimpleName();
+				if(relationship.subjectIsObject) {
+					dataType = ((ObjectRule)relationship.subject).templateClass.getSimpleName();
 				} else {
-					dataType = ((PropertyRule)relation.subject).dataType.javaClass.getSimpleName();
+					dataType = ((PropertyRule)relationship.subject).dataType.javaClass.getSimpleName();
 				}
 				if(typeName.equals("Map")) {
 					result.append("Map<String, ");

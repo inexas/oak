@@ -12,12 +12,12 @@ public class TestOakObjects {
 		doTest(toTest, toTest);
 	}
 
-	private void doPrettyTest(String expected, String toTest) {
+	private void doPrettyTest(String expected, String toTest) throws OakException {
 		try {
 			final Oak oak = new Oak(toTest);
 			oak.toAst();
 			checkParsingErrors(oak);
-			final ToStringVisitor toStringVisitor = new ToStringVisitor(true);
+			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			final String got = toStringVisitor.toString();
 
@@ -31,7 +31,7 @@ public class TestOakObjects {
 			assertEquals(expected, got);
 		} catch(final OakException e) {
 			System.err.println(e.getAdvisory());
-			fail();
+			throw e;
 		}
 	}
 
@@ -39,7 +39,7 @@ public class TestOakObjects {
 		final Oak oak = new Oak(toTest);
 		oak.toAst();
 		checkParsingErrors(oak);
-		final ToStringVisitor toStringVisitor = new ToStringVisitor(false);
+		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(false);
 		// toStringVisitor.setTracing(true);
 		oak.accept(toStringVisitor);
 		final String got = toStringVisitor.toString();
@@ -77,7 +77,7 @@ public class TestOakObjects {
 	}
 
 	@Test
-	public void testPretty() {
+	public void testPretty() throws OakException {
 		doPrettyTest(
 				"A [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t}\n]\n",
 				"A[{a:1;},{b:2;}]");
@@ -92,10 +92,10 @@ public class TestOakObjects {
 
 	}
 
-	// @Test
+	@Test
 	public void testObjects() throws OakException {
-		doTest("a{b:1;}");
-		doTest("a{b:1;c:2;d:3;}");
+		doTest("A{b:1;}");
+		doTest("A{b:1;c:2;d:3;}");
 	}
 
 }
