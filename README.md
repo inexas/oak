@@ -1,4 +1,5 @@
-# Oak - Better than JSON, much better than XML
+# Oak
+## Better than JSON, much better than XML
 
 Oak is a library that supports an alternative to XML and JSON for files to store and transport data.
 
