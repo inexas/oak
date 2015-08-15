@@ -36,7 +36,7 @@ public class Relationship {
 	public final Cardinality cardinality;
 
 	/**
-	 * Collection types for cardinalities where to > 1 otherwise singleton.
+	 * Collection types for cardinalities where to &gt; 1 otherwise singleton.
 	 */
 	public final CollectionType collection;
 

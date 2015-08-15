@@ -1,6 +1,5 @@
 package com.inexas.oak.template;
 
-import com.inexas.oak.advisory.OakException;
 
 public interface DialectVisitor {
 	public class Base implements DialectVisitor {
@@ -71,9 +70,6 @@ public interface DialectVisitor {
 
 		/**
 		 * {@inheritDoc}
-		 *
-		 * @throws OakException
-		 *             Thrown if parsing error encountered.
 		 */
 		@Override
 		public void visit(Constraint constraint) {
@@ -98,12 +94,6 @@ public interface DialectVisitor {
 
 	void exit(Property property);
 
-	/**
-	 * @param constraint
-	 *            The Constraint being visited.
-	 * @throws OakException
-	 *             Thrown if parsing error encountered.
-	 */
 	void visit(Constraint constraint);
 
 }

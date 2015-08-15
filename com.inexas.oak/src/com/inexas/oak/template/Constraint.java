@@ -17,6 +17,16 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 		this.values = values;
 	}
 
+	/**
+	 * Factory method to construct a new Constraint.
+	 *
+	 * @param type
+	 *            The type of the Constraint: regexp, choice, ...
+	 * @param values
+	 *            A list of 0..* values depending on the type of the Constraint.
+	 * @return The newly created constraint. However if an error is encountered
+	 *         the the Advisory is updated and null is returned.
+	 */
 	public static Constraint newConstraint(String type, List<Object> values) {
 		final Constraint result;
 
@@ -54,8 +64,6 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 *
 	 * @param map
 	 *            A non-empty Map of values to test.
-	 * @throws OakException
-	 *             Thrown on invalid value.
 	 */
 	public void validate(Map<String, Object> map) {
 		for(final Object value : map.values()) {
@@ -74,10 +82,6 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 *
 	 * @param collection
 	 *            A non-empty Collection of values to test.
-	 * @param collection
-	 *            A non-empty Collection of values to test.
-	 * @throws OakException
-	 *             Thrown on invalid value.
 	 */
 	public void validate(Collection<Object> collection) {
 		for(final Object value : collection) {
@@ -85,6 +89,13 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 		}
 	}
 
+	/**
+	 * Test a value to see if it satisfies the constraint. If it doesn't then
+	 * update the Advisory accordingly.
+	 *
+	 * @param value
+	 *            The value to test.
+	 */
 	public abstract void validate(Object value);
 
 	/**

@@ -10,7 +10,9 @@ public abstract class Rule implements Comparable<Rule> {
 	}
 
 	/**
-	 * The key is used to compare.</p>
+	 * <p>
+	 * The key is used to compare.
+	 * </p>
 	 *
 	 * {@inheritDoc}
 	 */
