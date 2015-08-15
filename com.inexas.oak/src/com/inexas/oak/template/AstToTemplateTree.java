@@ -11,8 +11,8 @@ import com.inexas.tad.Context;
 import com.inexas.util.*;
 
 /**
- * Visit an AST using list of rules to transform it into a template
- * tree. For example the transformation might generate a workflow model.
+ * Visit an AST using list of rules to transform it into a template tree. For
+ * example the transformation might generate a workflow model.
  *
  * Strategy. We're sent around an Oak AST. We process the input depth first and
  * as we go down a level by entering an object, we push the existing state onto
@@ -350,7 +350,10 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				final ObjectRule objectRule = (ObjectRule)rule;
 				if(objectRule.isRoot()) {
 					// Got the root,
-					final Relationship relation = new Relationship(objectRule);
+					final Relationship relation = new Relationship(
+							objectRule,
+							Cardinality.ONE_ONE,
+							CollectionType.singleton);
 					if(rootMap.put(objectRule.key, relation) != null) {
 						throw new InexasRuntimeException("Two root objects with same name");
 					}
@@ -515,7 +518,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				} else {
 					advisory.error(node,
 							"Wrong data type; expected path but got: " + rule.dataType
-							+ " '" + (value == null ? "null" : value.toString()));
+									+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);
 				}
 			}
@@ -558,7 +561,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				value = node.getValue();
 				break;
 
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				// !todo Implement default and other values
@@ -581,7 +584,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				value = node.cardinality;
 				break;
 
-				// $CASES-OMITTED$
+			// $CASES-OMITTED$
 			default:
 				// !todo React to bad types
 				throw new ImplementMeException();

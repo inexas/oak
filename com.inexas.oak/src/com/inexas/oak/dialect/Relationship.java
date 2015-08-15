@@ -1,6 +1,5 @@
 package com.inexas.oak.dialect;
 
-import static com.inexas.oak.dialect.CollectionType.*;
 import com.inexas.util.Cardinality;
 
 /**
@@ -41,81 +40,16 @@ public class Relationship {
 	 */
 	public final CollectionType collection;
 
-	/**
-	 * Object --- m..n ---&gt; Property
-	 *
-	 * Note that the collection is always a list for Properties.
-	 *
-	 * @param subject
-	 *            The subject Property
-	 * @param cardinality
-	 *            The cardinality of the relation.
-	 */
-	public Relationship(PropertyRule subject, Cardinality cardinality) {
-		assert subject != null;
-
-		this.subject = subject;
-		this.cardinality = cardinality;
-		// See comment on collection above
-		this.collection = cardinality.to <= 1 ? singleton : list;
-		subjectIsObject = false;
-		subjectKey = subject.key;
-	}
-
-	// !todo delete unused ctors
-
-	/**
-	 * For root Object only.
-	 *
-	 * @param subject
-	 *            The root object.
-	 */
-	public Relationship(ObjectRule subject) {
-		assert subject.isRoot();
-
-		this.subject = subject;
-		cardinality = Cardinality.ONE_MANY;
-		collection = singleton;
-		subjectIsObject = true;
-		subjectKey = subject.key;
-	}
-
-	public Relationship(ObjectRule subject, Cardinality cardinality, CollectionType collection) {
+	public Relationship(Rule subject, Cardinality cardinality, CollectionType collection) {
 		assert subject != null;
 		assert cardinality != null;
 		assert collection != null;
 
 		this.subject = subject;
 		this.cardinality = cardinality;
-
-		if(collection == null) {
-			if(this.cardinality == Cardinality.ONE_ONE || this.cardinality == Cardinality.ZERO_ONE) {
-				this.collection = CollectionType.singleton;
-			} else {
-				this.collection = CollectionType.list;
-			}
-		} else {
-
-			// todo I should probably warn if the cardinality is 0..1 or 1..1
-			// and the collection is not singleton
-			this.collection = collection;
-		}
-
-		subjectIsObject = true;
-		subjectKey = subject.key;
-	}
-
-	/**
-	 * @param rule
-	 * @param cardinality2
-	 * @param collectionType
-	 */
-	public Relationship(Rule subject, Cardinality cardinality, CollectionType collection) {
-		this.subject = subject;
-		this.subjectKey = subject.key;
-		this.subjectIsObject = subject instanceof ObjectRule;
-		this.cardinality = cardinality;
 		this.collection = collection;
+		subjectIsObject = subject instanceof ObjectRule;
+		subjectKey = subject.key;
 	}
 
 	/**

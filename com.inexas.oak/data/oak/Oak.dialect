@@ -15,15 +15,6 @@ Dialect {
 			key: Object;
 			cardinality: 1..*;
 			collection: map;
-		}, {
-			/**
-			 * KW: After trying visitors I don't like the idea too much because
-			 * there are lots of little problems. For example ActionDefs don't
-			 * get visited but the modifiers do. Similarly the visitor can't be
-			 * initialized properly.
-			 */
-			Property { key: visitor; }
-			cardinality: 0..*;
 		}]
 		
 	}, {
@@ -36,7 +27,7 @@ Dialect {
 		Member [{
 			Property { key: key; type: identifier; }
 		}, {
-			Property { key: class; type: identifier; }
+			Property { key: class; }
 		}, {
 			/**
 			 * The 'root' property tells Oak that this Object can be at

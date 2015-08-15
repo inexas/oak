@@ -1,20 +1,17 @@
 package com.inexas.oak.template;
 
-import java.util.*;
+import java.util.Map;
 import com.inexas.oak.advisory.Locus;
 
 public class Dialect extends Locus.Base {
 	public final String key;
-	public final List<String> visitorList;
 	public final Map<String, Objet> objectMap;
 
 	public Dialect(
 			String key,
-			Map<String, Objet> objectMap,
-			List<String> visitorList) {
+			Map<String, Objet> objectMap) {
 		this.key = key;
 		this.objectMap = objectMap;
-		this.visitorList = visitorList;
 	}
 
 	/**

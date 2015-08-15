@@ -241,12 +241,12 @@ public class ObjectRule extends Rule {
 				} catch(final SecurityException e1) {
 					error(this,
 							"Error accessing " + getConstructorName(templateClass, parameterTypes)
-							+ " in " + templateClass.getName() + ' ' + e.getMessage());
+									+ " in " + templateClass.getName() + ' ' + e.getMessage());
 				}
 			} catch(final SecurityException e) {
 				error(this,
 						"Error accessing " + getStaticConstructorName(templateClass, parameterTypes)
-								+ " in " + templateClass.getName() + ' ' + e.getMessage());
+						+ " in " + templateClass.getName() + ' ' + e.getMessage());
 			}
 		}
 	}
@@ -256,8 +256,8 @@ public class ObjectRule extends Rule {
 	 */
 	@Override
 	public String toString() {
-		return "Rule<" + key
-				+ ", " + (templateClass == null ? "no-template" : templateClass.getSimpleName())
+		return "Rule<key:" + key
+				+ ", " + (templateClass == null ? "no-template" : (templateClass.getSimpleName() + ".java"))
 				+ ", " + (isRoot ? "root" : "non-root")
 				+ '>';
 	}

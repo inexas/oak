@@ -4,6 +4,7 @@ Dialect {
 	Object {
 		key: Test1;
 		class: "com.inexas.oak.dialect.Test1";
+		root;
 		
 		Member [{
 			Property {
@@ -18,5 +19,4 @@ Dialect {
 			cardinality: 0..1;
 		}]
 	}
-
 }

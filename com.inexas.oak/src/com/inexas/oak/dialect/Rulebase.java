@@ -27,6 +27,7 @@ public class Rulebase {
 	public Rulebase(String name, ObjectRule[] rules) {
 		this.name = name;
 		this.rules = rules;
+		Arrays.sort(rules);
 	}
 
 	// !todo Move this out of here
@@ -35,7 +36,6 @@ public class Rulebase {
 	 */
 	public String getDialectText(String packageName) {
 		final TextBuilder tb = new TextBuilder();
-		final List<ObjectRule> objects = new ArrayList<>();
 
 		final String className = name + "Dialect";
 
@@ -50,18 +50,16 @@ public class Rulebase {
 		tb.newline();
 
 		tb.writeline("import static com.inexas.oak.dialect.CollectionType.*;");
-		tb.writeline("import com.inexas.oak.*;");
+		tb.writeline("import com.inexas.oak.DataType;");
 		tb.writeline("import com.inexas.oak.dialect.*;");
-		// tb.writeline("import com.inexas.oak.template.*;");
-		tb.writeline("import com.inexas.exception.InexasRuntimeException;");
 		tb.writeline("import com.inexas.util.Cardinality;");
 		tb.newline();
 
 		/*
 		 * Instead of using a
-		 *
+		 * 
 		 * tb.writeline("@SuppressWarnings(\"unused\")");
-		 *
+		 * 
 		 * in Eclipse, right click on the directory containing the generated
 		 * files Properties > Java Compiler > Ignore optional compile problems
 		 */
@@ -74,14 +72,7 @@ public class Rulebase {
 		tb.writeline("public static Rulebase rulebase;");
 		tb.newline();
 
-		tb.writeline("private static Relationship relate(PropertyRule rule, Cardinality cardinality) {");
-		tb.indentMore();
-		tb.writeline("return new Relationship(rule, cardinality);");
-		tb.indentLess();
-		tb.writeline("}");
-		tb.newline();
-
-		tb.writeline("private static Relationship relate(ObjectRule key, "
+		tb.writeline("private static Relationship relate(Rule key, "
 				+ "Cardinality cardinality, "
 				+ "CollectionType collection) {");
 		tb.indentMore();
@@ -99,27 +90,6 @@ public class Rulebase {
 		tb.writeline("}");
 		tb.newline();
 
-		// // public static String[] visitorList = { "a.b.c","a.b.c" };
-		// tb.writeline("public static String[] visitorList = {");
-		// if(visitorsList != null) {
-		// tb.indentMore();
-		// boolean delimit = false;
-		// for(final String visitor : visitorsList) {
-		// if(delimit) {
-		// tb.append("\",\n");
-		// } else {
-		// delimit = true;
-		// }
-		// tb.indent();
-		// tb.append('"');
-		// tb.append(visitor);
-		// }
-		// tb.append("\"\n");
-		// tb.indentLess();
-		// }
-		// tb.writeline("};");
-		// tb.newline();
-
 		// The static code block...
 
 		tb.writeline("static {");
@@ -130,12 +100,11 @@ public class Rulebase {
 		// Objects...
 
 		final List<String> names = new ArrayList<>();
-		final Map<String, PropertyRule> properties = new HashMap<>();
+		final SortedMap<String, PropertyRule> properties = new TreeMap<>();
 		for(final ObjectRule object : rules) {
 			// Take care of reserved words like 'class'
 			final String _objectName = "_" + object.key;
 			names.add(_objectName);
-			objects.add(object);
 
 			// Get the list of properties
 			for(final Relationship relationship : object.getRelationships()) {
@@ -234,7 +203,7 @@ public class Rulebase {
 
 		// Relationships...
 
-		for(final ObjectRule object : objects) {
+		for(final ObjectRule object : rules) {
 			final String objectName = "_" + object.key;
 			tb.indent();
 			tb.append(objectName);
@@ -250,35 +219,22 @@ public class Rulebase {
 				final Relationship relation = children[i];
 				final String end = i == count - 1 ? ");" : ",";
 
-				if(relation.subjectIsObject) {
-					// relate(name_, Cardinality.newInstance("1..*"), set),
-					tb.indent();
-					tb.append("relate(");
-					tb.append('_');
-					tb.append(((ObjectRule)relation.subject).key);
-					tb.append(", ");
-					tb.append("Cardinality.newInstance(\"");
-					tb.append(relation.cardinality.toString());
-					tb.append("\")");
-					tb.append(", ");
-					tb.append(relation.collection.name());
-					tb.append(')');
-					tb.append(end);
-					tb.newline();
-				} else {
-					// relate(name_, Cardinality.newInstance(1..*)),
-					tb.indent();
-					tb.append("relate(");
+				tb.indent();
+				tb.append("relate(");
+				if(!relation.subjectIsObject) {
 					tb.append(objectName);
-					tb.append('_');
-					tb.append(((PropertyRule)relation.subject).key);
-					tb.append(", ");
-					tb.append("Cardinality.newInstance(\"");
-					tb.append(relation.cardinality.toString());
-					tb.append("\"))");
-					tb.append(end);
-					tb.newline();
 				}
+				tb.append('_');
+				tb.append(relation.subject.key);
+				tb.append(", ");
+				tb.append("Cardinality.newInstance(\"");
+				tb.append(relation.cardinality.toString());
+				tb.append("\")");
+				tb.append(", ");
+				tb.append(relation.collection.name());
+				tb.append(')');
+				tb.append(end);
+				tb.newline();
 			}
 			tb.indentLess();
 			tb.indentLess();
@@ -296,7 +252,7 @@ public class Rulebase {
 		tb.writeline("} catch(final Exception e) {");
 		tb.indentMore();
 		tb.indent();
-		tb.append("throw new InexasRuntimeException(\"Error building ");
+		tb.append("throw new RuntimeException(\"Error building ");
 		tb.append(className);
 		tb.append("\", e);");
 		tb.newline();
@@ -316,7 +272,6 @@ public class Rulebase {
 	public String getVisitorText(String packageName) {
 
 		final TextBuilder tb = new TextBuilder();
-		final List<ObjectRule> objects = new ArrayList<>();
 
 		sign(tb);
 
@@ -343,7 +298,7 @@ public class Rulebase {
 		tb.newline();
 		tb.indentMore();
 
-		for(final ObjectRule object : objects) {
+		for(final ObjectRule object : rules) {
 			final String parameterList = getParameterList(object);
 			if(object.hasChildren()) {
 				// @Override public void enter(Xxx xxx) { /**/ }
@@ -375,7 +330,7 @@ public class Rulebase {
 
 		// Interface body...
 
-		for(final ObjectRule object : objects) {
+		for(final ObjectRule object : rules) {
 			final String parameterList = getParameterList(object);
 			if(object.hasChildren()) {
 				// void enter(Application application);
