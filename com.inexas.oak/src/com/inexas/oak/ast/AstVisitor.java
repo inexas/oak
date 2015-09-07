@@ -1,6 +1,6 @@
 package com.inexas.oak.ast;
 
-import com.inexas.oak.Oak;
+import com.inexas.oak.*;
 
 public interface AstVisitor {
 	public class Base implements AstVisitor {
@@ -183,6 +183,22 @@ public interface AstVisitor {
 			// Do nothing
 		}
 
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void enter(Expression expression) {
+			// Do nothing
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void exit(Expression expression) {
+			// Do nothing
+		}
+
 	}
 
 	/**
@@ -213,6 +229,10 @@ public interface AstVisitor {
 	void enter(Oak oak);
 
 	void exit(Oak oak);
+
+	void enter(Expression expression);
+
+	void exit(Expression expression);
 
 	void enter(ObjectPairNode node);
 
@@ -271,5 +291,4 @@ public interface AstVisitor {
 	void visit(ConstantNode node);
 
 	void visit(CardinalityNode node);
-
 }

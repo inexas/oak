@@ -13,7 +13,7 @@ public class Path {
 	/**
 	 * Thrown to indicate that the path is not valid
 	 */
-	public class PathException extends InexasRuntimeException {
+	public class PathException extends RuntimeException {
 		private static final long serialVersionUID = -5142183516183575168L;
 
 		PathException(String message) {
@@ -93,7 +93,7 @@ public class Path {
 					}
 					current = current.getRoot();
 					if(current == null) {
-						throw new InexasRuntimeException("Path can't have null root");
+						throw new RuntimeException("Path can't have null root");
 					}
 				} else if(state == SEEN_KEY) {
 					state = SEEN_SLASH;
@@ -154,7 +154,7 @@ public class Path {
 				break;
 
 			default:
-				throw new InexasRuntimeException("Type: " + terminal.getSymbol().getType());
+				throw new RuntimeException("Type: " + terminal.getSymbol().getType());
 			}
 		}
 	}
@@ -171,7 +171,7 @@ public class Path {
 		this(text, null, current);
 
 		if(current == null) {
-			throw new InexasRuntimeException("Null object as current starting point");
+			throw new RuntimeException("Null object as current starting point");
 		}
 	}
 
@@ -179,7 +179,7 @@ public class Path {
 		this(text, source, null);
 
 		if(source == null) {
-			throw new InexasRuntimeException("Null object as source");
+			throw new RuntimeException("Null object as source");
 		}
 	}
 
@@ -190,7 +190,7 @@ public class Path {
 
 		process(new StringReader(text));
 		if(errorMessages != null) {
-			throw new InexasRuntimeException(errorMessages.get(0) + ": " + text);
+			throw new RuntimeException(errorMessages.get(0) + ": " + text);
 		}
 	}
 

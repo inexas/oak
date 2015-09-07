@@ -3,7 +3,6 @@ package com.inexas.oak;
 import static org.junit.Assert.*;
 import java.io.File;
 import org.junit.Test;
-import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.ast.AstToStringVisitor;
 import com.inexas.oak.dialect.Rulebase;
@@ -37,7 +36,7 @@ public class TestOakCompiler {
 	public void testOak() throws OakException {
 		final File file = new File(FileU.DATATEST + "oak/OakTest.dialect");
 		if(!file.exists()) {
-			throw new InexasRuntimeException("No such file: " + file.getAbsolutePath());
+			throw new RuntimeException("No such file: " + file.getAbsolutePath());
 		}
 
 		doTest(new Oak(file), true, "com.inexas.oak");
@@ -81,15 +80,14 @@ public class TestOakCompiler {
 				+ "}\n");
 	}
 
-	// !todo Test Members when the referenced Property is missing
-	// !todo Test Throwing OakCtorExcep catching it and turning it a normal
+	// todo Test Members when the referenced Property is missing
+	// todo Test Throwing OakCtorExcep catching it and turning it a normal
 	// exception
 
 	@Test
 	public void testAntlrRecognisedError() {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;\n§");
-			oak.toAst();
 			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());

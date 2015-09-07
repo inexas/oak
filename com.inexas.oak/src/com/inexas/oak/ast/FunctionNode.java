@@ -1,16 +1,18 @@
 package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.DataType;
+import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.ast.FunctionRegistry.Function;
+import com.inexas.oak.ast.FunctionRegistry.FunctionException;
 import com.inexas.tad.Context;
 
 public class FunctionNode extends ExpressionNode {
 	private final ExpressionNode argumentNodes[];
-	private final Function function;
+	private Function function;
 	private final int argumentCount;
-	private final boolean isStatic;
-	private final DataType type;
+	private boolean isStatic;
+	private DataType type;
 
 	public FunctionNode(ParserRuleContext context, String name, ExpressionNode argumentNodes[]) {
 		super(context);
@@ -18,24 +20,28 @@ public class FunctionNode extends ExpressionNode {
 		this.argumentNodes = argumentNodes;
 		argumentCount = argumentNodes.length;
 
-		final FunctionRegister functionRegister = Context.get(FunctionRegister.class);
+		final FunctionRegistry functionRegister = Context.get(FunctionRegistry.class);
 		if(functionRegister == null) {
-			throw new InexasRuntimeException("No function register loaded");
+			throw new RuntimeException("No function register loaded");
 		}
-		function = functionRegister.getFunction(name, argumentNodes);
+		try {
+			function = functionRegister.getFunction(name, argumentNodes);
+			type = function.returnType;
 
-		type = function.returnType;
-
-		boolean soFarItsStatic = function.isStatic;
-		if(soFarItsStatic) {
-			for(int i = 0; i < argumentCount; i++) {
-				final ExpressionNode argument = argumentNodes[i];
-				if(!argument.isStatic()) {
-					soFarItsStatic = false;
+			isStatic = function.isStatic;
+			if(isStatic) {
+				for(int i = 0; i < argumentCount; i++) {
+					final ExpressionNode argument = argumentNodes[i];
+					if(!argument.isStatic()) {
+						isStatic = false;
+						break;
+					}
 				}
 			}
+		} catch(final FunctionException e) {
+			final Advisory advisory = Context.get(Advisory.class);
+			advisory.error(context, e.getMessage());
 		}
-		isStatic = soFarItsStatic;
 	}
 
 	@Override
@@ -61,8 +67,12 @@ public class FunctionNode extends ExpressionNode {
 		return type;
 	}
 
+	public String getKey() {
+		return function.key;
+	}
+
 	public String getName() {
-		return function.name;
+		return function.methodName;
 	}
 
 	@Override

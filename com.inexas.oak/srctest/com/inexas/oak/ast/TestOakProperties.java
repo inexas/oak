@@ -3,9 +3,9 @@ package com.inexas.oak.ast;
 import static org.junit.Assert.*;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.junit.Test;
-import com.inexas.oak.Oak;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
-import com.inexas.tad.*;
+import com.inexas.tad.TadRuntimeException;
 
 public class TestOakProperties {
 
@@ -15,7 +15,6 @@ public class TestOakProperties {
 
 	private void doPrettyTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
-		oak.toAst();
 		checkParsingErrors(oak);
 		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 		oak.accept(toStringVisitor);
@@ -33,7 +32,6 @@ public class TestOakProperties {
 
 	private void doTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
-		oak.toAst();
 		checkParsingErrors(oak);
 		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(false);
 		// toStringVisitor.setTracing(true);
@@ -55,6 +53,12 @@ public class TestOakProperties {
 			System.err.println(advisory);
 			fail();
 		}
+	}
+
+	private void doTest(String toTest, DataType expectedType) throws OakException {
+		final Oak oak = new Oak(toTest);
+		final PairNode root = oak.getRoot();
+		assertEquals(expectedType, root.getType());
 	}
 
 	@Test
@@ -85,6 +89,7 @@ public class TestOakProperties {
 
 	@Test
 	public void testArrays() throws OakException {
+		doTest("a[abc]");
 		doTest("a[1]");
 		doTest("a[1,2]");
 		doTest("a[1,3,\"b\",4]");
@@ -172,19 +177,10 @@ public class TestOakProperties {
 		doTest("a:5;", "a:false?2:5;");
 	}
 
+	@SuppressWarnings("unused")
 	@Test(expected = TadRuntimeException.class)
 	public void testFunctionsNotLoaded() throws OakException {
-		final Oak oak = new Oak("a:abs(-3);");
-		oak.toAst();
-	}
-
-	@Test
-	public void testFunctionsLoaded() throws OakException {
-		final FunctionRegister register = new FunctionRegister();
-		register.loadMath();
-		Context.attach(register);
-		doTest("a:5;", "a:abs(-5);");
-		Context.detach(register);
+		new Oak("a:abs(-3);");
 	}
 
 	@Test
@@ -207,5 +203,9 @@ public class TestOakProperties {
 		doTest("a:\"a\nc\";", "a: \"a\nc\";");
 	}
 
-	// !todo Automatically load built-ins
+	@Test
+	public void testNumbers() throws OakException {
+		doTest("a:-1;", DataType.z);
+		doTest("a:1;", DataType.z);
+	}
 }

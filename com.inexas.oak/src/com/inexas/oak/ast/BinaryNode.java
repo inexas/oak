@@ -1,32 +1,33 @@
 package com.inexas.oak.ast;
 
 import java.math.*;
-import java.util.Date;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
+import com.inexas.oak.DataType.NullValueException;
+import com.inexas.oak.DataType.OverflowException;
+import com.inexas.oak.DataType.TypeMismatchException;
 
 public class BinaryNode extends ExpressionNode {
 	private class Converter {
-		private String lhsString, rhsString;
-		private int lhsInteger, rhsInteger;
-		private BigInteger lhsBigInteger, rhsBigInteger;
-		private double lhsDecimal, rhsDecimal;
-		// !todo Handle BigDecimal throughout file
-		private BigDecimal lhsBigDecimal, rhsBigDecimal;
+		private String lhs_text, rhs_text;
+		private long lhs_z, rhs_z;
+		private BigInteger lhs_Z, rhs_Z;
+		private double lhs_f, rhs_f;
+		private BigDecimal lhs_F, rhs_F;
 		private boolean lhsBoolean, rhsBoolean;
-		private Date lhsDate, rhsDate;
+		private final Object lhsValue, rhsValue;
 
 		public Converter() {
-			final Object lhsValue = lhsNode.evaluate().getValue();
-			final Object rhsValue;
-			if(resultType == DataType.bool && lhsNode.getType() == DataType.bool) {
-				// Short circuiting for OR and AND...
+			lhsValue = lhsNode.evaluate().getValue();
+			if(commonType == DataType.bool && lhsNode.getType() == DataType.bool) {
 				final boolean lhsResult = ((Boolean)lhsValue).booleanValue();
-				if(operator == OakLexer.Or && lhsResult) {
+
+				// Check for chance to short circuit if it's OR or AND...
+				if(operator == OakLexer.Lor && lhsResult) {
 					// true OR <don't care>
 					rhsValue = Boolean.TRUE;
-				} else if(operator == OakLexer.And && !lhsResult) {
+				} else if(operator == OakLexer.Land && !lhsResult) {
 					// false AND <don't care>
 					rhsValue = Boolean.FALSE;
 				} else {
@@ -36,86 +37,94 @@ public class BinaryNode extends ExpressionNode {
 				rhsValue = rhsNode.evaluate().getValue();
 			}
 			switch(commonType) {
+			case z:
+				lhs_z = ((Number)lhsValue).longValue();
+				rhs_z = ((Number)rhsValue).longValue();
+				break;
+
+			case Z:
+				lhs_Z = toBigInteger(lhsValue);
+				rhs_Z = toBigInteger(rhsValue);
+				break;
+
+			case f:
+				lhs_f = ((Number)lhsValue).doubleValue();
+				rhs_f = ((Number)rhsValue).doubleValue();
+				break;
+
+			case F:
+				lhs_F = toBigDecimal(lhsValue);
+				rhs_F = toBigDecimal(rhsValue);
+				break;
+
 			case bool:
 				lhsBoolean = ((Boolean)lhsValue).booleanValue();
 				rhsBoolean = ((Boolean)rhsValue).booleanValue();
 				break;
 
-			case date:
-				lhsDate = (Date)lhsValue;
-				rhsDate = (Date)rhsValue;
-				break;
-
-			case integer:
-				lhsInteger = ((Long)lhsValue).intValue();
-				rhsInteger = ((Long)rhsValue).intValue();
-				break;
-
-			case INTEGER:
-				lhsBigInteger = toBigInteger(lhsValue);
-				rhsBigInteger = toBigInteger(lhsValue);
-				break;
-
-			case decimal:
-				lhsDecimal = ((Number)lhsValue).doubleValue();
-				rhsDecimal = ((Number)rhsValue).doubleValue();
-				break;
-
-			case DECIMAL:
-				lhsBigDecimal = toBigDecimal(lhsValue);
-				rhsBigDecimal = toBigDecimal(lhsValue);
-				break;
-
 			case text:
-				lhsString = lhsValue == null ? null : lhsValue.toString();
-				rhsString = rhsValue == null ? null : rhsValue.toString();
+			case identifier:
+			case path:
+				lhs_text = (String)lhsValue;
+				rhs_text = (String)rhsValue;
 				break;
 
-			// $CASES-OMITTED$
+			case datetime:
+			case date:
+			case time:
+			case cardinality:
+			case any:
 			default:
-				throw new UnexpectedException("Converter: " + resultType);
+				throw new UnexpectedException("Converter: " + commonType);
 			}
 		}
 
 		private BigInteger toBigInteger(Object value) {
 			final BigInteger result;
-
-			final Class<?> clazz = value.getClass();
-			if(clazz == Integer.class) {
-				result = BigInteger.valueOf(((Integer)value).intValue());
-			} else if(clazz == Double.class) {
-				// ?todo Warn on rounding
-				result = BigInteger.valueOf(((Double)value).intValue());
-			} else {
-				assert clazz == BigInteger.class;
+			if(value.getClass() == BigInteger.class) {
 				result = (BigInteger)value;
+			} else {
+				result = BigInteger.valueOf(((Long)value).longValue());
 			}
-
 			return result;
 		}
 
 		private BigDecimal toBigDecimal(Object value) {
 			final BigDecimal result;
-
 			final Class<?> clazz = value.getClass();
-			if(clazz == Integer.class) {
-				result = BigDecimal.valueOf(((Integer)value).intValue());
-			} else if(clazz == Double.class) {
-				result = BigDecimal.valueOf(((Double)value).intValue());
+			if(clazz == Long.class) {
+				result = BigDecimal.valueOf(((Long)value).longValue());
 			} else if(clazz == BigInteger.class) {
 				result = new BigDecimal((BigInteger)value);
+			} else if(clazz == Double.class) {
+				result = BigDecimal.valueOf(((Double)value).doubleValue());
 			} else {
 				assert clazz == BigDecimal.class;
 				result = (BigDecimal)value;
 			}
-
 			return result;
+		}
+
+		/**
+		 * Return the result of comparing the two objects using Java's equals().
+		 * If either of the objects are zero then a NullPointerException will
+		 * probably be thrown depending on the type of objects being tested.
+		 */
+		boolean areEqual() {
+			return lhsValue.equals(rhsValue);
 		}
 	}
 
 	private final int operator;
 	private final ExpressionNode lhsNode, rhsNode;
-	private final DataType resultType, commonType;
+	/**
+	 * The common type depends on the operation and operands. For something like
+	 * 5z + 6Z then the operands' common type is Z (the broader of the two) and
+	 * the returnType will be Z because of the operation.
+	 */
+	private final DataType commonType;
+	/** See commonType's Javadoc */
+	private final DataType returnType;
 
 	public BinaryNode(
 			ParserRuleContext context,
@@ -124,79 +133,42 @@ public class BinaryNode extends ExpressionNode {
 			ExpressionNode lhsNode) {
 		super(context);
 
-		assert DataType.integer.bit == 0x0001 && DataType.INTEGER.bit == 0x0002
-				&& DataType.decimal.bit == 0x0004 && DataType.DECIMAL.bit == 0x0008;
-
 		this.operator = operator;
 		this.lhsNode = lhsNode;
 		this.rhsNode = rhsNode;
-		final DataType lhsType = lhsNode.getType();
-		final DataType rhsType = rhsNode.getType();
-		final int lhsTypeBit = lhsType.bit;
-		final int rhsTypeBit = rhsType.bit;
-		final int combinedType = lhsTypeBit | rhsTypeBit;
 
-		if(combinedType <= DataType.DECIMAL.bit) {
-			// Both numeric
-			commonType = lhsTypeBit > rhsTypeBit ? lhsType : rhsType;
-		} else if(lhsTypeBit == rhsTypeBit) {
-			// Both the same type
-			commonType = lhsType;
-		} else {
-			throwInvalidTypes();
-			commonType = null;
+		DataType tmp = null;
+		try {
+			tmp = lhsNode.getType().getCommnType(rhsNode.getType());
+		} catch(final TypeMismatchException e) {
+			error(e.getMessage());
 		}
+		commonType = tmp;
 
-		// Figure out what data type this node is...
+		final boolean ok;
 		switch(operator) {
 		case OakLexer.Plus:
-			if(combinedType == DataType.text.bit) {
-				// Concatenate strings
-				resultType = DataType.text;
-			} else if(combinedType <= DataType.DECIMAL.bit) {
-				// Need number (x) number,..
-				resultType = commonType;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = commonType.numeric || commonType == DataType.text;
 			break;
 
 		case OakLexer.Minus:
 		case OakLexer.Multiply:
 		case OakLexer.Divide:
-			if(combinedType <= DataType.DECIMAL.bit) {
-				// Need number (x) number,..
-				resultType = commonType;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = commonType.numeric;
 			break;
 
 		case OakLexer.Eq:
 		case OakLexer.Ne:
-			if((combinedType <= DataType.DECIMAL.bit)
-					|| combinedType == DataType.text.bit
-					|| combinedType == DataType.bool.bit) {
-				resultType = DataType.bool;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = true;
+			tmp = DataType.bool;
 			break;
 
 		case OakLexer.Lt:
 		case OakLexer.Lte:
 		case OakLexer.Gte:
 		case OakLexer.Gt:
-			if((combinedType == DataType.text.bit) || (combinedType <= DataType.DECIMAL.bit)) {
-				// Both strings or both numbers
-				resultType = DataType.bool;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = commonType != DataType.cardinality;
+			tmp = DataType.bool;
 			break;
 
 		case OakLexer.And:
@@ -204,40 +176,30 @@ public class BinaryNode extends ExpressionNode {
 		case OakLexer.Mod:
 		case OakLexer.Shl:
 		case OakLexer.Shr:
+			ok = commonType == DataType.z || commonType == DataType.Z;
+			break;
+
 		case OakLexer.Usr:
-			// Need integer (x) integer,..
-			if(combinedType != 1) {
-				throwInvalidTypes();
-			}
-			resultType = commonType;
+			ok = commonType == DataType.z;
 			break;
 
 		case OakLexer.Xor:
-			if(combinedType == 1) {
-				// integer (x) integer,..
-				resultType = DataType.integer;
-			} else if(combinedType == DataType.bool.bit) {
-				// boolean (x) boolean,..
-				resultType = DataType.bool;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = commonType == DataType.z || commonType == DataType.Z || commonType == DataType.bool;
 			break;
 
 		case OakLexer.Lor:
 		case OakLexer.Land:
-			// Need boolean (x) boolean,..
-			if(combinedType == DataType.bool.bit) {
-				resultType = DataType.bool;
-			} else {
-				throwInvalidTypes();
-				resultType = null;
-			}
+			ok = commonType == DataType.bool;
 			break;
 
 		default:
 			throw new RuntimeException("Operator not handled: " + operator);
+		}
+
+		returnType = tmp;
+
+		if(!ok) {
+			throwInvalidTypes();
 		}
 	}
 
@@ -245,28 +207,37 @@ public class BinaryNode extends ExpressionNode {
 	public ConstantNode evaluate() {
 		final ConstantNode result;
 
-		final Converter converter = new Converter();
 		final ParserRuleContext lhsContext = lhsNode.context;
+
+		final Converter converter = new Converter();
 
 		switch(operator) {
 		case OakLexer.Plus:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger + converter.rhsInteger);
+			case z:
+				result = new ConstantNode(lhsContext, converter.lhs_z + converter.rhs_z);
 				break;
-			case INTEGER:
-				result = new ConstantNode(lhsContext, converter.lhsBigInteger.add(converter.rhsBigInteger));
+			case Z:
+				result = new ConstantNode(lhsContext, converter.lhs_Z.add(converter.rhs_Z));
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal + converter.rhsDecimal);
+			case f:
+				result = new ConstantNode(lhsContext, converter.lhs_f + converter.rhs_f);
 				break;
-			case DECIMAL:
-				result = new ConstantNode(lhsContext, converter.lhsBigDecimal.add(converter.rhsBigDecimal));
+			case F:
+				result = new ConstantNode(lhsContext, converter.lhs_F.add(converter.rhs_F));
 				break;
 			case text:
-				result = new ConstantNode(lhsContext, converter.lhsString + converter.rhsString);
+				result = new ConstantNode(lhsContext, converter.lhs_text + converter.rhs_text);
 				break;
-			// $CASES-OMITTED$
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -274,23 +245,28 @@ public class BinaryNode extends ExpressionNode {
 
 		case OakLexer.Minus:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger - converter.rhsInteger);
+			case z:
+				result = new ConstantNode(lhsContext, converter.lhs_z - converter.rhs_z);
 				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.subtract(converter.rhsBigInteger));
+			case Z:
+				result = new ConstantNode(lhsContext, converter.lhs_Z.subtract(converter.rhs_Z));
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal - converter.rhsDecimal);
+			case f:
+				result = new ConstantNode(lhsContext, converter.lhs_f - converter.rhs_f);
 				break;
-			case DECIMAL:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigDecimal.subtract(converter.rhsBigDecimal));
+			case F:
+				result = new ConstantNode(lhsContext, converter.lhs_F.subtract(converter.rhs_F));
 				break;
-			// $CASES-OMITTED$
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -298,23 +274,28 @@ public class BinaryNode extends ExpressionNode {
 
 		case OakLexer.Multiply:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger * converter.rhsInteger);
+			case z:
+				result = new ConstantNode(lhsContext, converter.lhs_z * converter.rhs_z);
 				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.multiply(converter.rhsBigInteger));
+			case Z:
+				result = new ConstantNode(lhsContext, converter.lhs_Z.multiply(converter.rhs_Z));
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal * converter.rhsDecimal);
+			case f:
+				result = new ConstantNode(lhsContext, converter.lhs_f * converter.rhs_f);
 				break;
-			case DECIMAL:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigDecimal.multiply(converter.rhsBigDecimal));
+			case F:
+				result = new ConstantNode(lhsContext, converter.lhs_F.multiply(converter.rhs_F));
 				break;
-			// $CASES-OMITTED$
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
@@ -322,194 +303,336 @@ public class BinaryNode extends ExpressionNode {
 
 		case OakLexer.Divide:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger / converter.rhsInteger);
+			case z:
+				result = new ConstantNode(lhsContext, converter.lhs_z / converter.rhs_z);
 				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext, converter.lhsBigInteger.divide(converter.rhsBigInteger));
+			case Z:
+				result = new ConstantNode(lhsContext, converter.lhs_Z.divide(converter.rhs_Z));
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal / converter.rhsDecimal);
+			case f:
+				result = new ConstantNode(lhsContext, converter.lhs_f / converter.rhs_f);
 				break;
-			case DECIMAL:
-				result = new ConstantNode(
-						lhsContext, converter.lhsBigDecimal.divide(converter.rhsBigDecimal));
+			case F:
+				result = new ConstantNode(lhsContext, converter.lhs_F.divide(converter.rhs_F));
 				break;
-			// $CASES-OMITTED$
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
 			break;
 
 		case OakLexer.Mod:
-			result = new ConstantNode(lhsContext, converter.lhsInteger % converter.rhsInteger);
+			if(commonType == DataType.z) {
+				result = new ConstantNode(lhsContext, converter.lhs_z % converter.rhs_z);
+			} else {
+				result = new ConstantNode(lhsContext, converter.lhs_Z.remainder(converter.rhs_Z));
+			}
 			break;
 
 		case OakLexer.And:
-			result = new ConstantNode(lhsContext, converter.lhsInteger & converter.rhsInteger);
+			if(commonType == DataType.z) {
+				result = new ConstantNode(lhsContext, converter.lhs_z & converter.rhs_z);
+			} else {
+				assert commonType == DataType.Z : commonType.name();
+				result = new ConstantNode(lhsContext, converter.lhs_Z.and(converter.rhs_Z));
+			}
 			break;
 
 		case OakLexer.Or:
-			result = new ConstantNode(lhsContext, converter.lhsInteger | converter.rhsInteger);
+			if(commonType == DataType.z) {
+				result = new ConstantNode(lhsContext, converter.lhs_z | converter.rhs_z);
+			} else {
+				assert commonType == DataType.Z : commonType.name();
+				result = new ConstantNode(lhsContext, converter.lhs_Z.or(converter.rhs_Z));
+			}
 			break;
 
 		case OakLexer.Xor:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger ^ converter.rhsInteger);
+			case z:
+				result = new ConstantNode(lhsContext, converter.lhs_z ^ converter.rhs_z);
+				break;
+			case Z:
+				result = new ConstantNode(lhsContext, converter.lhs_Z.xor(converter.rhs_Z));
 				break;
 			case bool:
 				result = new ConstantNode(lhsContext, converter.lhsBoolean ^ converter.rhsBoolean);
 				break;
-			// $CASES-OMITTED$
+
+			case F:
+			case any:
+			case cardinality:
+			case date:
+			case datetime:
+			case f:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
 			break;
 
-		case OakLexer.Shl:
-			result = new ConstantNode(lhsContext, converter.lhsInteger << converter.rhsInteger);
+		case OakLexer.Shl: {
+			ConstantNode tmp = null;
+			try {
+				if(commonType == DataType.z) {
+					final int n = DataType.getInt(new Long(converter.rhs_z));
+					tmp = new ConstantNode(lhsContext, converter.lhs_z << n);
+				} else {
+					assert commonType == DataType.Z : commonType.name();
+					final int n = DataType.getInt(converter.rhs_Z);
+					tmp = new ConstantNode(lhsContext, converter.lhs_Z.shiftLeft(n));
+				}
+			} catch(final OverflowException e) {
+				error("Shift to big");
+			} catch(NullValueException | TypeMismatchException e) {
+				throw new UnexpectedException("evaluate");
+			}
+			result = tmp;
 			break;
+		}
 
-		case OakLexer.Shr:
-			result = new ConstantNode(lhsContext, converter.lhsInteger >> converter.rhsInteger);
+		case OakLexer.Shr: {
+			ConstantNode tmp = null;
+			try {
+				if(commonType == DataType.z) {
+					final int n = DataType.getInt(new Long(converter.rhs_z));
+					tmp = new ConstantNode(lhsContext, converter.lhs_z >> n);
+				} else {
+					assert commonType == DataType.Z : commonType.name();
+					final int n = DataType.getInt(converter.rhs_Z);
+					tmp = new ConstantNode(lhsContext, converter.lhs_Z.shiftRight(n));
+				}
+			} catch(final OverflowException e) {
+				error("Shift to big");
+			} catch(NullValueException | TypeMismatchException e) {
+				throw new UnexpectedException("evaluate");
+			}
+			result = tmp;
 			break;
+		}
 
 		case OakLexer.Usr:
-			result = new ConstantNode(lhsContext, converter.lhsInteger >>> converter.rhsInteger);
+			assert commonType == DataType.z : commonType.name();
+			result = new ConstantNode(lhsContext, converter.lhs_z >>> converter.rhs_z);
 			break;
 
-		case OakLexer.Lt:
-			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger < converter.rhsInteger);
-				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) < 0);
-				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal < converter.rhsDecimal);
-				break;
-			// $CASES-OMITTED$
-			default:
-				throw new UnexpectedException("evaluate: " + operator);
-			}
-			break;
+		case OakLexer.Lt: {
+			boolean compare;
 
-		case OakLexer.Lte:
 			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger <= converter.rhsInteger);
+			case z:
+				compare = converter.lhs_z < converter.rhs_z;
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal <= converter.rhsDecimal);
+			case Z:
+				compare = converter.lhs_Z.compareTo(converter.rhs_Z) < 0;
 				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) <= 0);
+			case f:
+				compare = converter.lhs_f < converter.rhs_f;
 				break;
-				// $CASES-OMITTED$
-			default:
-				throw new UnexpectedException("evaluate: " + operator);
-			}
-			break;
-
-		case OakLexer.Gte:
-			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger >= converter.rhsInteger);
+			case F:
+				compare = converter.lhs_F.compareTo(converter.rhs_F) < 0;
 				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal >= converter.rhsDecimal);
-				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) >= 0);
-				break;
-				// $CASES-OMITTED$
-			default:
-				throw new UnexpectedException("evaluate: " + operator);
-			}
-			break;
-
-		case OakLexer.Gt:
-			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger > converter.rhsInteger);
-				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal > converter.rhsDecimal);
-				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						converter.lhsBigInteger.compareTo(converter.rhsBigInteger) > 0);
-				break;
-				// $CASES-OMITTED$
-			default:
-				throw new UnexpectedException("evaluate: " + operator);
-			}
-			break;
-
-		case OakLexer.Eq:
-			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger == converter.rhsInteger);
-				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal == converter.rhsDecimal);
-				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext, converter.lhsBigInteger.equals(converter.rhsBigInteger));
-				break;
-			case bool:
-				result = new ConstantNode(lhsContext, converter.lhsBoolean == converter.rhsBoolean);
-				break;
-			case date:
-				result = new ConstantNode(lhsContext, converter.lhsDate.equals(converter.rhsDate));
-				break;
+			case identifier:
+			case path:
 			case text:
-				result = new ConstantNode(lhsContext, converter.lhsString.equals(converter.rhsString));
+				compare = converter.lhs_text.compareTo(converter.lhs_text) < 0;
 				break;
-				// $CASES-OMITTED$
-			default:
-				throw new UnexpectedException("evaluate: " + operator);
-			}
-			break;
 
-		case OakLexer.Ne:
-			switch(commonType) {
-			case integer:
-				result = new ConstantNode(lhsContext, converter.lhsInteger != converter.rhsInteger);
-				break;
-			case decimal:
-				result = new ConstantNode(lhsContext, converter.lhsDecimal != converter.rhsDecimal);
-				break;
-			case INTEGER:
-				result = new ConstantNode(
-						lhsContext,
-						!converter.lhsBigInteger.equals(converter.rhsBigInteger));
-				break;
+			case any:
 			case bool:
-				result = new ConstantNode(lhsContext, converter.lhsBoolean != converter.rhsBoolean);
-				break;
+			case cardinality:
 			case date:
-				result = new ConstantNode(lhsContext, !converter.lhsDate.equals(converter.rhsDate));
-				break;
-			case text:
-				result = new ConstantNode(lhsContext, !converter.lhsString.equals(converter.rhsString));
-				break;
-				// $CASES-OMITTED$
+			case datetime:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + operator);
 			}
+			result = new ConstantNode(lhsContext, compare);
 			break;
+		}
+
+		case OakLexer.Lte: {
+			boolean compare;
+			switch(commonType) {
+			case z:
+				compare = converter.lhs_z <= converter.rhs_z;
+				break;
+			case Z:
+				compare = converter.lhs_Z.compareTo(converter.rhs_Z) <= 0;
+				break;
+			case f:
+				compare = converter.lhs_f <= converter.rhs_f;
+				break;
+			case F:
+				compare = converter.lhs_F.compareTo(converter.rhs_F) <= 0;
+				break;
+			case identifier:
+			case path:
+			case text:
+				compare = converter.lhs_text.compareTo(converter.lhs_text) <= 0;
+				break;
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case time:
+			default:
+				throw new UnexpectedException("evaluate: " + operator);
+			}
+			result = new ConstantNode(lhsContext, compare);
+			break;
+		}
+
+		case OakLexer.Gte: {
+			boolean compare;
+
+			switch(commonType) {
+			case z:
+				compare = converter.lhs_z >= converter.rhs_z;
+				break;
+			case Z:
+				compare = converter.lhs_Z.compareTo(converter.rhs_Z) >= 0;
+				break;
+			case f:
+				compare = converter.lhs_f >= converter.rhs_f;
+				break;
+			case F:
+				compare = converter.lhs_F.compareTo(converter.rhs_F) >= 0;
+				break;
+			case identifier:
+			case path:
+			case text:
+				compare = converter.lhs_text.compareTo(converter.lhs_text) >= 0;
+				break;
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case time:
+			default:
+				throw new UnexpectedException("evaluate: " + operator);
+			}
+			result = new ConstantNode(lhsContext, compare);
+			break;
+		}
+
+		case OakLexer.Gt: {
+			boolean compare;
+			switch(commonType) {
+			case z:
+				compare = converter.lhs_z > converter.rhs_z;
+				break;
+			case Z:
+				compare = converter.lhs_Z.compareTo(converter.rhs_Z) > 0;
+				break;
+			case f:
+				compare = converter.lhs_f > converter.rhs_f;
+				break;
+			case F:
+				compare = converter.lhs_F.compareTo(converter.rhs_F) > 0;
+				break;
+			case identifier:
+			case path:
+			case text:
+				compare = converter.lhs_text.compareTo(converter.lhs_text) > 0;
+				break;
+
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case time:
+			default:
+				throw new UnexpectedException("evaluate: " + operator);
+			}
+			result = new ConstantNode(lhsContext, compare);
+			break;
+		}
+
+		case OakLexer.Eq: {
+			boolean compare;
+			switch(commonType) {
+			case z:
+				compare = converter.lhs_z == converter.rhs_z;
+				break;
+			case f:
+				compare = converter.lhs_f == converter.rhs_f;
+				break;
+			case Z:
+				compare = converter.lhs_Z.equals(converter.rhs_Z);
+				break;
+			case F:
+				compare = converter.lhs_F.equals(converter.rhs_F);
+				break;
+			case identifier:
+			case path:
+			case text:
+			case cardinality:
+			case date:
+			case datetime:
+			case time:
+			case bool:
+				compare = converter.areEqual();
+				break;
+
+			case any:
+			default:
+				throw new UnexpectedException("evaluate: " + operator);
+			}
+			result = new ConstantNode(lhsContext, compare);
+			break;
+		}
+
+		case OakLexer.Ne: {
+			boolean compare;
+			switch(commonType) {
+			case z:
+				compare = converter.lhs_z != converter.rhs_z;
+				break;
+			case f:
+				compare = converter.lhs_f != converter.rhs_f;
+				break;
+			case Z:
+				compare = !converter.lhs_Z.equals(converter.rhs_Z);
+				break;
+			case F:
+				compare = !converter.lhs_F.equals(converter.rhs_F);
+				break;
+			case identifier:
+			case path:
+			case text:
+			case cardinality:
+			case date:
+			case datetime:
+			case time:
+			case bool:
+				compare = !converter.areEqual();
+				break;
+
+			case any:
+			default:
+				throw new UnexpectedException("evaluate: " + operator);
+			}
+			result = new ConstantNode(lhsContext, compare);
+			break;
+		}
 
 		case OakLexer.Land:
 			result = new ConstantNode(lhsContext, converter.lhsBoolean && converter.rhsBoolean);
@@ -524,14 +647,12 @@ public class BinaryNode extends ExpressionNode {
 					+ AstToStringVisitor.operatorToString[operator]);
 		}
 
-		result.coerce(resultType);
-
 		return result;
 	}
 
 	@Override
 	public DataType getType() {
-		return resultType;
+		return returnType;
 	}
 
 	@Override

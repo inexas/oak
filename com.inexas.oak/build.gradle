@@ -30,7 +30,7 @@ def PROJECT_NAME = 'Oak'
 def PROJECT_NAME_LOWER = 'oak'
 def PROJECT_VENDOR = 'Inexas'
 def PROJECT_GROUP = 'com.inexas'
-def PROJECT_VERSION = '0.1.2'
+def PROJECT_VERSION = '0.1.3'
 def PROJECT_DESCRIPTION = 'Oak - Better than JSON, much better than XML'
 def PROJECT_URL = 'http://www.inexas.org'
 def PROJECT_JAVA_VERSION = '1.8'
@@ -108,12 +108,13 @@ jar {
 }
 
 dependencies {
-	//antlr "org.antlr:antlr4:4.5"
-	compile 'com.inexas:util:0.1.1'
-	compile 'com.inexas:tad:0.1.1'
+	testCompile 'junit:junit:4.11'
+	testCompile 'org.checkerframework:checker:1.9.4'
+	
+	compile 'com.inexas:util:0.1.3'
+	compile 'com.inexas:tad:0.1.2'
 	compile 'org.antlr:antlr4-runtime:4.5'
 	compile 'org.apache.commons:commons-lang3:3.3.2'
-	testCompile 'junit:junit:4.11'
 }
 
 uploadArchives {

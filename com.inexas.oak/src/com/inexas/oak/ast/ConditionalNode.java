@@ -45,8 +45,8 @@ public class ConditionalNode extends ExpressionNode {
 			type = trueType;
 		} else {
 			switch(trueType) {
-			case integer:
-				if(falseType.isNumeric) {
+			case z:
+				if(falseType.numeric) {
 					type = falseType;
 				} else {
 					throwInvalidTypes();
@@ -54,17 +54,18 @@ public class ConditionalNode extends ExpressionNode {
 				}
 				break;
 
-			case decimal:
-				if(falseType.isNumeric) {
-					type = falseType == DataType.integer ? trueType : falseType;
+			case f:
+				if(falseType.numeric) {
+					type = falseType == DataType.z ? trueType : falseType;
 				} else {
 					throwInvalidTypes();
 					type = null;
 				}
 				break;
 
-			case INTEGER:
-				if(falseType.isNumeric) {
+			case Z:
+			case F:
+				if(falseType.numeric) {
 					type = trueType;
 				} else {
 					throwInvalidTypes();
@@ -72,7 +73,15 @@ public class ConditionalNode extends ExpressionNode {
 				}
 				break;
 
-			// $CASES-OMITTED$
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throwInvalidTypes();
 				type = null;
@@ -93,7 +102,6 @@ public class ConditionalNode extends ExpressionNode {
 
 		final boolean isTrue = ((Boolean)condition.evaluate().getValue()).booleanValue();
 		result = isTrue ? trueValue.evaluate() : falseValue.evaluate();
-		result.coerce(type);
 
 		return result;
 	}

@@ -1,7 +1,8 @@
 package com.inexas.oak.ast;
 
 import java.time.temporal.Temporal;
-import com.inexas.oak.DataType;
+import java.util.List;
+import com.inexas.oak.*;
 import com.inexas.util.TextBuilder;
 
 public class AstToStringVisitor extends AstVisitor.Base {
@@ -45,6 +46,25 @@ public class AstToStringVisitor extends AstVisitor.Base {
 
 	public AstToStringVisitor(boolean pretty) {
 		tb = new TextBuilder(pretty);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void enter(Oak oak) {
+		// Are there any libraries?
+		final List<Class<?>> libraries = oak.getRegistry().getLibaries();
+
+		if(libraries.size() > 0) {
+			for(final Class<?> libary : libraries) {
+				tb.append("#load \"");
+				tb.append(libary.getName());
+				tb.append('"');
+				tb.newline();
+			}
+			tb.newline();
+		}
 	}
 
 	/**
@@ -218,7 +238,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 		if(value == null) {
 			string = "null";
 		} else {
-			if(type.isTemporal) {
+			if(type.temporal) {
 				tb.append('@');
 				if(type == DataType.date) {
 					string = ConstantNode.dateFormatter.format((Temporal)value);

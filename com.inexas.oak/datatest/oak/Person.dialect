@@ -7,11 +7,12 @@ Dialect {
 		root;
 		
 		Member [{
-			key: userId;
+			Property {
+				key: userId;
+				type: identifier;
+			}
 		}, {
 			key: Email;
-			cardinality: 0..*;
-			collection: list;
 		}]
 		
 	}, {
@@ -19,21 +20,14 @@ Dialect {
 		class: "com.inexas.oak.examples.Email";
 		
 		Member [{
-			key: text;
+			Property {
+				key: text;
+			}
 		}, {
 			Property {
 				key: isHome;
+				type: boolean;
 			}
-			cardinality: 1..1;
-			collection: singleton;
 		}]
-	}]
-		
-	Property [{
-		key: userId;
-		type: identifier;
-	}, {
-		key: text;
-		type: text;
 	}]
 }

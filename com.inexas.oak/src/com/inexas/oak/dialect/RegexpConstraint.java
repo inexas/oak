@@ -125,7 +125,7 @@ public class RegexpConstraint extends Constraint {
 
 		final Class<?> expectedClass;
 		final String expected;
-		if(dataType == DataType.text) {
+		if(dataType == DataType.text || dataType == DataType.identifier) {
 			expected = DataType.text.toString();
 			expectedClass = String.class;
 

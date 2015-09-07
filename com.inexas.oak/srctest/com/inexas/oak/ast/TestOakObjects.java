@@ -15,7 +15,6 @@ public class TestOakObjects {
 	private void doPrettyTest(String expected, String toTest) throws OakException {
 		try {
 			final Oak oak = new Oak(toTest);
-			oak.toAst();
 			checkParsingErrors(oak);
 			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
@@ -37,7 +36,6 @@ public class TestOakObjects {
 
 	private void doTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
-		oak.toAst();
 		checkParsingErrors(oak);
 		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(false);
 		// toStringVisitor.setTracing(true);

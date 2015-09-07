@@ -5,20 +5,21 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.ast.FunctionRegistry.FunctionException;
+import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
 import com.inexas.oak.ast.OakParser.ArrayContext;
 import com.inexas.oak.ast.OakParser.CardinalityContext;
-import com.inexas.oak.ast.OakParser.ExpressionContext;
+import com.inexas.oak.ast.OakParser.ExprContext;
 import com.inexas.oak.ast.OakParser.LiteralContext;
+import com.inexas.oak.ast.OakParser.LoadContext;
 import com.inexas.oak.ast.OakParser.ObjectContext;
 import com.inexas.oak.ast.OakParser.PairContext;
 import com.inexas.oak.ast.OakParser.PathContext;
 import com.inexas.tad.Context;
-import com.inexas.util.Cardinality;
+import com.inexas.util.*;
 
 /**
  * Visits the ANTLR AST and outputs an Oak AST.
- *
- * @author kwhittingham
  */
 public class AntlrToAstVisitor extends OakBaseListener {
 	private final Stack<Node> stack = new Stack<>();
@@ -28,35 +29,80 @@ public class AntlrToAstVisitor extends OakBaseListener {
 
 	public Node getRoot() {
 		assert stack.size() == 1;
-		return stack.peek();
+		final Node result = stack.peek();
+		return result;
+	}
+
+	@Override
+	public void enterLoad(LoadContext ctx) {
+		try {
+			final String className = StringU.removeQuotes(ctx.getChild(1).getText());
+			final Class<?> funclib = Class.forName(className);
+			final FunctionRegistry registry = Context.get(FunctionRegistry.class);
+			registry.register(funclib);
+		} catch(final ClassNotFoundException e) {
+			error(ctx, "Function library class not found: " + e.getMessage());
+		} catch(final FunctionException | InvalidMethodException e) {
+			error(ctx, e.getMessage());
+		}
 	}
 
 	@Override
 	public void exitLiteral(LiteralContext ctx) {
+		/*
+		 * !todo Integer minimum value problem. There is a pretty horrible
+		 * problem here caused when trying parse minimum integer values. For a
+		 * Long this is -9223372036854775808 but Oak parses the input as a '-'
+		 * and a positive number that is too large to fit in a long. In Java
+		 * weird things happen too. For example long l = Long.MIN_VALUE; l = -1;
+		 * l is still negative!
+		 *
+		 * The only solution to this problem is perhaps to use Z and F all over
+		 * and then convert to long, int, short, ... After all this isn't a
+		 * calculation engine.
+		 */
 		final int type = ctx.start.getType();
 		final String text = ctx.getText();
 		final Node constant;
 		switch(ctx.start.getType()) {
-		case OakLexer.IntegerLiteral: {
+		case OakLexer.IntegerLiteral:
 			constant = ConstantNode.toIntegerConstant(ctx, text);
 			break;
-		}
 
-		case OakLexer.FloatingPointLiteral: {
-			constant = ConstantNode.toDecimalConstant(ctx, text);
-			break;
-		}
-
-		case OakLexer.BigDecimalLiteral:
-			constant = ConstantNode.toPrecisionConstant(ctx, text);
+		case OakLexer.BinaryIntegerLiteral:
+			constant = ConstantNode.toBinaryIntegerConstant(ctx, text);
 			break;
 
-		case OakLexer.StringLiteral:
-			constant = new ConstantNode(ctx, text.substring(1, text.length() - 1));
+		case OakLexer.HexIntegerLiteral:
+			constant = ConstantNode.toHexIntegerConstant(ctx, text);
+			break;
+
+		case OakLexer.BigIntegerLiteral:
+			constant = ConstantNode.toBigIntegerConstant(ctx, text);
+			break;
+
+		case OakLexer.FloatingPointLiteral:
+			constant = ConstantNode.toFloatingPointConstant(ctx, text);
+			break;
+
+		case OakLexer.BigFloatingPointLiteral:
+			constant = ConstantNode.toBigFloatingPointConstant(ctx, text);
+			break;
+
+		case OakLexer.TextLiteral:
+			constant = ConstantNode.toTextConstant(ctx, text.substring(1, text.length() - 1));
 			break;
 
 		case OakLexer.DateTimeLiteral:
+			constant = ConstantNode.toDateTime(ctx, text.substring(1, text.length()));
+			break;
+
+		case OakLexer.DateLiteral:
 			constant = ConstantNode.toDate(ctx, text.substring(1, text.length()));
+			break;
+
+		case OakLexer.TimeLiteral:
+			constant = ConstantNode.toTime(ctx, text.substring(1, text.length()));
 			break;
 
 		case OakLexer.True:
@@ -78,7 +124,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 	}
 
 	@Override
-	public void exitExpression(ExpressionContext ctx) {
+	public void exitExpr(ExprContext ctx) {
 		final int count = ctx.getChildCount();
 		final ExpressionNode node;
 		if(count >= 3 && ctx.getChild(1).getText().charAt(0) == '(') {
@@ -101,7 +147,6 @@ public class AntlrToAstVisitor extends OakBaseListener {
 			case 2: {
 				final int operator = getOperand(ctx, 0);
 				switch(operator) {
-				case OakLexer.Plus:
 				case OakLexer.Minus:
 				case OakLexer.Not:
 				case OakLexer.Comp:
@@ -109,7 +154,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 					break;
 
 				default:
-					throw new UnexpectedException("exitExpression: ");
+					throw new UnexpectedException("exitExpression: " + operator);
 				}
 				break;
 			}
@@ -144,7 +189,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 					break;
 
 				default:
-					error(ctx, "Syntax error");
+					error(ctx, "Syntax error: " + operator);
 					node = null;
 				}
 				break;
@@ -246,7 +291,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		final int type = ctx.start.getType();
 		final String text = ctx.getText();
 		switch(ctx.start.getType()) {
-		case OakLexer.Path: {
+		case OakLexer.PathLiteral: {
 			stack.add(new PathNode(ctx, text));
 			break;
 		}
@@ -302,7 +347,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		}
 	}
 
-	private int getOperand(ExpressionContext ctx, int index) {
+	private int getOperand(ExprContext ctx, int index) {
 		return ((TerminalNode)ctx.getChild(index)).getSymbol().getType();
 	}
 

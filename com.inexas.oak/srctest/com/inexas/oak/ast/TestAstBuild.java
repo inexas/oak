@@ -22,7 +22,6 @@ public class TestAstBuild {
 
 	private void doTest(String expected, String toTest) throws OakException {
 		final Oak oak = new Oak(toTest);
-		oak.toAst();
 		checkParsingErrors(oak);
 		final AstToStringVisitor toStringVisitor = new AstToStringVisitor(false);
 		// toStringVisitor.setTracing(true);

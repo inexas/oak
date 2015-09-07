@@ -12,9 +12,9 @@ public interface Navigable {
 	 *     getPath(result);
 	 *     return result.toString();
 	 * }
-	 *
+	 * 
 	 *  ...and...
-	 *
+	 * 
 	 * private void getPath(TextBuilder result) {
 	 *     if(parent == null) {
 	 *         result.append('/');
@@ -103,5 +103,5 @@ public interface Navigable {
 	 * @return The node that has been located.
 	 */
 	<T extends Navigable> T locate(String path);
-	// !todo Exception for error in path?
+	// todo Throw an exception for error in path?
 }

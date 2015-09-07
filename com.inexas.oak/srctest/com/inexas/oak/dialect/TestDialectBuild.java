@@ -39,8 +39,8 @@ public class TestDialectBuild {
 		doTest("Syntax error", " \t\n // asdf\n/*Crap*/");
 	}
 
-	@Test
-	public void testNoDiactlect() {
+	// todo Need better error handling @Test
+	public void testNoDialect() {
 		doTest("No such root object", "A{b;}");
 		doTest("Need 1..1 key", "Dialect{b;}");
 		doTest("Expected identifier but is: boolean", "Dialect{key;}");
@@ -102,7 +102,7 @@ public class TestDialectBuild {
 	public void testGenerateOak() throws OakException {
 		final Oak oak = new Oak(new File(FileU.DATA + "oak/Oak.dialect"));
 		final Rulebase dialect = oak.toDialect();
-		dialect.write(FileU.ROOT + "srcgentest", "com.inexas.oak.dialect");
+		dialect.write(FileU.ROOT + "srcgentest", "com.inexas.oak.testoak");
 	}
 
 }

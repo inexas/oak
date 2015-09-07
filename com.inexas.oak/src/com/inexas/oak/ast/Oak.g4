@@ -7,103 +7,10 @@
  *
  * * Keys don't have "quotes"
  *
- * + Expressions are supported: "TimeoutInMs: 60*60*1000 "
+ * + exprs are supported: "TimeoutInMs: 60*60*1000 "
  *
  */
 grammar Oak;
-
-/**
- * This is the root of Oak
- */
-oak : pair EOF;
-
-pair
-	:	Key Colon value Semi	// E.g. myKey: 32; 
-	|	Key object				// E.g. MyKey { ... }
-	|	Key array				// E.g. myKey [ 1, 2, 3 ]
-	|	Key Semi				// Shorthand for myKey: true; 
-	;
-
-array
-	:	Square value (Comma value)* Erauqs		// Either [ 1, 2, 3 ]...
-	|	Square object (Comma object)* Erauqs	// ...or [ {...}, {...}, {...} ]
-	;
-
-object
-	:	Curly pair+ Ylruc		// E.g. { a:1; ... }
-	;
-	
-value
-	:	literal
-	|	path
-	|	expression
-	|	cardinality
-	;
-
-/**
- * This is the root for expression evaluation.
- * 
- * The members is in operator precedence order
- */
-expression
-	:	primary
-	|	Key Paren ( expression ( Comma expression)* )? Nerap // Function
-	|	(Plus|Minus|Not|Comp) expression // Unary
-	|	expression (Multiply|Divide|Mod) expression
-	|	expression (Plus|Minus) expression
-	|	expression (Shl|Shr|Usr) expression
-	|	expression (Lte | Gte | Gt | Lt) expression
-	|	expression (Eq | Ne) expression
-	|	expression And expression
-	|	expression Xor expression
-	|	expression Or expression
-	|	expression Land expression
-	|	expression Lor expression
-	|	expression Qm expression Colon expression // condition ? t : f
-;
-
-primary
-	:	Paren expression Nerap 
-	|	literal
-	;
-		
-literal
-	:	IntegerLiteral
-	|	FloatingPointLiteral
-	|	BigDecimalLiteral
-	|	StringLiteral
-	|	DateTimeLiteral
-	|	True
-	|	False
-	|	Null
-	;
-
-path: Path | Key | Divide;
-
-cardinality: Cardinality;
-
-WS  :  [ \t\r\n\u000C]+ -> skip
-	;
-
-COMMENT
-	:	'/*' .*? '*/' -> skip
-	;
-
-LINE_COMMENT
-	:	'//' ~[\r\n]* -> skip
-	;
-
-
-Path
-	:	Children					// Children of root and children and root 
-	|	( '/' Key)+ Children?		// Absolute path
-	|	Key ( '/' Key)+ Children?	// Relative path
-	;
-
-fragment Children
-	:	'/@'		// Children of node
-	|	'/@@'		// Children and node
-	;
 
 Plus:		'+'; // Keep as first please
 Minus:		'-';
@@ -142,146 +49,156 @@ Erauqs:		']';
 Dots:		'..';
 
 
+/**
+ * The entry point for Oak evaluation.
+ */
+oak : load* pair EOF;
+
+/**
+ * The entry point for expression evaluation.
+ */
+expression:  expr EOF;
+
+load
+	:	'#load' TextLiteral
+	;
+
+pair
+	:	Key Colon value Semi	// E.g. myKey: 32; 
+	|	Key object				// E.g. MyKey { ... }
+	|	Key array				// E.g. myKey [ 1, 2, 3 ]
+	|	Key Semi				// Shorthand for myKey: true; 
+	;
+
+array
+	:	Square value (Comma value)* Erauqs		// Either [ 1, 2, 3 ]...
+	|	Square object (Comma object)* Erauqs	// ...or [ {...}, {...}, {...} ]
+	;
+
+object
+	:	Curly pair+ Ylruc		// E.g. { a:1; ... }
+	;
+	
+value
+	:	expr
+	|	path
+	|	literal
+	|	cardinality
+	;
+
+// Members are in operator precedence order
+expr
+	:	primary
+	|	Key Paren ( expr ( Comma expr)* )? Nerap // Function
+	|	(Minus|Not|Comp) expr // Unary
+	|	expr (Multiply|Divide|Mod) expr
+	|	expr (Plus|Minus) expr
+	|	expr (Shl|Shr|Usr) expr
+	|	expr (Lte | Gte | Gt | Lt) expr
+	|	expr (Eq | Ne) expr
+	|	expr And expr
+	|	expr Xor expr
+	|	expr Or expr
+	|	expr Land expr
+	|	expr Lor expr
+	|	expr Qm expr Colon expr // condition ? t : f
+;
+
+primary
+	:	Paren expr Nerap 
+	|	literal
+	;
+		
+literal
+	:	IntegerLiteral
+	|	BinaryIntegerLiteral
+	|	HexIntegerLiteral
+	|	BigIntegerLiteral
+	|	FloatingPointLiteral
+	|	BigFloatingPointLiteral
+	|	TextLiteral
+	|	DateTimeLiteral
+	|	DateLiteral
+	|	TimeLiteral
+	|	True
+	|	False
+	|	Null
+	;
+
+
+path
+	:	PathLiteral
+	|	Key
+	|	'/'
+	;
+
+cardinality: Cardinality;
+
+WS  :  [ \t\r\n\u000C]+ -> skip
+	;
+
+COMMENT
+	:	'/*' .*? '*/' -> skip
+	;
+
+LINE_COMMENT
+	:	'//' ~[\r\n]* -> skip
+	;
+
+
+
+// P A T H
+
+PathLiteral
+	:	Children					// Children of root and children and root 
+	|	( '/' Key)+ Children?		// Absolute path
+	|	Key ( '/' Key)+ Children?	// Relative path
+	;
+
+fragment Children
+	:	'/@'		// Direct children of node
+	|	'/@@'		// Children and node
+	;
+
+
+// I D E N T I F I E R
+
 Key: [A-Za-z_][0-9A-Za-z_]* ;
 
-Cardinality
-	:	DecimalIntegerLiteral '..' (DecimalIntegerLiteral | '*')
+
+// T E X T
+
+TextLiteral
+	:	'"' TextCharacter*  '"'
 	;
 
-Exponent: ('e') '-'? [1-9] Digit* ;
-
-
-IntegerLiteral
-	:	DecimalIntegerLiteral
-	|	HexIntegerLiteral
-	|	BinaryIntegerLiteral
+fragment TextCharacter
+	:	~["\\]
+	|	EscapeSequence
 	;
 
-fragment HexIntegerLiteral
-	:	HexNumeral
+fragment EscapeSequence
+	:	'\\' [btnfr"\\]
+	|	UnicodeEscape
 	;
 
-fragment BinaryIntegerLiteral
-	:	BinaryNumeral
+fragment UnicodeEscape
+	:	'\\' 'u' HexDigit HexDigit HexDigit HexDigit
 	;
+	
 
-fragment DecimalIntegerLiteral
-	:	'0'
-	|	NonZeroDigit (Digits? | Underscores Digits)
-	;
-
-fragment Digits
-	:	Digit (DigitOrUnderscore* Digit)?
-	;
-
-fragment Digit
-	:	'0'
-	|	NonZeroDigit
-	;
-
-fragment NonZeroDigit
-	:	[1-9]
-	;
-
-fragment DigitOrUnderscore
-	:	Digit
-	|	'_'
-	;
-
-fragment Underscores
-	:	'_'+
-	;
-
-fragment HexNumeral
-	:	'0' [x] HexDigits
-	;
-
-fragment HexDigits
-	:	HexDigit (HexDigitOrUnderscore* HexDigit)?
-	;
-
-fragment HexDigit
-	:	[0-9a-fA-F]
-	;
-
-fragment HexDigitOrUnderscore
-	:	HexDigit
-	|	'_'
-	;
-
-fragment BinaryNumeral
-	:	'0' [bB] BinaryDigits
-	;
-
-fragment BinaryDigits
-	:	BinaryDigit (BinaryDigitOrUnderscore* BinaryDigit)?
-	;
-
-fragment BinaryDigit
-	:	[01]
-	;
-
-fragment BinaryDigitOrUnderscore
-	:	BinaryDigit
-	|	'_'
-	;
-
-FloatingPointLiteral
-	:	DecimalFloatingPointLiteral
-	|	HexadecimalFloatingPointLiteral
-	;
-
-BigDecimalLiteral
-	:	'0' [sS] DecimalFloatingPointLiteral
-	;
-
-fragment DecimalFloatingPointLiteral
-	:	Digits '.' Digits? ExponentPart?
-	|	'.' Digits ExponentPart?
-	|	Digits ExponentPart
-	;
-
-fragment ExponentPart
-	:	ExponentIndicator SignedInteger
-	;
-
-fragment ExponentIndicator
-	:	[eE]
-	;
-
-fragment SignedInteger
-	:	Sign? Digits
-	;
-
-fragment Sign
-	:	[+-]
-	;
-
-fragment HexadecimalFloatingPointLiteral
-	:	HexSignificand BinaryExponent
-	;
-
-fragment HexSignificand
-	:	HexNumeral '.'?
-	|	'0' [xX] HexDigits? '.' HexDigits
-	;
-
-fragment BinaryExponent
-	:	BinaryExponentIndicator SignedInteger
-	;
-
-fragment BinaryExponentIndicator
-	:	[pP]
-	;
-
-StringLiteral
-	:	'"' StringCharacter*  '"'
-	;
+// T E M P O R A L   C O N S T R U C T S
 
 DateTimeLiteral
 	:	'@' Date WS Time
-	|	'@' Date
-	|	'@' Time
+	;
+
+DateLiteral
+	:	'@' Date
+	;
+
+TimeLiteral
+	:	'@' Time
 	;
 
 // yyyy/mm/dd
@@ -294,22 +211,104 @@ fragment Time
 	:	Digit+ ':' Digit+ ( ':' Digit+ (':' Digit+)? )?
 	;
 
-fragment StringCharacter
-	:	~["\\]
-	|	EscapeSequence
+
+Cardinality
+	:	Integer '..' (Integer | '*')
 	;
 
-// Unused
-fragment SingleCharacter
-	:	~['\\]
+
+// F L O A T I N G   P O I N T S
+
+BigFloatingPointLiteral
+	:	Integer 'F'
+	|	Integer '.' Digit+ 'F'
+	|	Integer ('.' Digit+)? ExponentPart 'F'
 	;
 
-fragment EscapeSequence
-	:	'\\' [btnfr"'\\]
-	|	UnicodeEscape
+FloatingPointLiteral
+	:	Integer 'f'
+	|	Integer '.' Digit+ 'f'?
+	|	Integer ('.' Digit+)? ExponentPart 'f'?
 	;
 
-fragment UnicodeEscape
-	:	'\\' 'u' HexDigit HexDigit HexDigit HexDigit
+fragment ExponentPart
+	:	'e' SignedInteger
 	;
+
+fragment SignedInteger
+	:	'0'
+	|	Minus? Digits
+	;
+	
+// I N T E G E R S
+
+// Decimal
+
+BigIntegerLiteral
+	:	Integer 'Z'
+	;
+
+IntegerLiteral
+	:	Integer 'z'?
+	;
+
+fragment Integer
+	:	'0'
+	|	Digits
+	;
+
+fragment Digits
+	:	NonZeroDigit (DigitOrUnderscore* Digit)?
+	;
+
+fragment Digit
+	:	[0-9]
+	;
+
+fragment NonZeroDigit
+	:	[1-9]
+	;
+
+fragment DigitOrUnderscore
+	:	[0-9_]
+	;
+
+
+// Binary
+
+BinaryIntegerLiteral
+	:	'0b' BinaryDigits
+	;
+
+fragment BinaryDigits
+	:	BinaryDigit (BinaryDigitOrUnderscore* BinaryDigit)?
+	;
+
+fragment BinaryDigit
+	:	[01]
+	;
+
+fragment BinaryDigitOrUnderscore
+	:	[01_]
+	;
+
+
+// Hexadecimal
+
+HexIntegerLiteral
+	:	'0x' HexDigits
+	;
+
+fragment HexDigits
+	:	HexDigit (HexDigitOrUnderscore* HexDigit)?
+	;
+
+fragment HexDigitOrUnderscore
+	:	[0-9a-fA-F_]
+	;
+
+fragment HexDigit
+	:	[0-9a-fA-F]
+	;
+
 

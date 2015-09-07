@@ -167,16 +167,16 @@ public class ObjectRule extends Rule {
 						case text:
 							parameterType = String.class;
 							break;
-						case integer:
+						case z:
 							parameterType = Long.class;
 							break;
-						case INTEGER:
+						case Z:
 							parameterType = BigInteger.class;
 							break;
-						case decimal:
+						case f:
 							parameterType = Double.class;
 							break;
-						case DECIMAL:
+						case F:
 							parameterType = BigDecimal.class;
 							break;
 						case date:

@@ -1,8 +1,8 @@
 package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.exception.*;
-import com.inexas.oak.*;
+import com.inexas.exception.ImplementMeException;
+import com.inexas.oak.DataType;
 import com.inexas.util.Cardinality;
 
 public class ValuePairNode extends PairNode {
@@ -36,7 +36,7 @@ public class ValuePairNode extends PairNode {
 		} else if(clazz == PathNode.class) {
 			result = ((PathNode)node).toString();
 		} else {
-			throw new InexasRuntimeException("Invalid node type: " + clazz.getName()
+			throw new RuntimeException("Invalid node type: " + clazz.getName()
 					+ " for " + name);
 		}
 
@@ -48,7 +48,7 @@ public class ValuePairNode extends PairNode {
 		if(node.getClass() == PathNode.class) {
 			result = ((PathNode)node).path;
 		} else {
-			throw new InexasRuntimeException("Invalid node type: " + node.getClass().getName()
+			throw new RuntimeException("Invalid node type: " + node.getClass().getName()
 					+ " for " + name);
 		}
 		return result;
@@ -59,7 +59,7 @@ public class ValuePairNode extends PairNode {
 		if(node.getClass() == CardinalityNode.class) {
 			result = ((CardinalityNode)node).cardinality;
 		} else {
-			throw new InexasRuntimeException("Invalid node for cardinality: " + node.getClass().getName());
+			throw new RuntimeException("Invalid node for cardinality: " + node.getClass().getName());
 		}
 		return result;
 	}
@@ -84,20 +84,7 @@ public class ValuePairNode extends PairNode {
 			final ConstantNode constant = ((ExpressionNode)node).evaluate();
 			result = constant.getBooleanValue();
 		} else {
-			throw new InexasRuntimeException("Invalid node type: " + clazz.getName());
-		}
-
-		return result;
-	}
-
-	public Expression asExpression() {
-		final Expression result;
-
-		final Class<?> clazz = node.getClass();
-		if(clazz == ExpressionNode.class) {
-			result = new Expression((ExpressionNode)node);
-		} else {
-			throw new InexasRuntimeException("Invalid node type: " + clazz.getName());
+			throw new RuntimeException("Invalid node type: " + clazz.getName());
 		}
 
 		return result;
@@ -110,7 +97,7 @@ public class ValuePairNode extends PairNode {
 		if(clazz == ExpressionNode.class) {
 			result = (ExpressionNode)node;
 		} else {
-			throw new InexasRuntimeException("Invalid node type: " + clazz.getName());
+			throw new RuntimeException("Invalid node type: " + clazz.getName());
 		}
 
 		return result;
@@ -125,7 +112,7 @@ public class ValuePairNode extends PairNode {
 		} else if(clazz == ConstantNode.class) {
 			result = ((ConstantNode)node).getValue();
 		} else {
-			// !todo Implement me
+			// todo Implement me
 			throw new ImplementMeException();
 			// result = node.getValue();
 		}

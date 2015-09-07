@@ -2,8 +2,9 @@ package com.inexas.oak.ast;
 
 import java.math.BigDecimal;
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.DataType;
+import com.inexas.oak.advisory.Advisory;
+import com.inexas.tad.Context;
 
 public abstract class ExpressionNode extends Node {
 
@@ -18,7 +19,7 @@ public abstract class ExpressionNode extends Node {
 		public TypedNumber(Object object) {
 			number = (Number)object;
 			if(object instanceof Integer) {
-				type = DataType.integer;
+				type = DataType.z;
 			} else {
 				final String name = object == null ? "null" : object.getClass().getCanonicalName();
 				throw new RuntimeException("Not a valid number: " + name);
@@ -67,10 +68,16 @@ public abstract class ExpressionNode extends Node {
 	public abstract ConstantNode evaluate();
 
 	protected void throwInvalidTypes() {
-		throw new InexasRuntimeException("Invalid data types: " + toString());
+		throw new RuntimeException("Invalid data types: " + toString());
 	}
 
 	Object getValue() {
 		return evaluate().getValue();
 	}
+
+	protected void error(String message) {
+		final Advisory advisory = Context.get(Advisory.class);
+		advisory.error(this, message);
+	}
+
 }

@@ -8,13 +8,30 @@ import com.inexas.util.TextBuilder;
 
 public abstract class Node implements Locus {
 	protected Node parent;
+
 	protected ParserRuleContext context;
 
 	protected Node(ParserRuleContext context) {
 		this.context = context;
 	}
 
-	public abstract void accept(AstVisitor visitor);
+	/**
+	 * @return The parent Node.
+	 */
+	public Node getParent() {
+		return parent;
+	}
+
+	/**
+	 * @return Data type, null for objects
+	 */
+	public abstract DataType getType();
+
+	public String getPath() {
+		final TextBuilder result = new TextBuilder();
+		getPath(result);
+		return result.toString();
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -33,23 +50,14 @@ public abstract class Node implements Locus {
 		return context.start.getCharPositionInLine();
 	}
 
+	public abstract void accept(AstVisitor visitor);
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
 	public void setSourcePosition(int line, int column) throws NotImplementedException {
 		throw new NotImplementedException();
-	}
-
-	/**
-	 * @return Data type, null for objects
-	 */
-	public abstract DataType getType();
-
-	public String getPath() {
-		final TextBuilder result = new TextBuilder();
-		getPath(result);
-		return result.toString();
 	}
 
 	@Override

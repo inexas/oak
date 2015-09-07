@@ -1,12 +1,12 @@
 package com.inexas.oak.ast;
 
-import java.math.BigDecimal;
+import java.math.*;
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.exception.*;
-import com.inexas.oak.*;
+import com.inexas.exception.UnexpectedException;
+import com.inexas.oak.DataType;
 
 /**
- * Unary Plus '+', Minus '-', Logical Complement '~' or Not '!'.
+ * Unary Minus '-', Logical Complement '~' or Not '!'.
  *
  * Bitwise Complement '~' The type of the operand expression of the unary ~
  * operator must be a primitive integral type, or a compile-time error occurs.
@@ -14,7 +14,6 @@ import com.inexas.oak.*;
  * bitwise complement expression is the promoted type of the operand.
  */
 public class UnaryNode extends ExpressionNode {
-	// !todo UnaryExpression or UnaryExpressionNode
 	private final int operator;
 	private final ExpressionNode operand;
 	private final DataType type;
@@ -29,24 +28,20 @@ public class UnaryNode extends ExpressionNode {
 
 		switch(operator) {
 		case OakLexer.Minus:
-		case OakLexer.Plus:
-			if(!(type == DataType.integer || type == DataType.decimal || type == DataType.INTEGER)) {
-				throw new InexasRuntimeException("Invalid data type for +/- (should be numeric): "
-						+ type);
+			if(!type.numeric) {
+				error("Invalid data type, should be numeric: " + type);
 			}
 			break;
 
 		case OakLexer.Comp:
-			if(operand.getType() != DataType.integer) {
-				throw new InexasRuntimeException("Invalid data type for '~' (should be integer): "
-						+ type);
+			if(type != DataType.z) {
+				error("Invalid data type for '~' (should be integer): " + type);
 			}
 			break;
 
 		case OakLexer.Not:
-			if(operand.getType() != DataType.bool) {
-				throw new InexasRuntimeException("Invalid data type for '!' (should be boolean): "
-						+ type);
+			if(type != DataType.bool) {
+				error("Invalid data type for '!' (should be boolean): " + type);
 			}
 			break;
 
@@ -63,32 +58,44 @@ public class UnaryNode extends ExpressionNode {
 		final ConstantNode valueConstant = operand.evaluate();
 		final Object value = valueConstant.getValue();
 		switch(operator) {
-		case OakLexer.Plus:
-			result = valueConstant;
-			break;
-
 		case OakLexer.Minus:
 			switch(type) {
-			case integer:
+			case z:
 				result = new ConstantNode(context, -((Long)value).intValue());
 				break;
 
-			case decimal:
-				result = new ConstantNode(context, -((Number)value).doubleValue());
+			case Z:
+				result = new ConstantNode(context, ((BigInteger)value).negate());
 				break;
 
-			case INTEGER:
+			case f:
+				result = new ConstantNode(context, -((Number)value).doubleValue());
+				break;
+			case F:
 				result = new ConstantNode(context, ((BigDecimal)value).negate());
 				break;
 
-				// $CASES-OMITTED$
+			case any:
+			case bool:
+			case cardinality:
+			case date:
+			case datetime:
+			case identifier:
+			case path:
+			case text:
+			case time:
 			default:
 				throw new UnexpectedException("evaluate: " + type);
 			}
 			break;
 
 		case OakLexer.Comp:
-			result = new ConstantNode(context, ~((Long)value).intValue());
+			if(type == DataType.z) {
+				result = new ConstantNode(context, ~((Long)value).longValue());
+			} else {
+				// There's already an error in the advisory from the ctor
+				result = new ConstantNode(context, 0);
+			}
 			break;
 
 		case OakLexer.Not:

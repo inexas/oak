@@ -27,7 +27,6 @@ public class Documentation {
 	public static void processString() {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;");
-			oak.toAst();
 			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
@@ -40,7 +39,6 @@ public class Documentation {
 	public static void toStringExample() {
 		try {
 			final Oak oak = new Oak("meaningOfLife:42;");
-			oak.toAst();
 			final AstToStringVisitor toStringVisitor = new AstToStringVisitor(true);
 			oak.accept(toStringVisitor);
 			System.out.println(toStringVisitor.toString());
@@ -63,8 +61,8 @@ public class Documentation {
 
 			// Write and use the Java dialect files...
 			personDialect.write("srctest", "com.inexas.oak.examples");
-//			final Person john = personOak.toObjectTree(PersonDialect.class);
-//			System.out.println(john.toString());
+			// final Person john = personOak.toObjectTree(PersonDialect.class);
+			// System.out.println(john.toString());
 		} catch(final OakException e) {
 			System.out.println(e.getAdvisory());
 		}

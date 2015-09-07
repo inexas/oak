@@ -4,13 +4,13 @@ import java.math.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.Temporal;
-import java.util.Date;
 import org.antlr.v4.runtime.*;
 import org.apache.commons.lang3.StringEscapeUtils;
-import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
+import com.inexas.oak.ast.OakParser.LiteralContext;
 import com.inexas.tad.Context;
+import com.inexas.util.Cardinality;
 
 public class ConstantNode extends ExpressionNode {
 	public final static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("y/M/d");
@@ -20,164 +20,93 @@ public class ConstantNode extends ExpressionNode {
 	public final static DateTimeFormatter dateTimeFormatterSecs =
 			DateTimeFormatter.ofPattern("y/M/d HH:mm:ss");
 	public final DataType type;
-	private Object value;
+	private final Object value;
 
-	public static ConstantNode toIntegerConstant(ParserRuleContext context, String text) {
-
-		final ConstantNode result;
-
-		final String noUnderlines = text.replace("_", "");
-		if(noUnderlines.length() > 2 && noUnderlines.charAt(0) == '0') {
-			final String number = noUnderlines.substring(2);
-			switch(noUnderlines.charAt(1)) {
-			case 'b':
-				result = new ConstantNode(context, Long.parseLong(number, 2));
-				break;
-			case 'B':
-				result = new ConstantNode(context, new BigInteger(number, 2));
-				break;
-			case 'x':
-				result = new ConstantNode(context, Long.parseLong(number, 16));
-				break;
-			case 'X':
-				result = new ConstantNode(context, new BigInteger(number, 16));
-				break;
-			default:
-				result = new ConstantNode(context, new Long(noUnderlines));
-				break;
-			}
-		} else {
-			result = new ConstantNode(context, new Long(noUnderlines));
-		}
-
-		return result;
-	}
-
-	public static ConstantNode toDecimalConstant(ParserRuleContext context, String text) {
-		final ConstantNode result;
-
-		final String noUnderlines = text.replace("_", "");
-		result = new ConstantNode(context, new Double(noUnderlines));
-
-		return result;
-	}
-
-	public static Node toDate(ParserRuleContext context, String text) {
-
-		final boolean containsDate = text.indexOf('/') > 0;
-		int colonCount = 0;
-		final char[] ca = text.toCharArray();
-		for(final char c : ca) {
-			if(c == ':') {
-				colonCount++;
-			}
-		}
-
-		final Temporal temporal;
-		final DataType dataType;
-		if(containsDate) {
-			if(colonCount == 0) {
-				dataType = DataType.date;
-				temporal = LocalDate.parse(text, dateFormatter);
-			} else {
-				dataType = DataType.datetime;
-				if(colonCount == 1) {
-					temporal = LocalDateTime.parse(text, dateTimeFormatter);
-				} else if(colonCount == 2) {
-					temporal = LocalDateTime.parse(text, dateTimeFormatterSecs);
-				} else {
-					error(context, "Can't parse date/time: " + text);
-					temporal = null;
-				}
-			}
-		} else {
-			dataType = DataType.time;
-			if(colonCount == 1) {
-				temporal = LocalTime.parse(text, timeFormatter);
-			} else if(colonCount == 2) {
-				temporal = LocalTime.parse(text, timeFormatterSecs);
-			} else {
-				error(context, "Can't parse date/time: " + text);
-				temporal = null;
-			}
-		}
-
-		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, dataType);
-	}
-
-	/**
-	 * For null only
-	 *
-	 * @param context
-	 *            The current context.
-	 */
-	public ConstantNode(ParserRuleContext context) {
+	ConstantNode(ParserRuleContext context) {
 		super(context);
 		value = null;
 		type = DataType.any;
 	}
 
-	public ConstantNode(ParserRuleContext context, boolean b) {
+	ConstantNode(ParserRuleContext context, boolean b) {
 		super(context);
 		value = b ? Boolean.TRUE : Boolean.FALSE;
 		type = DataType.bool;
 	}
 
-	public ConstantNode(ParserRuleContext context, Boolean b) {
+	ConstantNode(ParserRuleContext context, Boolean b) {
 		super(context);
 		value = b;
 		type = DataType.bool;
 	}
 
-	public ConstantNode(ParserRuleContext context, long value) {
+	ConstantNode(ParserRuleContext context, long value) {
 		super(context);
 		this.value = new Long(value);
-		type = DataType.integer;
+		type = DataType.z;
 	}
 
-	public ConstantNode(ParserRuleContext context, Long value) {
+	ConstantNode(ParserRuleContext context, Long value) {
 		super(context);
 		this.value = value;
-		type = DataType.integer;
+		type = DataType.z;
 	}
 
-	public ConstantNode(ParserRuleContext context, double value) {
+	ConstantNode(ParserRuleContext context, double value) {
 		super(context);
 		this.value = new Double(value);
-		type = DataType.decimal;
+		type = DataType.f;
 	}
 
-	public ConstantNode(ParserRuleContext context, Double value) {
+	ConstantNode(ParserRuleContext context, Double value) {
 		super(context);
 		this.value = value;
-		type = DataType.decimal;
+		type = DataType.f;
 	}
 
-	public ConstantNode(ParserRuleContext context, BigInteger value) {
+	ConstantNode(ParserRuleContext context, BigInteger value) {
 		super(context);
 		this.value = value;
-		type = DataType.INTEGER;
+		type = DataType.Z;
 	}
 
-	public ConstantNode(ParserRuleContext context, BigDecimal value) {
+	ConstantNode(ParserRuleContext context, BigDecimal value) {
 		super(context);
 		this.value = value;
-		type = DataType.DECIMAL;
+		type = DataType.F;
 	}
 
-	public ConstantNode(ParserRuleContext context, String value) {
+	ConstantNode(ParserRuleContext context, String value) {
 		super(context);
 		this.value = StringEscapeUtils.unescapeJava(value);
 		type = DataType.text;
 	}
 
-	public ConstantNode(ParserRuleContext context, Date value) {
+	ConstantNode(ParserRuleContext context, LocalDateTime value) {
+		super(context);
+		this.value = value;
+		type = DataType.datetime;
+	}
+
+	ConstantNode(ParserRuleContext context, LocalDate value) {
+		super(context);
+		this.value = value;
+		type = DataType.date;
+	}
+
+	ConstantNode(ParserRuleContext context, LocalTime value) {
+		super(context);
+		this.value = value;
+		type = DataType.time;
+	}
+
+	ConstantNode(ParserRuleContext context, Cardinality value) {
 		super(context);
 		this.value = value;
 		type = DataType.text;
 	}
 
-	public ConstantNode(ParserRuleContext context, Temporal value, DataType type) {
+	private ConstantNode(ParserRuleContext context, Temporal value, DataType type) {
 		super(context);
 		this.value = value;
 		this.type = type;
@@ -188,24 +117,6 @@ public class ConstantNode extends ExpressionNode {
 		return type;
 	}
 
-	public void coerce(DataType expectedType) {
-		if(type.isNumeric && type != expectedType) {
-			if(expectedType == DataType.decimal) {
-				value = new Double(((Integer)value).intValue());
-			} else if(expectedType == DataType.INTEGER) {
-				if(type == DataType.integer) {
-					value = new BigDecimal(((Integer)value).intValue());
-				} else if(type == DataType.decimal) {
-					value = new BigDecimal(((Double)value).doubleValue());
-				} else {
-					throw new UnexpectedException("Coerce  " + type + " to " + expectedType);
-				}
-			} else {
-				throw new UnexpectedException("Coerce  " + type + " to " + expectedType);
-			}
-		}
-	}
-
 	@Override
 	public boolean isStatic() {
 		return true;
@@ -214,13 +125,6 @@ public class ConstantNode extends ExpressionNode {
 	@Override
 	public ConstantNode evaluate() {
 		return this;
-	}
-
-	public static ConstantNode toPrecisionConstant(ParserRuleContext context, String text) {
-		final ConstantNode result;
-		final String noUnderlines = text.replace("_", "");
-		result = new ConstantNode(context, new BigDecimal(noUnderlines.substring(2)));
-		return result;
 	}
 
 	@Override
@@ -274,9 +178,20 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
+	public Cardinality getCardinality() {
+		final Cardinality result;
+		if(type == DataType.cardinality) {
+			result = (Cardinality)value;
+		} else {
+			error("Wrong data type. Expected cardinality but is: " + type);
+			result = null;
+		}
+		return result;
+	}
+
 	public Integer getInteger() {
 		final Integer result;
-		if(type == DataType.integer) {
+		if(type == DataType.z) {
 			result = (Integer)value;
 		} else {
 			error("Wrong data type. Expected integer but is: " + type);
@@ -287,7 +202,7 @@ public class ConstantNode extends ExpressionNode {
 
 	public BigInteger getBigInteger() {
 		final BigInteger result;
-		if(type == DataType.INTEGER) {
+		if(type == DataType.Z) {
 			result = (BigInteger)value;
 		} else {
 			error("Wrong data type. Expected INTEGER but is: " + type);
@@ -296,9 +211,9 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public Double getDecimal() {
+	public Double getFloat() {
 		final Double result;
-		if(type == DataType.integer) {
+		if(type == DataType.z) {
 			result = (Double)value;
 		} else {
 			error("Wrong data type. Expected decimal but is: " + type);
@@ -307,9 +222,9 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public BigInteger getBigDecimal() {
+	public BigInteger getBigFloat() {
 		final BigInteger result;
-		if(type == DataType.DECIMAL) {
+		if(type == DataType.F) {
 			result = (BigInteger)value;
 		} else {
 			error("Wrong data type. Expected INTEGER but is: " + type);
@@ -318,10 +233,21 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public Date getDatetime() {
-		final Date result;
+	public String getString() {
+		final String result;
+		if(type == DataType.text || type == DataType.identifier || type == DataType.path) {
+			result = (String)value;
+		} else {
+			error("Wrong data type. Expected String but is: " + type);
+			result = null;
+		}
+		return result;
+	}
+
+	public LocalDateTime getDatetime() {
+		final LocalDateTime result;
 		if(type == DataType.datetime) {
-			result = (Date)value;
+			result = (LocalDateTime)value;
 		} else {
 			error("Wrong data type. Expected datetime but is: " + type);
 			result = null;
@@ -329,10 +255,10 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public Date getDate() {
-		final Date result;
+	public LocalDate getDate() {
+		final LocalDate result;
 		if(type == DataType.date) {
-			result = (Date)value;
+			result = (LocalDate)value;
 		} else {
 			error("Wrong data type. Expected date but is: " + type);
 			result = null;
@@ -340,10 +266,10 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public Date getTime() {
-		final Date result;
+	public LocalTime getTime() {
+		final LocalTime result;
 		if(type == DataType.time) {
-			result = (Date)value;
+			result = (LocalTime)value;
 		} else {
 			error("Wrong data type. Expected time but is: " + type);
 			result = null;
@@ -362,11 +288,132 @@ public class ConstantNode extends ExpressionNode {
 		advisory.error(token.getStartIndex(), token.getCharPositionInLine(), message);
 	}
 
-	/**
-	 * @param string
-	 */
-	private void error(String message) {
-		final Advisory advisory = Context.get(Advisory.class);
-		advisory.error(this, message);
+	public static Node toIntegerConstant(LiteralContext context, String text) {
+		// todo Check to see if we have to remove underlines
+		final String noUnderlines = text.replace("_", "");
+		final String noPostfix = removeOptionalPostFix(noUnderlines, 'z');
+		// todo Check for negative, check for too big perhaps parse to BigInt?
+		return new ConstantNode(context, new Long(noPostfix));
 	}
+
+	public static Node toBinaryIntegerConstant(LiteralContext context, String text) {
+		final String noUnderlines = text.replace("_", "");
+		final String noPrefix = noUnderlines.substring(2);
+		// todo Check for negative, check for too big perhaps parse to BigInt?
+		return new ConstantNode(context, Long.parseLong(noPrefix, 2));
+	}
+
+	public static Node toHexIntegerConstant(LiteralContext context, String text) {
+		final String noUnderlines = text.replace("_", "");
+		final String noPrefix = noUnderlines.substring(2);
+		// todo Check for negative, check for too big perhaps parse to BigInt?
+		return new ConstantNode(context, Long.parseLong(noPrefix, 16));
+	}
+
+	public static Node toBigIntegerConstant(LiteralContext context, String text) {
+		final String noUnderlines = text.replace("_", "");
+		final String noPostfix = removeOptionalPostFix(noUnderlines, 'Z');
+		return new ConstantNode(context, new BigInteger(noPostfix));
+	}
+
+	public static Node toFloatingPointConstant(LiteralContext context, String text) {
+		final String noUnderlines = text.replace("_", "");
+		final String noPostfix = removeOptionalPostFix(noUnderlines, 'f');
+		// todo Check for too big perhaps parse to BigDec?
+		return new ConstantNode(context, Double.parseDouble(noPostfix));
+	}
+
+	public static Node toBigFloatingPointConstant(LiteralContext context, String text) {
+		final String noUnderlines = text.replace("_", "");
+		final String noPostfix = removeOptionalPostFix(noUnderlines, 'F');
+		// todo Check for too big perhaps parse to BigDec?
+		return new ConstantNode(context, Double.parseDouble(noPostfix));
+	}
+
+	public static Node toTextConstant(LiteralContext context, String text) {
+		return new ConstantNode(context, text);
+	}
+
+	public static Node toDate(LiteralContext context, String text) {
+		final Temporal temporal = LocalDate.parse(text, dateFormatter);
+		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, DataType.date);
+	}
+
+	public static Node toTime(LiteralContext context, String text) {
+		final Temporal temporal;
+
+		int colonCount = 0;
+		final char[] ca = text.toCharArray();
+		for(final char c : ca) {
+			if(c == ':') {
+				colonCount++;
+			}
+		}
+		if(colonCount == 1) {
+			temporal = LocalTime.parse(text, timeFormatter);
+		} else if(colonCount == 2) {
+			temporal = LocalTime.parse(text, timeFormatterSecs);
+		} else {
+			error(context, "Can't parse date/time: " + text);
+			temporal = null;
+		}
+
+		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, DataType.time);
+	}
+
+	public static Node toDateTime(LiteralContext context, String text) {
+		// todo Simplify this using toDate and toTime
+		final boolean containsDate = text.indexOf('/') > 0;
+		int colonCount = 0;
+		final char[] ca = text.toCharArray();
+		for(final char c : ca) {
+			if(c == ':') {
+				colonCount++;
+			}
+		}
+
+		final Temporal temporal;
+		final DataType dataType;
+		if(containsDate) {
+			if(colonCount == 0) {
+				dataType = DataType.date;
+				temporal = LocalDate.parse(text, dateFormatter);
+			} else {
+				dataType = DataType.datetime;
+				if(colonCount == 1) {
+					temporal = LocalDateTime.parse(text, dateTimeFormatter);
+				} else if(colonCount == 2) {
+					temporal = LocalDateTime.parse(text, dateTimeFormatterSecs);
+				} else {
+					error(context, "Can't parse date/time: " + text);
+					temporal = null;
+				}
+			}
+		} else {
+			dataType = DataType.time;
+			if(colonCount == 1) {
+				temporal = LocalTime.parse(text, timeFormatter);
+			} else if(colonCount == 2) {
+				temporal = LocalTime.parse(text, timeFormatterSecs);
+			} else {
+				error(context, "Can't parse date/time: " + text);
+				temporal = null;
+			}
+		}
+
+		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, dataType);
+
+	}
+
+	private static String removeOptionalPostFix(String string, char postFix) {
+		final String result;
+		final int index = string.length() - 1;
+		if(string.charAt(index) == postFix) {
+			result = string.substring(0, index);
+		} else {
+			result = string;
+		}
+		return result;
+	}
+
 }

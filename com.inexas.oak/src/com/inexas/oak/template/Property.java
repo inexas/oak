@@ -20,19 +20,7 @@ public class Property extends Locus.Base implements Keyed {
 
 	public Property(String key, String type, Constraint[] constraints) {
 		this.key = key;
-		if("expression".equals(type)) {
-			this.type = DataType.any;
-		} else if("boolean".equals(type)) {
-			this.type = DataType.bool;
-		} else {
-			try {
-				// Default type is text
-				this.type = type == null ? DataType.text : DataType.valueOf(type);
-			} catch(final IllegalArgumentException e) {
-				// !todo Implement me
-				throw new ImplementMeException("Invalid data type: " + type);
-			}
-		}
+		this.type = type == null ? DataType.text : DataType.get(type);
 		this.constraints = constraints;
 	}
 
@@ -61,7 +49,7 @@ public class Property extends Locus.Base implements Keyed {
 				try {
 					constraint.accept(visitor);
 				} catch(final Exception e) {
-					// !todo Implement me
+					// todo Implement me
 					throw new ImplementMeException();
 				}
 			}

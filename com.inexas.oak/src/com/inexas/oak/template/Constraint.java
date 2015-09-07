@@ -2,7 +2,7 @@ package com.inexas.oak.template;
 
 import java.time.*;
 import java.util.*;
-import com.inexas.exception.InexasRuntimeException;
+
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.*;
@@ -149,9 +149,9 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 				switch(dataType) {
 				case bool:
 				case cardinality:
-				case decimal:
-				case integer:
-				case INTEGER:
+				case f:
+				case z:
+				case Z:
 				case identifier:
 				case path:
 					tb.append(value.toString());
@@ -177,7 +177,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 
 					// $CASES-OMITTED$
 				default:
-					throw new InexasRuntimeException("Type: " + dataType);
+					throw new RuntimeException("Type: " + dataType);
 				}
 			}
 		}

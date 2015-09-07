@@ -59,7 +59,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				}
 			} else {
 				if(state.relation == null) {
-					relation = getBestGuess(context);
+					relation = getBestGuess(node, context);
 				} else {
 					relation = state.getChildRelation(node, context);
 				}
@@ -132,7 +132,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 							error(node, "Key already defined in this map: " + key);
 						}
 					} catch(final ClassCastException e) {
-						// !todo Implement me
+						// todo Implement me
 						throw new ImplementMeException(child.getClass().getName()
 								+ " must implement Keyed if it is to be used in a map");
 					}
@@ -198,7 +198,6 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			final Object result;
 
 			final String name = node.getName();
-			// !todo Need to check this
 			final PropertyRule propertyRule = (PropertyRule)relation.subject;
 			if(propertyRule == null) {
 				error(node, "Invalid property: " + name + " in " + context);
@@ -220,7 +219,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					result = node.asString();
 					break;
 
-				case integer:
+				case z:
 					result = node.asInteger();
 					break;
 
@@ -235,11 +234,11 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				case date:
 				case time:
 				case datetime:
-				case decimal:
-				case INTEGER:
-					// $CASES-OMITTED$
+				case f:
+				case F:
+				case Z:
 				default:
-					// !todo Implement me
+					// todo Implement me
 					throw new ImplementMeException(propertyRule.dataType.name());
 				}
 			}
@@ -326,9 +325,23 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		 * @param relationName
 		 * @return The best guess relationName
 		 */
-		private Relationship getBestGuess(String relationName) {
+		private Relationship getBestGuess(Node node, String name) {
+			final Relationship result;
+
 			// todo Implement something that makes sense
-			return null;
+			if(relation != null && relation.subjectIsObject) {
+				final ObjectRule object = (ObjectRule)relation.subject;
+				result = object.getRelationship(name);
+			} else {
+				result = null;
+			}
+			if(result == null) {
+				error(
+						node,
+						"'" + name + "' is not a valid child, expecting: " + getExpected());
+			}
+
+			return result;
 		}
 
 	}
@@ -355,7 +368,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 							Cardinality.ONE_ONE,
 							CollectionType.singleton);
 					if(rootMap.put(objectRule.key, relation) != null) {
-						throw new InexasRuntimeException("Two root objects with same name");
+						throw new RuntimeException("Two root objects with same name");
 					}
 				}
 			}
@@ -394,7 +407,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 						}
 					}
 				} catch(final Exception e) {
-					throw new InexasRuntimeException("Checker error", e);
+					throw new RuntimeException("Checker error", e);
 				}
 			}
 		}
@@ -536,36 +549,44 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			case identifier:
 				value = node.getIdentifierValue();
 				break;
-
 			case path:
 				value = node.getPathValue();
 				break;
-
 			case text:
 				value = node.getTextValue();
 				break;
-
-			case INTEGER:
-				value = node.getBigInteger();
-				break;
-
-			case integer:
+			case z:
 				value = node.getInteger();
 				break;
-
+			case Z:
+				value = node.getBigInteger();
+				break;
+			case f:
+				value = node.getFloat();
+				break;
+			case F:
+				value = node.getBigFloat();
+				break;
 			case bool:
 				value = node.getBooleanValue();
 				break;
-
+			case cardinality:
+				value = node.getCardinality();
+				break;
+			case datetime:
+				value = node.getDatetime();
+				break;
+			case date:
+				value = node.getDate();
+				break;
+			case time:
+				value = node.getTime();
+				break;
 			case any:
 				value = node.getValue();
 				break;
-
-			// $CASES-OMITTED$
 			default:
-				// !todo React to bad types
-				// !todo Implement default and other values
-				throw new ImplementMeException();
+				throw new UnexpectedException("visit: " + rule.dataType);
 			}
 			state.add(node, state.relation, value);
 		}
@@ -579,14 +600,10 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		if(!state.seenError) {
 			final PropertyRule rule = (PropertyRule)state.relation.subject;
 			final Object value;
-			switch(rule.dataType) {
-			case cardinality:
+			if(rule.dataType == DataType.cardinality) {
 				value = node.cardinality;
-				break;
-
-			// $CASES-OMITTED$
-			default:
-				// !todo React to bad types
+			} else {
+				// todo Implement me
 				throw new ImplementMeException();
 			}
 			state.add(node, state.relation, value);

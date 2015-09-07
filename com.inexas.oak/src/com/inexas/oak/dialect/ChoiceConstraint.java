@@ -108,23 +108,23 @@ public class ChoiceConstraint extends Constraint {
 			expectedClass = String.class;
 			break;
 
-		case integer:
-			expected = DataType.integer.toString();
+		case z:
+			expected = DataType.z.toString();
 			expectedClass = Long.class;
 			break;
 
-		case INTEGER:
-			expected = DataType.INTEGER.toString();
+		case Z:
+			expected = DataType.Z.toString();
 			expectedClass = BigInteger.class;
 			break;
 
-		case decimal:
-			expected = DataType.decimal.toString();
+		case f:
+			expected = DataType.f.toString();
 			expectedClass = Double.class;
 			break;
 
-		case DECIMAL:
-			expected = DataType.INTEGER.toString();
+		case F:
+			expected = DataType.Z.toString();
 			expectedClass = BigDecimal.class;
 			break;
 

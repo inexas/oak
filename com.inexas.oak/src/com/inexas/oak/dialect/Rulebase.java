@@ -13,7 +13,6 @@ package com.inexas.oak.dialect;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
-import com.inexas.exception.InexasRuntimeException;
 import com.inexas.oak.template.Constraint;
 import com.inexas.util.*;
 
@@ -22,15 +21,13 @@ public class Rulebase {
 	public final ObjectRule[] rules;
 	private final Date now = new Date();
 
-	// private List<String> visitorsList;
-
 	public Rulebase(String name, ObjectRule[] rules) {
 		this.name = name;
 		this.rules = rules;
 		Arrays.sort(rules);
 	}
 
-	// !todo Move this out of here
+	// todo Move this out of here
 	/**
 	 * Convert the Dialog AST to a file. {@inheritDoc}
 	 */
@@ -47,6 +44,7 @@ public class Rulebase {
 		tb.append("package ");
 		tb.append(packageName);
 		tb.append(';');
+		tb.newline();
 		tb.newline();
 
 		tb.writeline("import static com.inexas.oak.dialect.CollectionType.*;");
@@ -86,6 +84,7 @@ public class Rulebase {
 		tb.indent();
 		tb.append(name);
 		tb.append("Dialect.rulebase = new Rulebase(\"Dialect\", rules);");
+		tb.newline();
 		tb.indentLess();
 		tb.writeline("}");
 		tb.newline();
@@ -394,22 +393,22 @@ public class Rulebase {
 
 		final File sourceFile = new File(sourceDirectory);
 		if(!sourceFile.isDirectory()) {
-			throw new InexasRuntimeException("Source directory does not exist: " + sourceDirectory);
+			throw new RuntimeException("Source directory does not exist: " + sourceDirectory);
 		}
 		final File file = new File(fileDirectory);
 		if(file.isDirectory()) {
 			// OK
 		} else if(file.exists()) {
-			throw new InexasRuntimeException("Cannot create: " + fileDirectory);
+			throw new RuntimeException("Cannot create: " + fileDirectory);
 		} else {
 			if(!file.mkdirs()) {
-				throw new InexasRuntimeException("Cannot create: " + fileDirectory);
+				throw new RuntimeException("Cannot create: " + fileDirectory);
 			}
 		}
 		try(final FileWriter writer = new FileWriter(path, false)) {
 			writer.write(text);
 		} catch(final IOException e) {
-			throw new InexasRuntimeException("Error writing: " + sourceDirectory, e);
+			throw new RuntimeException("Error writing: " + sourceDirectory, e);
 		}
 	}
 
