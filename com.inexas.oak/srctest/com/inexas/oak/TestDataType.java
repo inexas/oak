@@ -95,9 +95,13 @@ public class TestDataType {
 		final List<Object> list = new ArrayList<>();
 		// value() is private (and should be)
 		try {
-			final Method method = DataType.class.getDeclaredMethod("value", tb.getClass(), List.class);
+			final Method method = DataType.class.getDeclaredMethod(
+					"value",
+					tb.getClass(),
+					DataType.class,
+					List.class);
 			method.setAccessible(true);
-			final Boolean result = (Boolean)method.invoke(null, tb, list);
+			final Boolean result = (Boolean)method.invoke(null, tb, DataType.any, list);
 
 			if(expectedResult) {
 				assertTrue(result.booleanValue());
@@ -119,10 +123,58 @@ public class TestDataType {
 		tb.append(toTest);
 		// date() is private (and should be)
 		try {
-			final Method method = DataType.class.getDeclaredMethod(methodName, tb.getClass());
+			final Method method = DataType.class.getDeclaredMethod(methodName, TextBuilder.class);
 			method.setAccessible(true);
 			final Object result = method.invoke(null, tb);
 			assertEquals(expectedResult, result);
+		} catch(final InvocationTargetException e) {
+			throw (RuntimeException)e.getCause();
+		} catch(final Exception e) {
+			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+			fail();
+		}
+	}
+
+	private void doCardinalityTest(Cardinality expected, String toTest) {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(toTest);
+		try {
+			// private static boolean cardinality(TextBuilder, List<Object>
+			// valueList)
+			final Method method = DataType.class.getDeclaredMethod(
+					"cardinality",
+					TextBuilder.class,
+					List.class);
+			method.setAccessible(true);
+			final List<Object> list = new ArrayList<>();
+			final Boolean result = (Boolean)method.invoke(null, tb, list);
+			assertTrue(result.booleanValue());
+			assertEquals(expected, list.get(0));
+		} catch(final InvocationTargetException e) {
+			throw (RuntimeException)e.getCause();
+		} catch(final Exception e) {
+			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+			fail();
+		}
+	}
+
+	private void doNumberTest(Object expected, DataType type, String toTest) {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(toTest);
+		// number() is private (and should be)
+		try {
+			// private static Object number(TextBuilder)
+			final Method method = DataType.class.getDeclaredMethod(
+					"number",
+					TextBuilder.class,
+					DataType.class,
+					List.class);
+			method.setAccessible(true);
+			final List<Object> list = new ArrayList<>();
+			final Boolean result = (Boolean)method.invoke(null, tb, type, list);
+			assertTrue(result.booleanValue());
+			assertEquals(expected, list.get(0));
+			assertEquals(toTest.length(), tb.cursor());
 		} catch(final InvocationTargetException e) {
 			throw (RuntimeException)e.getCause();
 		} catch(final Exception e) {
@@ -278,11 +330,7 @@ public class TestDataType {
 		doValueTest(false, "", "");
 		doValueTest(true, Path.parse("`path`"), "`path`"); // Path
 		doValueTest(true, "\"ab\\nc\"", "\"ab\\nc\""); // Text
-	}
-
-	@Test(expected = ParsingException.class)
-	public void testValueError1() {
-		doValueTest(true, "", "\"abc");
+		doValueTest(false, "", "\"abc");
 	}
 
 	@Test
@@ -299,48 +347,63 @@ public class TestDataType {
 
 	@Test
 	public void testNumbers() {
-		doNumberTest(new Long(0), "0");
-		doNumberTest(new Long(123), "123");
-		doNumberTest(new Long(-123), "-123");
-		doNumberTest(new Long(123), "123z");
+		doNumberTest(new Long(0), DataType.any, "0");
+		doNumberTest(new Long(123), DataType.any, "123");
+		doNumberTest(new Long(-123), DataType.any, "-123");
+		doNumberTest(new Long(123), DataType.any, "123z");
 
-		doNumberTest(new Long(4), "0b100");
-		doNumberTest(new Long(17), "0x11");
-		doNumberTest(new Long(634799), "0x09afAF");
+		doNumberTest(new Long(4), DataType.any, "0b100");
+		doNumberTest(new Long(17), DataType.any, "0x11");
+		doNumberTest(new Long(634799), DataType.any, "0x09afAF");
 
-		doNumberTest(new BigInteger("123"), "123Z");
-		doNumberTest(new BigInteger("-123"), "-123Z");
+		doNumberTest(new BigInteger("123"), DataType.any, "123Z");
+		doNumberTest(new BigInteger("-123"), DataType.any, "-123Z");
 
-		doNumberTest(new Double(0), "0.0");
-		doNumberTest(new Double(200), "2e2");
-		doNumberTest(new Double(-0.02), "-2e-2");
-		doNumberTest(new Double(0.3), ".3");
-		doNumberTest(new Double(-.3), "-.3");
-		doNumberTest(new Double(1.23), "1.23f");
+		doNumberTest(new Double(0), DataType.any, "0.0");
+		doNumberTest(new Double(200), DataType.any, "2e2");
+		doNumberTest(new Double(-0.02), DataType.any, "-2e-2");
+		doNumberTest(new Double(0.3), DataType.any, ".3");
+		doNumberTest(new Double(-.3), DataType.any, "-.3");
+		doNumberTest(new Double(1.23), DataType.any, "1.23f");
 
-		doNumberTest(new BigDecimal(0.5), "0.5F");
+		doNumberTest(new BigDecimal(0.5), DataType.any, "0.5F");
 
-		doNumberTest(Cardinality.ZERO_MANY, "*");
-		doNumberTest(Cardinality.ONE_MANY, "1..*");
-		doNumberTest(Cardinality.newInstance("3..4"), "3..4");
+		doNumberTest(new Long(0), DataType.z, "0");
+		doNumberTest(new BigInteger("0"), DataType.Z, "0");
+		doNumberTest(new Double(0), DataType.f, "0");
+		doNumberTest(new BigDecimal(0), DataType.F, "0");
 	}
 
-	private void doNumberTest(Object expected, String toTest) {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(toTest);
-		// number() is private (and should be)
-		try {
-			// private static Object number(TextBuilder)
-			final Method method = DataType.class.getDeclaredMethod("number", tb.getClass());
-			method.setAccessible(true);
-			final Object result = method.invoke(null, tb);
-			assertEquals(expected, result);
-			assertEquals(toTest.length(), tb.cursor());
-		} catch(final InvocationTargetException e) {
-			throw (RuntimeException)e.getCause();
-		} catch(final Exception e) {
-			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
-			fail();
-		}
+	@Test
+	public void testCardinality() {
+		doCardinalityTest(Cardinality.ZERO_MANY, "*");
+		doCardinalityTest(Cardinality.ONE_MANY, "1..*");
+		doCardinalityTest(Cardinality.newInstance("3..4"), "3..4");
+	}
+
+	@Test
+	public void testKeywords() {
+		doValueTest(true, null, "null");
+		doValueTest(true, Boolean.TRUE, "true");
+		doValueTest(true, Boolean.FALSE, "false");
+	}
+
+	@Test
+	public void testArray() {
+		assertArrayEquals(
+				new Object[] { Boolean.TRUE, Boolean.FALSE, null },
+				DataType.parseArray("[ true, false, null ]", DataType.bool));
+		assertArrayEquals(
+				new Object[] {},
+				DataType.parseArray("[ ]", DataType.z));
+		assertArrayEquals(
+				new Object[] { new Long(1), new Long(2) },
+				DataType.parseArray("[1,2]", DataType.z));
+		assertArrayEquals(
+				new Object[] { new BigDecimal(1), new BigDecimal(2) },
+				DataType.parseArray("[1,2F]", DataType.F));
+		assertArrayEquals(
+				new Object[] { "\"abc\"", new Long(1), new BigInteger("2"), null },
+				DataType.parseArray("[\"abc\", 1, 2Z, null]", DataType.any));
 	}
 }

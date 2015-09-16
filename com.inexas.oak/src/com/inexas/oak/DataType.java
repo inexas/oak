@@ -234,6 +234,7 @@ public enum DataType {
 	 *             Thrown only on narrowing value conversions, e.g from a
 	 *             BigInteger to an Integer.
 	 */
+	@Nullable
 	public static <T> T convert(Object value, Class<?> to) throws TypeMismatchException, OverflowException {
 		final Object result;
 
@@ -757,33 +758,35 @@ public enum DataType {
 	 * @param string
 	 *            A string representation of an Oak property array, e.g. [ true,
 	 *            null, false ]
+	 * @param type
+	 *            The type of the array, may be 'any'.
 	 * @return A potentially empty but not null list of values.
 	 */
-	public static List<?> parseArray(String string) {
+	public static Object[] parseArray(String string, DataType type) {
 		final List<?> result;
 
 		final TextBuilder tb = new TextBuilder();
 		tb.append(string);
 		if(tb.consume('[')
-				&& (result = elementList(tb)) != null
-				&& tb.consume(']')
+				&& (result = elementList(tb, type)) != null
+				&& (tb.ws() && tb.consume(']'))
 				&& tb.isEof()) {
 			// OK
 		} else {
 			throw new ParsingException("Invalid array: " + string);
 		}
 
-		return result;
+		return result.toArray(new Object[result.size()]);
 	}
 
-	private static List<Object> elementList(TextBuilder tb) {
+	private static List<Object> elementList(TextBuilder tb, DataType type) {
 		final List<Object> result = new ArrayList<>();
 
 		// elementList: ( WS? value ( WS? ',' WS? value )* WS? )?
-		if(tb.ws() && value(tb, result)) {
+		if(tb.ws() && value(tb, type, result)) {
 			while(true) {
 				final int save = tb.cursor();
-				if(tb.ws() && tb.consume(',') && tb.ws() && value(tb, result)) {
+				if(tb.ws() && tb.consume(',') && tb.ws() && value(tb, type, result)) {
 					continue;
 				}
 				tb.setCursor(save);
@@ -799,15 +802,76 @@ public enum DataType {
 	 *
 	 * @param tb
 	 *            Source.
+	 * @param type
+	 *            The type of the array, may be any..
 	 * @param valueList
 	 *            Result added here.
 	 * @return Return true if a value has been added to the valueList and the
 	 *         cursor advanced or false and the cursor is as it was.
 	 */
-	private static boolean value(TextBuilder tb, List<Object> valueList) {
+	private static boolean value(TextBuilder tb, DataType type, List<Object> valueList) {
 		boolean result;
 
-		final int save = tb.cursor();
+		if(tb.isEof()) {
+			result = false;
+		} else if(tb.consume("null")) {
+			valueList.add(null);
+			result = true;
+		} else {
+			switch(type) {
+			case z:
+			case Z:
+			case f:
+			case F:
+				result = number(tb, type, valueList);
+				break;
+
+			case text:
+				result = text(tb, valueList);
+				break;
+
+			case identifier:
+				result = identifier(tb, valueList);
+				break;
+
+			case path:
+				result = path(tb, valueList);
+				break;
+
+			case datetime:
+				result = datetime(tb, valueList);
+				break;
+
+			case date:
+				result = date(tb, valueList);
+				break;
+
+			case time:
+				result = time(tb, valueList);
+				break;
+
+			case bool:
+				result = bool(tb, valueList);
+				break;
+
+			case cardinality:
+				result = cardinality(tb, valueList);
+				break;
+
+			case any:
+				result = any(tb, valueList);
+				break;
+
+			default:
+				throw new UnexpectedException("value: " + type);
+			}
+		}
+
+		return result;
+	}
+
+	private static boolean any(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
 
 		// value
 		// : Text
@@ -820,105 +884,59 @@ public enum DataType {
 		// | Cardinality
 		// ;
 
-		if(tb.isEof()) {
-			result = false;
+		/*
+		 * Try and parse a value, we don't know the type so use the first
+		 * character as an indicator to jump to the right type.
+		 * 
+		 * We know we're not EOF and "null" has been dealt with by the caller.
+		 */
+		final char c = tb.peek();
+		if(c == '"') { // Text
+			result = text(tb, valueList);
+		} else if(c == '`') { // Path
+			result = path(tb, valueList);
+		} else if(c == '@') { // Temporal
+			result = datetime(tb, valueList) // Must be first
+					|| date(tb, valueList)
+					|| time(tb, valueList);
+		} else if(c >= '0' && c <= '9' || c == '.' || c == '-') {
+			result = cardinality(tb, valueList) ||
+					number(tb, DataType.any, valueList);
 		} else {
-			result = true;
-			final char c = tb.peek();
-			if(c == '"') { // Text
-				if(tb.consumeString()) {
-					final String textValue = tb.getString(save);
-					valueList.add(textValue);
-				} else {
-					throw new ParsingException("Unterminated string");
-				}
-			} else if(c == '`') { // Path
-				final Path pathValue = Path.parse(tb);
-				if(pathValue != null) {
-					valueList.add(pathValue);
-				} else {
-					result = false;
-				}
-			} else if(c == '@') { // Temporal
-				final Temporal temporal = temporal(tb);
-				if(temporal != null) {
-					valueList.add(temporal);
-				} else {
-					result = false;
-				}
-			} else if(c >= '0' && c <= '9' || c == '.' || c == '-') {
-				final Object number = number(tb);
-				if(number != null) {
-					valueList.add(number);
-				} else {
-					result = false;
-				}
-			} else {
-				final int start = tb.cursor();
-				if(Identifier.consume(tb)) {
-					final String token = tb.getString(start);
-					if(token.equals("null")) {
-						valueList.add(null);
-					} else if(token.equals("true")) {
-						valueList.add(Boolean.TRUE);
-					} else if(token.equals("false")) {
-						valueList.add(Boolean.FALSE);
-					} else {
-						valueList.add(token); // Identifier
-					}
-				} else {
-					result = false;
-				}
-			}
-
-			if(result == false) {
-				tb.setCursor(save);
-			}
+			result = bool(tb, valueList) // Must be first
+					|| identifier(tb, valueList);
 		}
 
 		return result;
 	}
 
-	/**
-	 * There's a bug in this as it requires seconds in the string whereas the
-	 * time() function does not. It seems to be in the Java parser.
-	 *
-	 * @param tb
-	 *            Source to parse.
-	 * @return A Temporal or null if none found.
-	 */
-	@Nullable
-	private static Temporal temporal(TextBuilder tb) {
-		Temporal result;
+	private static boolean datetime(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
 
-		final int save = tb.cursor();
-		tb.consume('@');
-		final int start = save + 1;
+		final int start = tb.cursor();
+		if(tb.consume('@') && date(tb) && tb.ws() && time(tb)) {
+			final String string = tb.getString(start + 1); // Jump the'@'
+			final LocalDateTime value = DateU.parseStandardDateTime(string);
+			valueList.add(value);
+			result = true;
+		} else {
+			result = false;
+		}
 
-		// yyyy/MM/dd HH:mm:ss.S
+		return result;
+	}
 
-		try {
-			if(date(tb)) {
-				final int save2 = tb.cursor();
-				tb.ws();
-				if(time(tb)) {
-					final String string = tb.getString(start);
-					result = DateU.parseStandardDateTime(string);
-				} else {
-					tb.setCursor(save2);
-					final String string = tb.getString(start);
-					result = DateU.parseStandardDate(string);
-				}
-			} else if(time(tb)) {
-				final String string = tb.getString(start);
-				result = DateU.parseStandardTime(string);
-			} else {
-				result = null;
-				tb.setCursor(save);
-			}
-		} catch(final DateTimeParseException e) {
-			result = null;
-			tb.setCursor(save);
+	private static boolean date(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		final int start = tb.cursor();
+		if(tb.consume('@') && date(tb)) {
+			final String string = tb.getString(start + 1); // Jump the'@'
+			final LocalDate value = DateU.parseStandardDate(string);
+			valueList.add(value);
+			result = true;
+		} else {
+			result = false;
 		}
 
 		return result;
@@ -939,6 +957,22 @@ public enum DataType {
 		} else {
 			result = false;
 			tb.setCursor(save);
+		}
+
+		return result;
+	}
+
+	private static boolean time(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		final int start = tb.cursor();
+		if(tb.consume('@') && time(tb)) {
+			final String string = tb.getString(start + 1); // Jump the'@'
+			final LocalTime value = DateU.parseStandardTime(string);
+			valueList.add(value);
+			result = true;
+		} else {
+			result = false;
 		}
 
 		return result;
@@ -970,9 +1004,130 @@ public enum DataType {
 		return result;
 	}
 
-	private static Object number(TextBuilder tb) {
-		final Object result;
+	private static boolean cardinality(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
 
+		final Cardinality value = Cardinality.parse(tb);
+		if(value == null) {
+			result = false;
+		} else {
+			valueList.add(value);
+			result = true;
+		}
+
+		return result;
+	}
+
+	private static boolean path(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		final Path value = Path.parse(tb);
+		if(value == null) {
+			result = false;
+		} else {
+			valueList.add(value);
+			result = true;
+		}
+
+		return result;
+	}
+
+	private static boolean identifier(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		final int start = tb.cursor();
+		if(Identifier.consume(tb)) {
+			final String token = tb.getString(start);
+			valueList.add(token);
+			result = true;
+		} else {
+			result = false;
+		}
+
+		return result;
+	}
+
+	private static boolean text(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		final int start = tb.cursor();
+		if(tb.consumeString()) {
+			final String textValue = tb.getString(start);
+			valueList.add(textValue);
+			result = true;
+		} else {
+			// ?todo Could easily detect unterminated string and throw here
+			result = false;
+		}
+
+		return result;
+	}
+
+	private static boolean bool(TextBuilder tb, List<Object> valueList) {
+		final boolean result;
+
+		if(tb.consume("true")) {
+			valueList.add(Boolean.TRUE);
+			result = true;
+		} else if(tb.consume("false")) {
+			valueList.add(Boolean.FALSE);
+			result = true;
+		} else {
+			result = false;
+		}
+
+		return result;
+	}
+
+	/**
+	 * There's a bug in this as it requires seconds in the string whereas the
+	 * time() function does not. It seems to be in the Java parser.
+	 *
+	 * @param tb
+	 *            Source to parse.
+	 * @return A Temporal or null if none found.
+	 */
+	@Nullable
+	private static Temporal temporal(TextBuilder tb) {
+		Temporal result;
+
+		final int save = tb.cursor();
+		tb.consume('@');
+		final int start = save + 1;
+
+		// yyyy/MM/dd HH:mm:ss
+
+		try {
+			if(date(tb)) {
+				final int save2 = tb.cursor();
+				tb.ws();
+				if(time(tb)) {
+					final String string = tb.getString(start);
+					result = DateU.parseStandardDateTime(string);
+				} else {
+					tb.setCursor(save2);
+					final String string = tb.getString(start);
+					result = DateU.parseStandardDate(string);
+				}
+			} else if(time(tb)) {
+				final String string = tb.getString(start);
+				result = DateU.parseStandardTime(string);
+			} else {
+				result = null;
+				tb.setCursor(save);
+			}
+		} catch(final DateTimeParseException e) {
+			result = null;
+			tb.setCursor(save);
+		}
+
+		return result;
+	}
+
+	private static boolean number(
+			TextBuilder tb,
+			DataType requiredType,
+			List<Object> valueList) {
 		// posNumber
 		// : cardinality
 		// | '0b' BinaryDigits+ [zZ]?
@@ -980,104 +1135,173 @@ public enum DataType {
 		// | '-'? Pint? ( '.' Digit+ ) ('e' Pint) [fF]
 		// | '-'? Pint [zZfF]?
 		// ;
-
-		int start = tb.cursor();
-		if(cardinality(tb)) {
-			result = Cardinality.newInstance(tb.getString(start));
-		} else {
-			final boolean negative = tb.consume('-');
-			boolean preferFloat = false;
-			int radix;
-			if(tb.consume("0b") && tb.consumeAscii(TextBuilder.ASCII_0_1)) {
-				if(negative) {
-					throw new ParsingException("Binary numbers cannot be negative (-0b111)");
-				}
-				radix = 2;
-				start += 2;
-			} else if(tb.consume("0x") && tb.consumeAscii(TextBuilder.ASCII_0_F)) {
-				if(negative) {
-					throw new ParsingException("Hex numbers cannot be negative (-0xF5)");
-				}
-				radix = 16;
-				start += 2;
-			} else {
-				radix = 10;
-				tb.consumePint();
-
-				// Optional decimal part
-				int save = tb.cursor();
-				if(tb.consume('.') && tb.consumeAscii(TextBuilder.ASCII_0_9)) {
-					preferFloat = true;
-				} else {
-					tb.setCursor(save);
-				}
-
-				// Optional exponent
-				save = tb.cursor();
-				if(tb.consume('e') && tb.consumeInt()) {
-					preferFloat = true;
-				} else {
-					tb.setCursor(save);
-				}
-			}
-			// Optional data type
-			final int end = tb.cursor();
-
-			if(start == end) {
-				// Nothing parsed...
-				result = null;
-			} else {
-				final String string = tb.getString(start);
-				final char numberType = numberType(tb, preferFloat);
-				if(numberType == 'z') {
-					result = new Long(Long.parseLong(string, radix));
-				} else if(numberType == 'Z') {
-					result = new BigInteger(string, radix);
-				} else if(numberType == 'f') {
-					result = new Double(string);
-				} else {
-					assert numberType == 'F';
-					result = new BigDecimal(string);
-				}
-			}
-		}
-
-		return result;
-	}
-
-	private static char numberType(TextBuilder tb, boolean preferFloat) {
-		final char result;
-
-		if(tb.isEof()) {
-			result = preferFloat ? 'f' : 'z';
-		} else {
-			final char c = tb.peek();
-			if(c == 'z' || c == 'Z' || c == 'f' || c == 'F') {
-				result = c;
-				tb.consume(c);
-			} else {
-				result = preferFloat ? 'f' : 'z';
-			}
-		}
-
-		return result;
-	}
-
-	private static boolean cardinality(TextBuilder tb) {
 		final boolean result;
 
-		// cardinality
-		// : '*'
-		// | Pint '..' ( '*' | Pint )
-		// ;
+		assert !tb.isEof() : "Should have been checked by caller";
 
+		if(binary(tb, valueList, requiredType) || hex(tb, valueList, requiredType)) {
+			// ?todo I could allow negatives here
+			// ( binary | hex | '0' )
+			result = true;
+		} else {
+			// ( Int DecPart | Int | DecPart ) ( 'e' Int )? [zZfF]?
+
+			final int start = tb.cursor();
+
+			if((tb.consumeInt() && (decPart(tb) || true) && (exponent(tb) || true))
+					|| (tb.consume('-') || true) && decPart(tb) && (exponent(tb) || true)) {
+				final String string = tb.getString(start);
+				final Object value = deriveType(string, requiredType, tb, 10);
+				valueList.add(value);
+				result = true;
+			} else {
+				result = false;
+			}
+
+		}
+		return result;
+	}
+
+	private static boolean exponent(TextBuilder tb) {
+		final boolean result;
+
+		// 'e' Int
 		final int save = tb.cursor();
-		if(tb.consume('*') ||
-				tb.consumePint() && tb.consume("..") && (tb.consume('*') || tb.consumePint())) {
+		if(tb.consume('e') && tb.consumeInt()) {
 			result = true;
 		} else {
 			tb.setCursor(save);
 			result = false;
+		}
+
+		return result;
+	}
+
+	private static boolean decPart(TextBuilder tb) {
+		final boolean result;
+
+		// '.' Digits+
+		final int save = tb.cursor();
+		if(tb.consume('.') && tb.consumeAscii(TextBuilder.ASCII_0_9)) {
+			result = true;
+		} else {
+			tb.setCursor(save);
+			result = false;
+		}
+
+		return result;
+	}
+
+	private static boolean hex(TextBuilder tb, List<Object> valueList, DataType requiredType) {
+		final boolean result;
+
+		// '0x' HexDigit+ [zZfF]?
+		final int save = tb.cursor();
+		if(tb.consume("0x") && tb.consumeAscii(TextBuilder.ASCII_0_F)) {
+			final String string = tb.getString(save + 2);
+			final Object value = deriveType(string, requiredType, tb, 16);
+			valueList.add(value);
+			result = true;
+		} else {
+			tb.setCursor(save);
+			result = false;
+		}
+
+		return result;
+	}
+
+	private static boolean binary(TextBuilder tb, List<Object> valueList, DataType requiredType) {
+		final boolean result;
+
+		// '0b' [01]+ [zZfF]?
+		final int save = tb.cursor();
+		if(tb.consume("0b") && tb.consumeAscii(TextBuilder.ASCII_0_1)) {
+			final String string = tb.getString(save + 2);
+			final Object value = deriveType(string, requiredType, tb, 2);
+			valueList.add(value);
+			result = true;
+		} else {
+			tb.setCursor(save);
+			result = false;
+		}
+
+		return result;
+	}
+
+	/**
+	 * Given the parsing context and what numerical data type is expected
+	 * convert a string to the correct type. Note no attempt is made to let the
+	 * magnitude of the number influence our choice.
+	 *
+	 * @param string
+	 *            The string to convert to a number. E.g. "123.3e2". If it
+	 *            contains a '.' or an 'e' then the type must either be f or F.
+	 * @param requiredType
+	 *            Either z, Z, f, F or any.
+	 * @param tb
+	 *            The source. The cursor will be at the end of the number but
+	 *            any type specifier will not have been consumed. If there is
+	 *            one then we'll eat it.
+	 * @return The derived type.
+	 * @throws ParsingException
+	 *             If there is a clash of types.
+	 */
+	private static Object deriveType(
+			String string,
+			DataType requiredType,
+			TextBuilder tb,
+			int radix) {
+		final Object result;
+
+		// Figure out the correct type...
+		final DataType derivedType;
+		if(tb.isEof()) {
+			if(requiredType == DataType.any) {
+				if(string.indexOf('.') >= 0 || string.indexOf('e') >= 0) {
+					derivedType = DataType.f;
+				} else {
+					derivedType = DataType.z;
+				}
+			} else {
+				derivedType = requiredType;
+			}
+		} else {
+			final char c = tb.peek();
+			if(c == 'z' || c == 'Z' || c == 'f' || c == 'F') {
+				tb.consume(c);
+				derivedType = DataType.valueOf(String.valueOf(c));
+				if(!(requiredType == DataType.any || requiredType == derivedType)) {
+					throw new ParsingException("Incompatible type: " + string + c);
+				}
+			} else {
+				if(requiredType == DataType.any) {
+					if(string.indexOf('.') >= 0 || string.indexOf('e') >= 0) {
+						derivedType = DataType.f;
+					} else {
+						derivedType = DataType.z;
+					}
+				} else {
+					derivedType = requiredType;
+				}
+			}
+		}
+
+		switch(derivedType) {
+		case z:
+			result = new Long(Long.parseLong(string, radix));
+			break;
+		case Z:
+			result = new BigInteger(string, radix);
+			break;
+		case f:
+			result = new Double(string);
+			break;
+		case F:
+			result = new BigDecimal(string);
+			break;
+		// $CASES-OMITTED$
+		default:
+			throw new UnexpectedException("toType: " + derivedType);
 		}
 
 		return result;

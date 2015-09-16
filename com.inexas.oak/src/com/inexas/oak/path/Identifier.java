@@ -53,7 +53,6 @@ public class Identifier implements Comparable<Identifier> {
 		return result;
 	}
 
-	@Nullable
 	public static boolean consume(TextBuilder tb) {
 		final boolean result;
 
