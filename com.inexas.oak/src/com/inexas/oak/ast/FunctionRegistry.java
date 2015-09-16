@@ -380,7 +380,7 @@ public class FunctionRegistry implements Tad {
 		tb.append('(');
 		for(final DataType parameterType : parameterTypes) {
 			tb.delimit();
-			tb.append(parameterType.getJavaType());
+			tb.append(parameterType.getJavaClass().getSimpleName());
 		}
 		if(returnType == null) {
 			tb.append(')');

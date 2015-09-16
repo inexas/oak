@@ -74,17 +74,21 @@ public class TestOakProperties {
 		// Test cardinality...
 		doTest("a:0..1;", "a: 0..1;");
 		doTest("a:0..*;", "a:0..*;");
+	}
 
-		// Paths...
-		doTest("a:/;", "a:/;");
+	@Test
+	public void testPairPaths() throws OakException {
+		doTest("a:`/`;", "a:`/`;");
+		doTest("a:`.`;", "a:`.`;");
+		doTest("a:`..`;", "a:`..`;");
 
-		doTest("a:b;", "a:b;");
-		doTest("a:a/b;", "a:a/b;");
+		doTest("a:`/b`;", "a:`/b`;");
+		doTest("a:`./b`;", "a:`./b`;");
+		doTest("a:`../b`;", "a:`../b`;");
 
-		doTest("a:/b;", "a:/b;");
+		doTest("a:`/b/c`;", "a:`/b/c`;");
 
-		doTest("a:b/c;", "a:b/c;");
-		doTest("a:/b/c;", "a:/b/c;");
+		doTest("a:`/b[0]`;", "a:`/b[0]`;");
 	}
 
 	@Test
@@ -95,7 +99,7 @@ public class TestOakProperties {
 		doTest("a[1,3,\"b\",4]");
 
 		doTest("a[abc]");
-		doTest("a[abc/def,ghi]");
+		doTest("a[true,ghi]");
 	}
 
 	@Test

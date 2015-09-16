@@ -11,8 +11,13 @@
 package com.inexas.oak;
 
 import static org.junit.Assert.*;
+import java.lang.reflect.*;
 import java.math.*;
+import java.time.*;
+import java.util.*;
 import org.junit.Test;
+import com.inexas.oak.path.Path;
+import com.inexas.util.*;
 
 /**
  * @author kwhittingham
@@ -79,6 +84,49 @@ public class TestDataType {
 		if(d1 != d2) {
 			System.err.println("d1: " + d1);
 			System.err.println("d2: " + d2);
+			fail();
+		}
+	}
+
+	private void doValueTest(boolean expectedResult, Object expectedObject, String toTest)
+			throws RuntimeException {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(toTest);
+		final List<Object> list = new ArrayList<>();
+		// value() is private (and should be)
+		try {
+			final Method method = DataType.class.getDeclaredMethod("value", tb.getClass(), List.class);
+			method.setAccessible(true);
+			final Boolean result = (Boolean)method.invoke(null, tb, list);
+
+			if(expectedResult) {
+				assertTrue(result.booleanValue());
+				assertEquals(expectedObject, list.get(0));
+			} else {
+				assertFalse(result.booleanValue());
+			}
+
+		} catch(final InvocationTargetException e) {
+			throw (RuntimeException)e.getCause();
+		} catch(final Exception e) {
+			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+			fail();
+		}
+	}
+
+	private void doDateTest(Object expectedResult, String methodName, String toTest) {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(toTest);
+		// date() is private (and should be)
+		try {
+			final Method method = DataType.class.getDeclaredMethod(methodName, tb.getClass());
+			method.setAccessible(true);
+			final Object result = method.invoke(null, tb);
+			assertEquals(expectedResult, result);
+		} catch(final InvocationTargetException e) {
+			throw (RuntimeException)e.getCause();
+		} catch(final Exception e) {
+			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
 			fail();
 		}
 	}
@@ -225,4 +273,74 @@ public class TestDataType {
 		DataType.getDouble(doubleMinMinus1AsBigDecimal);
 	}
 
+	@Test
+	public void testValue() {
+		doValueTest(false, "", "");
+		doValueTest(true, Path.parse("`path`"), "`path`"); // Path
+		doValueTest(true, "\"ab\\nc\"", "\"ab\\nc\""); // Text
+	}
+
+	@Test(expected = ParsingException.class)
+	public void testValueError1() {
+		doValueTest(true, "", "\"abc");
+	}
+
+	@Test
+	public void testTemporals() {
+		doDateTest(Boolean.TRUE, "date", "1957/04/30");
+		doDateTest(Boolean.TRUE, "time", "1:2");
+		doDateTest(Boolean.TRUE, "time", "01:23");
+		doDateTest(Boolean.TRUE, "time", "01:23:24");
+
+		doDateTest(LocalTime.of(1, 23, 45), "temporal", "@01:23:45");
+		doDateTest(LocalDate.of(1957, 4, 30), "temporal", "@1957/04/30");
+		doDateTest(LocalDateTime.of(1957, 4, 30, 1, 23, 45), "temporal", "@1957/04/30 01:23:45");
+	}
+
+	@Test
+	public void testNumbers() {
+		doNumberTest(new Long(0), "0");
+		doNumberTest(new Long(123), "123");
+		doNumberTest(new Long(-123), "-123");
+		doNumberTest(new Long(123), "123z");
+
+		doNumberTest(new Long(4), "0b100");
+		doNumberTest(new Long(17), "0x11");
+		doNumberTest(new Long(634799), "0x09afAF");
+
+		doNumberTest(new BigInteger("123"), "123Z");
+		doNumberTest(new BigInteger("-123"), "-123Z");
+
+		doNumberTest(new Double(0), "0.0");
+		doNumberTest(new Double(200), "2e2");
+		doNumberTest(new Double(-0.02), "-2e-2");
+		doNumberTest(new Double(0.3), ".3");
+		doNumberTest(new Double(-.3), "-.3");
+		doNumberTest(new Double(1.23), "1.23f");
+
+		doNumberTest(new BigDecimal(0.5), "0.5F");
+
+		doNumberTest(Cardinality.ZERO_MANY, "*");
+		doNumberTest(Cardinality.ONE_MANY, "1..*");
+		doNumberTest(Cardinality.newInstance("3..4"), "3..4");
+	}
+
+	private void doNumberTest(Object expected, String toTest) {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(toTest);
+		// number() is private (and should be)
+		try {
+			// private static Object number(TextBuilder)
+			final Method method = DataType.class.getDeclaredMethod("number", tb.getClass());
+			method.setAccessible(true);
+			final Object result = method.invoke(null, tb);
+			assertEquals(expected, result);
+			assertEquals(toTest.length(), tb.cursor());
+		} catch(final InvocationTargetException e) {
+			throw (RuntimeException)e.getCause();
+		} catch(final Exception e) {
+			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
+			fail();
+		}
+	}
 }

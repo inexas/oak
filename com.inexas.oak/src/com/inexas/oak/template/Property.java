@@ -20,7 +20,7 @@ public class Property extends Locus.Base implements Keyed {
 
 	public Property(String key, String type, Constraint[] constraints) {
 		this.key = key;
-		this.type = type == null ? DataType.text : DataType.get(type);
+		this.type = type == null ? DataType.text : DataType.valueOfCorrected(type);
 		this.constraints = constraints;
 	}
 

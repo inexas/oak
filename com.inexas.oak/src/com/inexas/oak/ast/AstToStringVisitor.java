@@ -278,6 +278,14 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void visit(IdentifierNode identifierNode) {
+		tb.append(identifierNode.identifier);
+	}
+
+	/**
 	 *
 	 * @return A parseable representation of the visited Oak file.
 	 */

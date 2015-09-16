@@ -304,16 +304,20 @@ public class BinaryNode extends ExpressionNode {
 		case OakLexer.Divide:
 			switch(commonType) {
 			case z:
-				result = new ConstantNode(lhsContext, converter.lhs_z / converter.rhs_z);
+				result = new ConstantNode(lhsContext, converter.lhs_z /
+						converter.rhs_z);
 				break;
 			case Z:
-				result = new ConstantNode(lhsContext, converter.lhs_Z.divide(converter.rhs_Z));
+				result = new ConstantNode(lhsContext,
+						converter.lhs_Z.divide(converter.rhs_Z));
 				break;
 			case f:
-				result = new ConstantNode(lhsContext, converter.lhs_f / converter.rhs_f);
+				result = new ConstantNode(lhsContext, converter.lhs_f /
+						converter.rhs_f);
 				break;
 			case F:
-				result = new ConstantNode(lhsContext, converter.lhs_F.divide(converter.rhs_F));
+				result = new ConstantNode(lhsContext,
+						converter.lhs_F.divide(converter.rhs_F));
 				break;
 
 			case any:

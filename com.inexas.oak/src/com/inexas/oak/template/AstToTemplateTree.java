@@ -524,14 +524,33 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			// ?todo Why might rule be null here?
 			if(rule != null) {
 				final Object value = node.path;
-				if(rule.dataType == DataType.identifier
-						|| rule.dataType == DataType.path
-						|| rule.dataType == DataType.any) {
+				if(rule.dataType == DataType.path || rule.dataType == DataType.any) {
 					state.add(node, state.relation, value);
 				} else {
 					advisory.error(node,
 							"Wrong data type; expected path but got: " + rule.dataType
-									+ " '" + (value == null ? "null" : value.toString()));
+							+ " '" + (value == null ? "null" : value.toString()));
+					state.add(node, state.relation, null);
+				}
+			}
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void visit(IdentifierNode node) {
+		if(!state.seenError) {
+			final PropertyRule rule = (PropertyRule)state.relation.subject;
+			if(rule != null) {
+				final Object value = node.identifier;
+				if(rule.dataType == DataType.identifier || rule.dataType == DataType.any) {
+					state.add(node, state.relation, value);
+				} else {
+					advisory.error(node,
+							"Wrong data type; expected path but got: " + rule.dataType
+							+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);
 				}
 			}

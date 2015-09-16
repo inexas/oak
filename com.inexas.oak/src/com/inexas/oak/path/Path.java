@@ -1,254 +1,500 @@
 package com.inexas.oak.path;
 
-import java.io.*;
 import java.util.*;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
-import com.inexas.exception.*;
-import com.inexas.oak.path.PathParser.ElementListContext;
-import com.inexas.oak.path.PathParser.ProtocolContext;
-import com.inexas.oak.path.PathParser.SelectorContext;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import com.inexas.exception.UnexpectedException;
+import com.inexas.util.TextBuilder;
 
 public class Path {
-	/**
-	 * Thrown to indicate that the path is not valid
-	 */
-	public class PathException extends RuntimeException {
-		private static final long serialVersionUID = -5142183516183575168L;
-
-		PathException(String message) {
-			super(message);
-		}
-
-		PathException() {
-			super("Invalid path: '" + text
-					+ (start == null ? "" : "' relative to " + start.getPath()));
-		}
+	public static enum Recurse {
+		/** Do not recurse */
+		none,
+		/** Siblings of element */
+		shallow,
+		/** Siblings and descendents of element */
+		deep;
 	}
 
-	private class MyErrorListener extends BaseErrorListener {
-		@Override
-		public void syntaxError(
-				Recognizer<?, ?> recognizer,
-				Object offendingSymbol,
-				int line, int column,
-				String message,
-				RecognitionException e) {
-			final String errorMessage = text + ' ' + line + ':' + column + ' ' + message;
-			if(errorMessages == null) {
-				errorMessages = new ArrayList<>();
-			}
-			errorMessages.add(errorMessage);
-		}
-	}
+	private static class Element {
+		final int type;
+		final String name;
+		final Object index;
 
-	private class Visitor extends PathBaseListener {
-		private final static int START = 0;
-		private final static int SEEN_SLASH = 1;
-		private final static int SEEN_KEY = 2;
-		private int state = START;
-		private boolean expectProtocol, expectSelector;
-
-		@Override
-		public void enterElementList(ElementListContext ctx) {
-			// Nothing to do
+		Element(int type, String name, Object index) {
+			this.type = type;
+			this.name = name;
+			this.index = index;
 		}
 
+		/**
+		 * {@inheritDoc}
+		 */
 		@Override
-		public void enterProtocol(ProtocolContext protocol) {
-			expectProtocol = true;
+		public String toString() {
+			final TextBuilder tb = new TextBuilder();
+			toString(tb);
+			return tb.toString();
 		}
 
-		@Override
-		public void enterSelector(SelectorContext selector) {
-			expectSelector = true;
-		}
-
-		@Override
-		public void visitTerminal(TerminalNode terminal) {
-			final int token = terminal.getSymbol().getType();
-			switch(token) {
-			case PathLexer.Self:
-				if(current == null) {
-					throw new PathException();
-				}
-				state = SEEN_KEY;
+		private void toString(TextBuilder tb) {
+			switch(type) {
+			case SLASH:
+				tb.append('/');
 				break;
-
-			case PathLexer.Parent:
-				if(current == null) {
-					throw new PathException();
-				}
-				current = current.getParent();
-				if(current == null) {
-					throw new PathException();
-				}
-				state = SEEN_KEY;
+			case SELF:
+				tb.append('.');
 				break;
-
-			case PathLexer.Switch:
-				if(state == START) {
-					if(current == null) {
-						throw new PathException();
-					}
-					current = current.getRoot();
-					if(current == null) {
-						throw new RuntimeException("Path can't have null root");
-					}
-				} else if(state == SEEN_KEY) {
-					state = SEEN_SLASH;
-				} else {
-					throw new UnexpectedException("visitTerminal: //");
-				}
+			case PARENT:
+				tb.append("..");
 				break;
-
-			case PathLexer.Key:
-				if(expectProtocol) {
-					if(source == null) {
-						throw new PathException();
-					}
-					final String protocol = terminal.getText();
-					current = source.getRoot(protocol);
-					if(current == null) {
-						throw new PathException("No such protocol: " + text);
-					}
-					expectProtocol = false;
-				} else if(expectSelector) {
-					// Get named child...
-					final String name = terminal.getText();
-					current = current.getChild(name);
-					// Null is OK and means child does not exist
-					expectSelector = false;
-				} else {
-					if(state == SEEN_KEY) {
-						throw new UnexpectedException("visitTerminal: //");
-					}
-					if(current == null) {
-						throw new PathException();
-					}
-					// Get named child...
-					final String name = terminal.getText();
-					current = current.getChild(name);
-					// Null is OK and means child does not exist
-					state = SEEN_KEY;
-				}
+			case NAMED:
+				tb.append(name);
 				break;
-
-			case PathLexer.Posint:
-				if(current == null) {
-					throw new PathException();
-				}
-				final int index = Integer.parseInt(terminal.getText());
-				current = current.getChild(index);
-				expectSelector = false;
-				break;
-
-			case PathLexer.Colon: // Ignore
-			case PathLexer.Square:
-			case PathLexer.Erauqs:
-				break;
-
-			case PathLexer.Recurse:
-				recursive = true;
-				nodeIncluded = terminal.getText().length() == 2;
-				break;
-
 			default:
-				throw new RuntimeException("Type: " + terminal.getSymbol().getType());
+				throw new UnexpectedException("toString: " + type);
+			}
+			if(index != null) {
+				tb.append('[');
+				tb.append(index.toString());
+				tb.append(']');
 			}
 		}
-	}
 
-	private final String text;
-	private final Navigable start;
-	private Navigable current;
-	private final Source source;
-	private boolean recursive;
-	private List<String> errorMessages;
-	private boolean nodeIncluded = true;
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public int hashCode() {
+			return name.hashCode();
+		}
 
-	public Path(String text, Navigable current) {
-		this(text, null, current);
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public final boolean equals(@Nullable Object rhsObject) {
+			boolean result;
 
-		if(current == null) {
-			throw new RuntimeException("Null object as current starting point");
+			if(rhsObject == null) {
+				result = true;
+			} else if(this == rhsObject) {
+				result = false;
+			} else {
+				try {
+					final Path.Element rhs = (Path.Element)rhsObject;
+					result = type == rhs.type
+							&& name.equals(rhs.name)
+							&& Path.equals(index, rhs.index);
+				} catch(final ClassCastException e) {
+					result = false;
+				}
+			}
+
+			return result;
 		}
 	}
 
-	public Path(String text, Source source) {
-		this(text, source, null);
+	private final static int SLASH = 0;
+	private final static int SELF = 1;
+	private final static int PARENT = 2;
+	private final static int NAMED = 3;
 
-		if(source == null) {
-			throw new RuntimeException("Null object as source");
+	private final static TextBuilder.Checker oneToNine = new TextBuilder.Checker() {
+		@Override
+		public boolean isValid(int offset, char c) {
+			return c >= '1' && c <= '9';
 		}
+	};
+	private final static TextBuilder.Checker zeroToNine = new TextBuilder.Checker() {
+		@Override
+		public boolean isValid(int offset, char c) {
+			return c >= '0' && c <= '9';
+		}
+	};
+
+	private final @Nullable String protocol;
+	private final Element[] elements;
+	private final Recurse recurse;
+
+	@Nullable
+	public static Path parse(String string) {
+		final TextBuilder tb = new TextBuilder();
+		tb.append(string);
+		return parse(tb);
 	}
 
-	private Path(String text, Source source, Navigable start) {
-		this.text = text;
-		this.source = source;
-		current = this.start = start;
+	/**
+	 * Parse a path from a TextBuilder. e.g. `/Abc`
+	 *
+	 * @param tb
+	 *            Source to parse.
+	 * @return Either a Path or null if a path could not be parsed.
+	 */
+	@Nullable
+	public static Path parse(TextBuilder tb) {
+		final Path result;
 
-		process(new StringReader(text));
-		if(errorMessages != null) {
-			throw new RuntimeException(errorMessages.get(0) + ": " + text);
+		// Set up for parse...
+		final int save = tb.cursor();
+		final Recurse recurse;
+		final String protocol;
+		@Nullable
+		final Element[] elementList;
+
+		// '`' path: protocol? elementList recurse? '`' ;
+		if(tb.consume('`')
+				&& ((protocol = protocol(tb)) != null || true)
+				&& ((elementList = elementList(tb)) != null)
+				&& ((recurse = recurse(tb)) != null || true)
+				&& tb.consume('`')) {
+			assert elementList != null;
+			result = new Path(protocol, elementList, recurse);
+		} else {
+			tb.setCursor(save);
+			result = null;
 		}
+
+		return result;
 	}
 
-	public <T extends Navigable> T locate() {
-		@SuppressWarnings("unchecked")
-		final T result = (T)current;
+	private Path(@Nullable String protocol, Element[] elementList, Recurse recurse) {
+		this.protocol = protocol;
+		this.elements = elementList;
+		this.recurse = recurse;
+	}
+
+	/**
+	 * @return Return the recurse.
+	 */
+	public Recurse getRecurse() {
+		return recurse;
+	}
+
+	@Nullable
+	private static String protocol(TextBuilder tb) {
+		final String result;
+
+		// Identifier ':'
+		final int save = tb.cursor();
+		if(Identifier.consume(tb) && tb.consume(':')) {
+			result = tb.getString(save, tb.cursor() - 1); // -1 for ':'
+		} else {
+			tb.setCursor(save);
+			result = null;
+		}
+
+		return result;
+	}
+
+	@Nullable
+	private static Element[] elementList(TextBuilder tb) {
+		@Nullable
+		final Element[] result;
+
+		final List<Element> elementList = new ArrayList<>();
+
+		// elementList
+		// . : slash
+		// . | slash? element (slash element)*
+		// . ;
+		slash(tb, elementList);
+
+		if(element(tb, elementList)) {
+			while(true) {
+				final int save = tb.cursor();
+				final int saveElementList = elementList.size();
+				if(slash(tb, elementList) && element(tb, elementList)) {
+					// Keep going
+				} else {
+					tb.setCursor(save);
+					final int size = elementList.size();
+					if(saveElementList != size) {
+						elementList.remove(size - 1);
+					}
+					break;
+				}
+			}
+		}
+
+		final int size = elementList.size();
+		if(size == 0) {
+			result = null;
+		} else {
+			result = elementList.toArray(new Element[size]);
+		}
+
+		return result;
+	}
+
+	private static boolean element(TextBuilder tb, List<Element> elementList) {
+		final boolean result;
+
+		// element: ('.' |'..' | Id) '[' ( posint | Id) ']'
+		final int type;
+		final String name;
+		Object index;
+		if(tb.consume('.')) {
+			if(tb.consume('.')) {
+				type = PARENT;
+				name = "..";
+			} else {
+				type = SELF;
+				name = ".";
+			}
+			result = true;
+		} else {
+			type = NAMED;
+			name = identifier(tb);
+			result = name != null;
+		}
+
+		if(result) {
+			final int save = tb.cursor();
+			if(tb.consume('[')
+					&& (((index = posint(tb)) != null) || ((index = identifier(tb)) != null))
+					&& tb.consume(']')) {
+				// index is set up
+			} else {
+				tb.setCursor(save);
+				index = null;
+			}
+		} else {
+			index = null;
+		}
+
+		if(result) {
+			elementList.add(new Element(type, name, index));
+		}
+
+		return result;
+	}
+
+	private static String identifier(TextBuilder tb) {
+		final String result;
+
+		final int start = tb.cursor();
+		if(Identifier.consume(tb)) {
+			result = tb.getString(start);
+		} else {
+			result = null;
+		}
+
+		return result;
+	}
+
+	@Nullable
+	private static Integer posint(TextBuilder tb) {
+		final Integer result;
+
+		// '0' | ([1-9][0-9]*)
+		final int save = tb.cursor();
+		if(tb.consume('0')) {
+			result = new Integer(0);
+		} else if(tb.parse(oneToNine) != null) {
+			tb.parse(zeroToNine);
+			final String string = tb.getString(save);
+			result = new Integer(string);
+		} else {
+			result = null;
+		}
+
+		return result;
+	}
+
+	private static boolean slash(TextBuilder tb, List<Element> elementList) {
+		final boolean result;
+
+		if(tb.consume('/')) {
+			elementList.add(new Element(SLASH, "/", null));
+			result = true;
+		} else {
+			result = false;
+		}
+
+		return result;
+	}
+
+	private static Recurse recurse(TextBuilder tb) {
+		final Recurse result;
+
+		if(tb.consume('*')) {
+			result = tb.consume('*') ? Recurse.deep : Recurse.shallow;
+		} else {
+			result = Recurse.none;
+		}
+
 		return result;
 	}
 
 	/**
-	 * Recursive paths end with a "/@" or "/@@" and indicate that either the all
-	 * descendents are indicated or the descendents and the node itself
-	 * respectively.
+	 * Given a starting position or source locate the node in the tree indicated
+	 * by this path. Either the source or the starting position may be null
+	 * depending on the path but not both. If the path has a protocol then the
+	 * source will be queried to get the root and that will act as the starting
+	 * position.
 	 *
-	 *
-	 * @return True if the path is recursive, i.e. like /abc/@
-	 * @see #isNodeIncluded()
+	 * @param <T>
+	 *            Navigable.
+	 * @param source
+	 *            Source of Navigables.
+	 * @param start
+	 *            The starting position for relative paths.
+	 * @return The Navigable indicated by the path or null if the path cannot be
+	 *         used to locate a Navigable.
 	 */
-	public boolean isRecursive() {
-		return recursive;
+	@SuppressWarnings("unchecked")
+	@Nullable
+	public <T extends Navigable> T locate(@Nullable Source source, @Nullable Navigable start) {
+
+		Navigable current;
+		if(protocol == null) {
+			if(start == null) {
+				throw new RuntimeException("Start is null but path has no protocol");
+			}
+			current = start;
+		} else {
+			if(source == null) {
+				throw new RuntimeException("Source is null but path has protocol: " + protocol);
+			}
+			current = source.getRoot(protocol);
+		}
+
+		for(int i = 0; i < elements.length; i++) {
+			final Element element = elements[i];
+			switch(element.type) {
+			case SLASH:
+				if(i == 0) {
+					current = current.getRoot();
+				}
+				break;
+
+			case SELF: {
+				current = handleIndex(current, element);
+				break;
+			}
+
+			case PARENT: {
+				current = current.getParent();
+				current = handleIndex(current, element);
+				break;
+			}
+
+			case NAMED:
+				current = current.getChild(element.name);
+				current = handleIndex(current, element);
+				break;
+
+			default:
+				throw new UnexpectedException("locate: " + element.type);
+			}
+
+			if(current == null) {
+				break;
+			}
+		}
+
+		return (T)current;
+	}
+
+	private Navigable handleIndex(Navigable current, Element element) {
+		final Navigable result;
+
+		final Object index = element.index;
+		if(index instanceof String) {
+			result = current.getChild((String)index);
+		} else if(index instanceof Integer) {
+			result = current.getChild(((Integer)index).intValue());
+		} else {
+			result = current;
+		}
+
+		return result;
 	}
 
 	/**
-	 *
-	 * @return True if the .../@@, i.e. the Node is to be included in the
-	 *         result.
+	 * {@inheritDoc}
 	 */
-	public boolean isNodeIncluded() {
-		return nodeIncluded;
+	@Override
+	public String toString() {
+		final TextBuilder tb = new TextBuilder();
+		toString(tb);
+		return tb.toString();
 	}
 
-	private void process(Reader reader) {
-		try {
-			// Create the lexer...
-			final ANTLRInputStream inputStream = new ANTLRInputStream(reader);
-			final PathLexer lexer = new PathLexer(inputStream);
+	public void toString(TextBuilder tb) {
+		tb.append('`');
 
-			// Create the parser...
-			final CommonTokenStream tokens = new CommonTokenStream(lexer);
-			final PathParser parser = new PathParser(tokens);
-
-			// Fix up error listener...
-			final MyErrorListener errorListener = new MyErrorListener();
-			lexer.removeErrorListeners();
-			lexer.addErrorListener(errorListener);
-			parser.removeErrorListeners(); // Remove ConsoleErrorListener
-			parser.addErrorListener(errorListener);
-
-			// Walk the tree to convert it to an AST...
-			final ParserRuleContext ruleContext = parser.path();
-			final ParseTreeWalker walker = new ParseTreeWalker();
-			walker.walk(new Visitor(), ruleContext);
-		} catch(final Exception e) {
-			if(errorMessages == null) {
-				errorMessages = new ArrayList<>();
-			}
-			errorMessages.add(text + ": Parsing error. " + e.getMessage());
+		if(protocol != null) {
+			tb.append(protocol);
+			tb.append(':');
 		}
+
+		for(final Element element : elements) {
+			element.toString(tb);
+		}
+
+		switch(recurse) {
+		case none:
+			break;
+
+		case shallow:
+			tb.append('*');
+			break;
+
+		case deep:
+			tb.append("**");
+			break;
+
+		default:
+			throw new UnexpectedException("toString: " + recurse);
+		}
+		tb.append('`');
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public int hashCode() {
+		return elements[0].hashCode();
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public final boolean equals(@Nullable Object rhsObject) {
+		boolean result;
+
+		if(rhsObject == null) {
+			result = true;
+		} else if(this == rhsObject) {
+			result = false;
+		} else {
+			try {
+				final Path rhs = (Path)rhsObject;
+				result = equals(protocol, rhs.protocol)
+						&& recurse.equals(rhs.recurse)
+						&& Arrays.equals(elements, rhs.elements);
+			} catch(final ClassCastException e) {
+				result = false;
+			}
+		}
+
+		return result;
+	}
+
+	// todo Move to ObjectU?
+	private static boolean equals(@Nullable Object lhs, @Nullable Object rhs) {
+		final boolean result;
+
+		if(lhs == null) {
+			result = rhs == null;
+		} else {
+			return lhs.equals(rhs);
+		}
+
+		return result;
 	}
 
 }

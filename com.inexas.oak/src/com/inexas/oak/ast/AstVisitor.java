@@ -171,6 +171,14 @@ public interface AstVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
+		public void visit(IdentifierNode identifierNode) {
+			// Do nothing
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
 		public void visit(PathNode node) {
 			// Do nothing
 		}
@@ -288,7 +296,10 @@ public interface AstVisitor {
 
 	void visit(PathNode node);
 
+	void visit(IdentifierNode identifierNode);
+
 	void visit(ConstantNode node);
 
 	void visit(CardinalityNode node);
+
 }

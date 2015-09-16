@@ -46,7 +46,6 @@ Curly:		'{';
 Ylruc:		'}';
 Square:		'[';
 Erauqs:		']';
-Dots:		'..';
 
 
 /**
@@ -64,10 +63,10 @@ load
 	;
 
 pair
-	:	Key Colon value Semi	// E.g. myKey: 32; 
-	|	Key object				// E.g. MyKey { ... }
-	|	Key array				// E.g. myKey [ 1, 2, 3 ]
-	|	Key Semi				// Shorthand for myKey: true; 
+	:	Identifier Colon value Semi	// E.g. myKey: 32; 
+	|	Identifier object				// E.g. MyKey { ... }
+	|	Identifier array				// E.g. myKey [ 1, 2, 3 ]
+	|	Identifier Semi				// Shorthand for myKey: true; 
 	;
 
 array
@@ -80,16 +79,16 @@ object
 	;
 	
 value
-	:	expr
-	|	path
-	|	literal
+	:	literal
+	|	identifier
+	|	expr
 	|	cardinality
 	;
 
 // Members are in operator precedence order
 expr
 	:	primary
-	|	Key Paren ( expr ( Comma expr)* )? Nerap // Function
+	|	Identifier Paren ( expr ( Comma expr)* )? Nerap // Function
 	|	(Minus|Not|Comp) expr // Unary
 	|	expr (Multiply|Divide|Mod) expr
 	|	expr (Plus|Minus) expr
@@ -102,7 +101,7 @@ expr
 	|	expr Land expr
 	|	expr Lor expr
 	|	expr Qm expr Colon expr // condition ? t : f
-;
+	;
 
 primary
 	:	Paren expr Nerap 
@@ -117,6 +116,7 @@ literal
 	|	FloatingPointLiteral
 	|	BigFloatingPointLiteral
 	|	TextLiteral
+	|	PathLiteral
 	|	DateTimeLiteral
 	|	DateLiteral
 	|	TimeLiteral
@@ -126,13 +126,9 @@ literal
 	;
 
 
-path
-	:	PathLiteral
-	|	Key
-	|	'/'
-	;
+identifier: Identifier;
 
-cardinality: Cardinality;
+// Lexer
 
 WS  :  [ \t\r\n\u000C]+ -> skip
 	;
@@ -147,23 +143,26 @@ LINE_COMMENT
 
 
 
-// P A T H
-
-PathLiteral
-	:	Children					// Children of root and children and root 
-	|	( '/' Key)+ Children?		// Absolute path
-	|	Key ( '/' Key)+ Children?	// Relative path
-	;
-
-fragment Children
-	:	'/@'		// Direct children of node
-	|	'/@@'		// Children and node
-	;
-
-
 // I D E N T I F I E R
 
-Key: [A-Za-z_][0-9A-Za-z_]* ;
+Identifier: [A-Za-z_][0-9A-Za-z_]* ;
+
+// P A T H
+
+
+PathLiteral
+	:	'`' ~[`]*  '`'
+	;
+
+
+// C A R D I N A L I T Y
+
+cardinality : Cardinality ;
+
+Cardinality
+	:	Integer '..' (Integer | '*')
+	;
+
 
 
 // T E X T
@@ -209,11 +208,6 @@ fragment Date
 // hh:mm[:ss[:ms]]
 fragment Time
 	:	Digit+ ':' Digit+ ( ':' Digit+ (':' Digit+)? )?
-	;
-
-
-Cardinality
-	:	Integer '..' (Integer | '*')
 	;
 
 

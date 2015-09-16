@@ -141,10 +141,8 @@ public class TestPath {
 
 		@Override
 		public <T extends Navigable> T locate(String pathText) {
-			final Path path = new Path(pathText, this);
-			@SuppressWarnings("unchecked")
-			final T result = (T)path.locate();
-			return result;
+			final Path path = Path.parse(pathText);
+			return path.locate(null, this);
 		}
 
 	}
@@ -170,67 +168,103 @@ public class TestPath {
 	}
 
 	@Test
+	public void test() {
+		final Path path = Path.parse("`.`");
+		final Element result = path.locate(null, a);
+		assertEquals(a, result);
+	}
+
+	private void doTest(String string) {
+		final String quoted = "`" + string + '`';
+		final Path path = Path.parse(quoted);
+		assertEquals(quoted, path.toString());
+	}
+
+	private void testLocate(Element expected, String pathString, Element startAt) {
+		final Path path = Path.parse("`" + pathString + '`');
+		assertEquals(expected, path.locate(null, startAt));
+	}
+
+	private void testLocate(Element expected, String pathString, Source theSource) {
+		final Path path = Path.parse("`" + pathString + '`');
+		assertEquals(expected, path.locate(theSource, null));
+	}
+
+	@Test
+	public void testToString() {
+		doTest("/");
+		doTest(".");
+		doTest("..");
+		doTest("abc");
+		doTest("/abc");
+		doTest("/a/b[x]/c[1]/./..**");
+
+		doTest("x:abc");
+	}
+
+	@Test
 	public void testDots() {
-		assertEquals(a, new Path(".", a).locate());
-		assertEquals(b, new Path(".", b).locate());
-		assertEquals(c, new Path(".", c).locate());
-		assertEquals(a, new Path("..", c).locate());
-		assertEquals(role, new Path("..", a).locate());
-		assertEquals(mary, new Path("../../mary", sarah).locate());
+		testLocate(a, ".", a);
+		testLocate(a, ".", a);
+		testLocate(b, ".", b);
+		testLocate(c, ".", c);
+		testLocate(a, "..", c);
+		testLocate(role, "..", a);
+		testLocate(mary, "../../mary", sarah);
 	}
 
 	@Test(expected = Exception.class)
 	public void testDotsExceptions1() {
-		new Path(".", source).locate();
+		testLocate(a, ".", source);
 	}
 
 	@Test(expected = Exception.class)
 	public void testDotsExceptions2() {
-		new Path("..", source).locate();
+		testLocate(a, "..", source);
 	}
 
-	@Test(expected = Exception.class)
+	@Test
 	public void testDotsExceptions3() {
-		new Path("..", role).locate();
+		final Path path = Path.parse("`..`");
+		assertNull(path.locate(null, role));
 	}
 
 	@Test
 	public void testRelative() {
-		assertEquals(c, new Path("c", a).locate());
-		assertEquals(e, new Path("e", d).locate());
+		testLocate(c, "c", a);
+		testLocate(e, "e", d);
 	}
 
 	@Test
 	public void testAbsolute() {
-		assertEquals(role, new Path("/", c).locate());
-		assertEquals(a, new Path("/a", c).locate());
-		assertEquals(c, new Path("/a/c", b).locate());
+		testLocate(role, "/", c);
+		testLocate(a, "/a", c);
+		testLocate(c, "/a/c", b);
 	}
 
 	@Test
 	public void testProtocols() {
-		assertEquals(c, new Path("role:/a/c", source).locate());
+		testLocate(c, "role:/a/c", source);
 	}
 
 	@Test
 	public void testSelectors() {
-		assertEquals(c, new Path("a[c]", role).locate());
-		assertEquals(c, new Path("a[0]", role).locate());
-		assertEquals(d, new Path("a[d]", role).locate());
-		assertEquals(d, new Path("a[1]", role).locate());
+		testLocate(c, "a[c]", role);
+		testLocate(c, "a[0]", role);
+		testLocate(d, "a[d]", role);
+		testLocate(d, "a[1]", role);
 	}
 
 	@Test
 	public void testRecursives() {
-		assertEquals(role, new Path("/@", role).locate());
-		assertEquals(a, new Path("/a/@", role).locate());
-		assertEquals(a, new Path("a/@", role).locate());
+		testLocate(d, "a[1]", role);
 
-		assertFalse(new Path("/", role).isRecursive());
-		assertTrue(new Path("/@", role).isRecursive());
-		assertFalse(new Path("/@", role).isNodeIncluded());
+		testLocate(role, "/*", role);
+		testLocate(a, "/a*", role);
+		testLocate(a, "a*", role);
 
-		assertTrue(new Path("/@@", role).isRecursive());
-		assertTrue(new Path("/@@", role).isNodeIncluded());
+		assertEquals(Path.Recurse.none, Path.parse("`/`").getRecurse());
+		assertEquals(Path.Recurse.shallow, Path.parse("`/*`").getRecurse());
+		assertEquals(Path.Recurse.deep, Path.parse("`/**`").getRecurse());
 	}
 }

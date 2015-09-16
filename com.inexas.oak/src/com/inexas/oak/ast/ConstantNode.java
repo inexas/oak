@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringEscapeUtils;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.OakParser.LiteralContext;
+import com.inexas.oak.path.Path;
 import com.inexas.tad.Context;
 import com.inexas.util.Cardinality;
 
@@ -110,6 +111,12 @@ public class ConstantNode extends ExpressionNode {
 		super(context);
 		this.value = value;
 		this.type = type;
+	}
+
+	public ConstantNode(LiteralContext context, Path value) {
+		super(context);
+		this.value = value;
+		type = DataType.path;
 	}
 
 	@Override
@@ -332,6 +339,10 @@ public class ConstantNode extends ExpressionNode {
 
 	public static Node toTextConstant(LiteralContext context, String text) {
 		return new ConstantNode(context, text);
+	}
+
+	public static Node toPathConstant(LiteralContext context, String text) {
+		return new ConstantNode(context, Path.parse(text));
 	}
 
 	public static Node toDate(LiteralContext context, String text) {

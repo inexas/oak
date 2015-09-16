@@ -10,11 +10,11 @@ import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
 import com.inexas.oak.ast.OakParser.ArrayContext;
 import com.inexas.oak.ast.OakParser.CardinalityContext;
 import com.inexas.oak.ast.OakParser.ExprContext;
+import com.inexas.oak.ast.OakParser.IdentifierContext;
 import com.inexas.oak.ast.OakParser.LiteralContext;
 import com.inexas.oak.ast.OakParser.LoadContext;
 import com.inexas.oak.ast.OakParser.ObjectContext;
 import com.inexas.oak.ast.OakParser.PairContext;
-import com.inexas.oak.ast.OakParser.PathContext;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
@@ -91,6 +91,10 @@ public class AntlrToAstVisitor extends OakBaseListener {
 
 		case OakLexer.TextLiteral:
 			constant = ConstantNode.toTextConstant(ctx, text.substring(1, text.length() - 1));
+			break;
+
+		case OakLexer.PathLiteral:
+			constant = ConstantNode.toPathConstant(ctx, text);
 			break;
 
 		case OakLexer.DateTimeLiteral:
@@ -287,28 +291,9 @@ public class AntlrToAstVisitor extends OakBaseListener {
 	}
 
 	@Override
-	public void exitPath(PathContext ctx) {
-		final int type = ctx.start.getType();
+	public void exitIdentifier(IdentifierContext ctx) {
 		final String text = ctx.getText();
-		switch(ctx.start.getType()) {
-		case OakLexer.PathLiteral: {
-			stack.add(new PathNode(ctx, text));
-			break;
-		}
-
-		case OakLexer.Key: {
-			stack.add(new PathNode(ctx, text));
-			break;
-		}
-
-		case OakLexer.Divide: {
-			stack.add(new PathNode(ctx, "/"));
-			break;
-		}
-
-		default:
-			throw new UnexpectedException("enterLiteral: " + type);
-		}
+		stack.push(new IdentifierNode(ctx, text));
 	}
 
 	@Override

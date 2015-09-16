@@ -4,25 +4,24 @@
 grammar Path;
 
 
-path: protocol ? elementList ;
+path: protocol? elementList recurse? ;
  
-protocol: Key Colon;
+protocol: Identifier Colon;
  
 elementList
-	:	Switch Recurse ?						// Root
-	|	(Switch element )+ recurse?				// Absolute path
-	|	element (Switch element )* recurse?		// Relative path
+	:	Switch
+	|	Switch? element (Switch element )*
 	;
  
-element:	key selector? ;
+element: part selector? ;
 
-key: Key | Parent | Self ;
+part: Identifier | Parent | Self ;
  
-selector: Square ( Key | Posint ) Erauqs ;
+selector: Square ( Identifier | Posint ) Erauqs ;
 
-recurse: Switch Recurse;
+recurse: Recurse;
  
-Key: [A-Za-z][A-Za-z0-9_]* ;
+Identifier: [A-Za-z][A-Za-z0-9_]* ;
  
 Posint: ( '0' | ([1-9][0-9]*) ) ;
 
@@ -30,7 +29,7 @@ Colon: ':';
 
 Switch: '/' ;
 
-Recurse: '@' '@'?;
+Recurse: '*' '*'?;
 
 Self: '.' ;
 
