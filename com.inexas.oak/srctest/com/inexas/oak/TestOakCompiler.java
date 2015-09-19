@@ -66,7 +66,7 @@ public class TestOakCompiler {
 				+ "        type:identifier;\n"
 				+ "        Constraint{\n"
 				+ "          type:choice;\n"
-				+ "          value[\"a\",\"b\"]\n"
+				+ "          value[a,b]\n"
 				+ "        }\n"
 				+ "      }\n"
 				+ "    }\n"

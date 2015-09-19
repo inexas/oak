@@ -3,7 +3,7 @@ package com.inexas.oak.path;
 import java.util.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 public class Path {
 	public static enum Recurse {
@@ -31,32 +31,32 @@ public class Path {
 		 */
 		@Override
 		public String toString() {
-			final TextBuilder tb = new TextBuilder();
-			toString(tb);
-			return tb.toString();
+			final Text t = new Text();
+			toString(t);
+			return t.toString();
 		}
 
-		private void toString(TextBuilder tb) {
+		private void toString(Text t) {
 			switch(type) {
 			case SLASH:
-				tb.append('/');
+				t.append('/');
 				break;
 			case SELF:
-				tb.append('.');
+				t.append('.');
 				break;
 			case PARENT:
-				tb.append("..");
+				t.append("..");
 				break;
 			case NAMED:
-				tb.append(name);
+				t.append(name);
 				break;
 			default:
 				throw new UnexpectedException("toString: " + type);
 			}
 			if(index != null) {
-				tb.append('[');
-				tb.append(index.toString());
-				tb.append(']');
+				t.append('[');
+				t.append(index.toString());
+				t.append(']');
 			}
 		}
 
@@ -99,13 +99,13 @@ public class Path {
 	private final static int PARENT = 2;
 	private final static int NAMED = 3;
 
-	private final static TextBuilder.Checker oneToNine = new TextBuilder.Checker() {
+	private final static Text.Checker oneToNine = new Text.Checker() {
 		@Override
 		public boolean isValid(int offset, char c) {
 			return c >= '1' && c <= '9';
 		}
 	};
-	private final static TextBuilder.Checker zeroToNine = new TextBuilder.Checker() {
+	private final static Text.Checker zeroToNine = new Text.Checker() {
 		@Override
 		public boolean isValid(int offset, char c) {
 			return c >= '0' && c <= '9';
@@ -118,9 +118,9 @@ public class Path {
 
 	@Nullable
 	public static Path parse(String string) {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(string);
-		return parse(tb);
+		final Text t = new Text();
+		t.append(string);
+		return parse(t);
 	}
 
 	/**
@@ -131,26 +131,26 @@ public class Path {
 	 * @return Either a Path or null if a path could not be parsed.
 	 */
 	@Nullable
-	public static Path parse(TextBuilder tb) {
+	public static Path parse(Text t) {
 		final Path result;
 
 		// Set up for parse...
-		final int save = tb.cursor();
+		final int save = t.cursor();
 		final Recurse recurse;
 		final String protocol;
 		@Nullable
 		final Element[] elementList;
 
 		// '`' path: protocol? elementList recurse? '`' ;
-		if(tb.consume('`')
-				&& ((protocol = protocol(tb)) != null || true)
-				&& ((elementList = elementList(tb)) != null)
-				&& ((recurse = recurse(tb)) != null || true)
-				&& tb.consume('`')) {
+		if(t.consume('`')
+				&& ((protocol = protocol(t)) != null || true)
+				&& ((elementList = elementList(t)) != null)
+				&& ((recurse = recurse(t)) != null || true)
+				&& t.consume('`')) {
 			assert elementList != null;
 			result = new Path(protocol, elementList, recurse);
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = null;
 		}
 
@@ -171,15 +171,15 @@ public class Path {
 	}
 
 	@Nullable
-	private static String protocol(TextBuilder tb) {
+	private static String protocol(Text t) {
 		final String result;
 
 		// Identifier ':'
-		final int save = tb.cursor();
-		if(Identifier.consume(tb) && tb.consume(':')) {
-			result = tb.getString(save, tb.cursor() - 1); // -1 for ':'
+		final int save = t.cursor();
+		if(Identifier.consume(t) && t.consume(':')) {
+			result = t.getString(save, t.cursor() - 1); // -1 for ':'
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = null;
 		}
 
@@ -187,7 +187,7 @@ public class Path {
 	}
 
 	@Nullable
-	private static Element[] elementList(TextBuilder tb) {
+	private static Element[] elementList(Text t) {
 		@Nullable
 		final Element[] result;
 
@@ -197,16 +197,16 @@ public class Path {
 		// . : slash
 		// . | slash? element (slash element)*
 		// . ;
-		slash(tb, elementList);
+		slash(t, elementList);
 
-		if(element(tb, elementList)) {
+		if(element(t, elementList)) {
 			while(true) {
-				final int save = tb.cursor();
+				final int save = t.cursor();
 				final int saveElementList = elementList.size();
-				if(slash(tb, elementList) && element(tb, elementList)) {
+				if(slash(t, elementList) && element(t, elementList)) {
 					// Keep going
 				} else {
-					tb.setCursor(save);
+					t.setCursor(save);
 					final int size = elementList.size();
 					if(saveElementList != size) {
 						elementList.remove(size - 1);
@@ -226,15 +226,15 @@ public class Path {
 		return result;
 	}
 
-	private static boolean element(TextBuilder tb, List<Element> elementList) {
+	private static boolean element(Text t, List<Element> elementList) {
 		final boolean result;
 
 		// element: ('.' |'..' | Id) '[' ( posint | Id) ']'
 		final int type;
 		final String name;
 		Object index;
-		if(tb.consume('.')) {
-			if(tb.consume('.')) {
+		if(t.consume('.')) {
+			if(t.consume('.')) {
 				type = PARENT;
 				name = "..";
 			} else {
@@ -244,18 +244,18 @@ public class Path {
 			result = true;
 		} else {
 			type = NAMED;
-			name = identifier(tb);
+			name = identifier(t);
 			result = name != null;
 		}
 
 		if(result) {
-			final int save = tb.cursor();
-			if(tb.consume('[')
-					&& (((index = posint(tb)) != null) || ((index = identifier(tb)) != null))
-					&& tb.consume(']')) {
+			final int save = t.cursor();
+			if(t.consume('[')
+					&& (((index = posint(t)) != null) || ((index = identifier(t)) != null))
+					&& t.consume(']')) {
 				// index is set up
 			} else {
-				tb.setCursor(save);
+				t.setCursor(save);
 				index = null;
 			}
 		} else {
@@ -269,12 +269,12 @@ public class Path {
 		return result;
 	}
 
-	private static String identifier(TextBuilder tb) {
+	private static String identifier(Text t) {
 		final String result;
 
-		final int start = tb.cursor();
-		if(Identifier.consume(tb)) {
-			result = tb.getString(start);
+		final int start = t.cursor();
+		if(Identifier.consume(t)) {
+			result = t.getString(start);
 		} else {
 			result = null;
 		}
@@ -283,16 +283,16 @@ public class Path {
 	}
 
 	@Nullable
-	private static Integer posint(TextBuilder tb) {
+	private static Integer posint(Text t) {
 		final Integer result;
 
 		// '0' | ([1-9][0-9]*)
-		final int save = tb.cursor();
-		if(tb.consume('0')) {
+		final int save = t.cursor();
+		if(t.consume('0')) {
 			result = new Integer(0);
-		} else if(tb.parse(oneToNine) != null) {
-			tb.parse(zeroToNine);
-			final String string = tb.getString(save);
+		} else if(t.parse(oneToNine) != null) {
+			t.parse(zeroToNine);
+			final String string = t.getString(save);
 			result = new Integer(string);
 		} else {
 			result = null;
@@ -301,10 +301,10 @@ public class Path {
 		return result;
 	}
 
-	private static boolean slash(TextBuilder tb, List<Element> elementList) {
+	private static boolean slash(Text t, List<Element> elementList) {
 		final boolean result;
 
-		if(tb.consume('/')) {
+		if(t.consume('/')) {
 			elementList.add(new Element(SLASH, "/", null));
 			result = true;
 		} else {
@@ -314,11 +314,11 @@ public class Path {
 		return result;
 	}
 
-	private static Recurse recurse(TextBuilder tb) {
+	private static Recurse recurse(Text t) {
 		final Recurse result;
 
-		if(tb.consume('*')) {
-			result = tb.consume('*') ? Recurse.deep : Recurse.shallow;
+		if(t.consume('*')) {
+			result = t.consume('*') ? Recurse.deep : Recurse.shallow;
 		} else {
 			result = Recurse.none;
 		}
@@ -416,21 +416,21 @@ public class Path {
 	 */
 	@Override
 	public String toString() {
-		final TextBuilder tb = new TextBuilder();
-		toString(tb);
-		return tb.toString();
+		final Text t = new Text();
+		toString(t);
+		return t.toString();
 	}
 
-	public void toString(TextBuilder tb) {
-		tb.append('`');
+	public void toString(Text t) {
+		t.append('`');
 
 		if(protocol != null) {
-			tb.append(protocol);
-			tb.append(':');
+			t.append(protocol);
+			t.append(':');
 		}
 
 		for(final Element element : elements) {
-			element.toString(tb);
+			element.toString(t);
 		}
 
 		switch(recurse) {
@@ -438,17 +438,17 @@ public class Path {
 			break;
 
 		case shallow:
-			tb.append('*');
+			t.append('*');
 			break;
 
 		case deep:
-			tb.append("**");
+			t.append("**");
 			break;
 
 		default:
 			throw new UnexpectedException("toString: " + recurse);
 		}
-		tb.append('`');
+		t.append('`');
 	}
 
 	/**

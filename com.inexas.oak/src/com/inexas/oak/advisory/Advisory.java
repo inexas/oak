@@ -176,16 +176,16 @@ public class Advisory implements Tad {
 			result = "<No errors>";
 		} else {
 			sort();
-			final TextBuilder tb = new TextBuilder();
+			final Text t = new Text();
 			if(string != null) {
-				tb.append(string);
-				tb.newline();
+				t.append(string);
+				t.newline();
 			}
 			for(final Advice item : items) {
-				tb.append(item.toString());
-				tb.newline();
+				t.append(item.toString());
+				t.newline();
 			}
-			result = tb.toString();
+			result = t.toString();
 		}
 		return result;
 	}

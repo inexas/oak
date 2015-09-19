@@ -5,17 +5,18 @@ import com.inexas.exception.ImplementMeException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Locus;
 import com.inexas.oak.dialect.Keyed;
+import com.inexas.oak.path.Identifier;
 
 public class Property extends Locus.Base implements Keyed {
 	public final String key;
 	public final DataType type;
 	public final Constraint[] constraints;
 
-	public Property(String key, String type, List<Constraint> constraints) {
+	public Property(Identifier key, Identifier type, List<Constraint> constraints) {
 		this(
-				key,
-				type,
-				constraints == null ? null : constraints.toArray(new Constraint[constraints.size()]));
+				key.toString(),
+				type == null ? null : type.toString(),
+						constraints == null ? null : constraints.toArray(new Constraint[constraints.size()]));
 	}
 
 	public Property(String key, String type, Constraint[] constraints) {

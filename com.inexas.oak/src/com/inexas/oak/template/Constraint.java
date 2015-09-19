@@ -2,16 +2,20 @@ package com.inexas.oak.template;
 
 import java.time.*;
 import java.util.*;
-
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.*;
+import com.inexas.oak.path.Identifier;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
 public abstract class Constraint extends Locus.Base implements Keyed {
 	public final Object[] values;
 	protected DataType dataType;
+
+	protected Constraint(String[] values) {
+		this.values = toType(values);
+	}
 
 	protected Constraint(Object[] values) {
 		this.values = values;
@@ -23,15 +27,16 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 * @param type
 	 *            The type of the Constraint: regexp, choice, ...
 	 * @param values
-	 *            A list of 0..* values depending on the type of the Constraint.
+	 *            A list of 0..* strings that will be parsed into objects
+	 *            depending on the type of the Constraint.
 	 * @return The newly created constraint. However if an error is encountered
 	 *         the the Advisory is updated and null is returned.
 	 */
-	public static Constraint newConstraint(String type, List<Object> values) {
+	public static Constraint newConstraint(Identifier type, List<Object> values) {
 		final Constraint result;
 
-		final Object[] array = values.toArray();
-		switch(type) {
+		final Object[] array = values.toArray(new Object[values.size()]);
+		switch(type.toString()) {
 		case ChoiceConstraint.KEY:
 			result = new ChoiceConstraint(array);
 			break;
@@ -49,7 +54,38 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 		return result;
 	}
 
-	public abstract void toMarkup(TextBuilder tb);
+	/**
+	 * Factory method to construct a new Constraint.
+	 *
+	 * @param type
+	 *            The type of the Constraint: regexp, choice, ...
+	 * @param values
+	 *            A list of 0..* values depending on the type of the Constraint.
+	 * @return The newly created constraint. However if an error is encountered
+	 *         the the Advisory is updated and null is returned.
+	 */
+	public static Constraint newConstraint(Identifier type, Object... values) {
+		final Constraint result;
+
+		switch(type.toString()) {
+		case ChoiceConstraint.KEY:
+			result = new ChoiceConstraint(values);
+			break;
+
+		case RegexpConstraint.KEY:
+			result = new RegexpConstraint(values);
+			break;
+
+		default:
+			final Advisory advisory = Context.get(Advisory.class);
+			advisory.error("Unrecognised Constraint type: '" + type + '\'');
+			result = null;
+		}
+
+		return result;
+	}
+
+	public abstract void toMarkup(Text t);
 
 	void accept(DialectVisitor visitor) {
 		visitor.visit(this);
@@ -99,52 +135,82 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	public abstract void validate(Object value);
 
 	/**
+	 * This method is called when the Constraint is added to a Property. Now we
+	 * know what data type the Constraint has to constrain then we need to check
+	 * that the values we were given on construction make sense.
+	 *
+	 * The default implementation is to check for at least on value (which would
+	 * only make sense if it were an expression) and of a matching data type.
+	 * Override me if you need anything else.
+	 *
+	 * Errors are passed to an Advisory if one is in the Context otherwise a
+	 * Parsing exception is thrown.
+	 *
+	 * @param dataType
+	 *            The data type of the property.
+	 */
+	public final void setDataType(DataType dataType) throws ParsingException {
+		if(dataType != DataType.any) {
+			for(final Object value : values) {
+				if(value == null) {
+					// Null is good for all types
+					continue;
+				}
+				final DataType valueType = DataType.getDataType(value.getClass());
+				if(valueType != dataType) {
+					error("Invalid data type: '" + value.toString() + "', expected: " + dataType.name());
+				}
+			}
+		}
+	}
+
+	/**
 	 * Convert the value(s) to a human readable array and add it to a
 	 * TextBuilder.
 	 *
 	 * @param tb
 	 *            Something like "["one", two, 3]" is added.
 	 */
-	protected void valuesToTextArray(TextBuilder tb) {
-		tb.append('[');
+	protected void valuesToTextArray(Text t) {
+		t.append('[');
 		for(final Object option : values) {
-			tb.delimit();
-			valueToText(tb, option);
+			t.delimit();
+			valueToText(t, option);
 		}
-		tb.space();
-		tb.append(']');
+		t.space();
+		t.append(']');
 	}
 
-	protected void valueToText(TextBuilder tb, Object value) {
+	protected void valueToText(Text t, Object value) {
 		if(dataType == null) {
 			/*
 			 * The Constraint has yet to be added to a Property so do the best
 			 * we can using the class of the value.
 			 */
 			if(value == null) {
-				tb.append("null");
+				t.append("null");
 			} else {
 				final Class<?> clazz = value.getClass();
 				if(clazz == String.class) {
-					tb.append('"');
-					StringU.escapeNewlinesAndQuotes((String)value, tb);
-					tb.append('"');
+					t.append('"');
+					StringU.escapeNewlinesAndQuotes((String)value, t);
+					t.append('"');
 				} else if(clazz == LocalDate.class) {
-					tb.append('@');
-					tb.append(DateU.format((LocalDate)value));
+					t.append('@');
+					t.append(DateU.formatStandardDate((LocalDate)value));
 				} else if(clazz == LocalTime.class) {
-					tb.append('@');
-					tb.append(DateU.format((LocalTime)value));
+					t.append('@');
+					t.append(DateU.formatStandardTime((LocalTime)value));
 				} else if(clazz == LocalDateTime.class) {
-					tb.append('@');
-					tb.append(DateU.format((LocalDateTime)value));
+					t.append('@');
+					t.append(DateU.formatStandardDatetime((LocalDateTime)value));
 				} else {
-					tb.append(value.toString());
+					t.append(value.toString());
 				}
 			}
 		} else {
 			if(value == null) {
-				tb.append("null");
+				t.append("null");
 			} else {
 				switch(dataType) {
 				case bool:
@@ -154,25 +220,25 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 				case Z:
 				case identifier:
 				case path:
-					tb.append(value.toString());
+					t.append(value.toString());
 					break;
 
 				case date:
-					tb.append(DateU.format((LocalDate)value));
+					t.append(DateU.formatStandardDate((LocalDate)value));
 					break;
 
 				case time:
-					tb.append(DateU.format((LocalTime)value));
+					t.append(DateU.formatStandardTime((LocalTime)value));
 					break;
 
 				case datetime:
-					tb.append(DateU.format((LocalDateTime)value));
+					t.append(DateU.formatStandardDatetime((LocalDateTime)value));
 					break;
 
 				case text:
-					tb.append('"');
-					StringU.escapeNewlinesAndQuotes((String)value, tb);
-					tb.append('"');
+					t.append('"');
+					StringU.escapeNewlinesAndQuotes((String)value, t);
+					t.append('"');
 					break;
 
 					// $CASES-OMITTED$
@@ -183,19 +249,31 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 		}
 	}
 
-	/**
-	 * This method is called when the Constraint is added to a Property. The
-	 * implementation should check that the data type makes sense for the
-	 * Constraint and that the values of all the parameters make sense. It
-	 * should also remember the data type: "this.dataType = dataType;"
-	 *
-	 * @param dataType
-	 *            The data type of the property.
-	 */
-	public abstract void setDataType(DataType dataType);
-
-	protected void error(String message) {
-		final Advisory advisory = Context.get(Advisory.class);
+	protected void error(String message) throws ParsingException {
+		final Advisory advisory = Context.getButDontThrow(Advisory.class);
+		if(advisory == null) {
+			throw new ParsingException(message);
+		}
 		advisory.error(this, message);
 	}
+
+	/**
+	 * Convert Oak value strings to their proper types
+	 *
+	 * @param values
+	 *            Values to convert; e.g. "1", "\"two\"", "three"
+	 * @return Converted values; e.g. 1, "two" three.
+	 */
+	private static Object[] toType(String[] values) {
+		final Object[] result;
+
+		final int length = values.length;
+		result = new Object[length];
+		for(int i = 0; i < length; i++) {
+			result[i] = DataType.parseValue(values[i]);
+		}
+
+		return result;
+	}
+
 }

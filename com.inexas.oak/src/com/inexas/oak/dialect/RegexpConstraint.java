@@ -1,9 +1,8 @@
 package com.inexas.oak.dialect;
 
 import java.util.regex.*;
-import com.inexas.oak.DataType;
 import com.inexas.oak.template.Constraint;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 /**
  * A choice constraint is given a list of choices in the values array. The value
@@ -12,66 +11,68 @@ import com.inexas.util.TextBuilder;
 public class RegexpConstraint extends Constraint {
 	public final static String KEY = "regexp";
 
-	public RegexpConstraint(Object... regexps) {
+	public RegexpConstraint(String... regexps) {
 		super(regexps);
-		if(regexps.length == 0) {
+		if(values.length == 0) {
 			error("Regular expression (regexp) Constraints need at least one regular expression");
 		} else {
-			for(final Object regexp : regexps) {
-				if(regexp == null) {
-					error("Cannot use <null> as a regular expression");
-				} else {
-					if(regexp instanceof String) {
-						final String string = (String)regexp;
-						try {
-							Pattern.compile(string);
-						} catch(final Exception e) {
-							error("Error compiling regular expression: " + string);
-						}
-					} else {
-						error("Constraint value not a string: " + regexp.toString());
-					}
+			for(final Object value : values) {
+				try {
+					final String string = (String)value;
+					Pattern.compile(string);
+				} catch(final PatternSyntaxException e) {
+					error("Error compiling regular expression: " + value);
+				} catch(final ClassCastException e) {
+					error("Invalid type for regular expression: " + value);
 				}
 			}
 		}
 	}
 
 	/**
+	 * @param values
+	 *            A list of zero or more objects.
+	 */
+	public RegexpConstraint(Object... values) {
+		super(values);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void toMarkup(TextBuilder tb) {
-		tb.indent();
-		tb.append("Constraint");
-		tb.space();
-		tb.append('{');
-		tb.newline();
-		tb.indentMore();
+	public void toMarkup(Text t) {
+		t.indent();
+		t.append("Constraint");
+		t.space();
+		t.append('{');
+		t.newline();
+		t.indentMore();
 
-		tb.indent();
-		tb.append("type:");
-		tb.space();
-		tb.append(KEY);
-		tb.append(';');
-		tb.newline();
+		t.indent();
+		t.append("type:");
+		t.space();
+		t.append(KEY);
+		t.append(';');
+		t.newline();
 
-		tb.indent();
+		t.indent();
 		if(values.length == 1) {
 			// value: "a*b";
-			tb.append("value: ");
-			valueToText(tb, values[0]);
-			tb.newline();
+			t.append("value: ");
+			valueToText(t, values[0]);
+			t.newline();
 		} else {
 			// value [ "a*b", "b*", "aba" ]
-			tb.append("value ");
-			valuesToTextArray(tb);
-			tb.newline();
+			t.append("value ");
+			valuesToTextArray(t);
+			t.newline();
 		}
 
-		tb.indentLess();
-		tb.indent();
-		tb.append('}');
-		tb.newline();
+		t.indentLess();
+		t.indent();
+		t.append('}');
+		t.newline();
 	}
 
 	/**
@@ -87,7 +88,7 @@ public class RegexpConstraint extends Constraint {
 	 */
 	@Override
 	public String toString() {
-		final TextBuilder result = new TextBuilder(true);
+		final Text result = new Text(true);
 		toMarkup(result);
 		return result.toString();
 	}
@@ -110,34 +111,13 @@ public class RegexpConstraint extends Constraint {
 		}
 
 		if(!matched) {
-			final TextBuilder tb = new TextBuilder(true);
-			tb.append("Invalid value for regexp constraint: '");
-			tb.append(value == null ? "<null>" : value.toString());
-			tb.append(", should have be one of: ");
-			valuesToTextArray(tb);
-			error(tb.toString());
+			final Text t = new Text(true);
+			t.append("Invalid value for regexp constraint: '");
+			t.append(value == null ? "<null>" : value.toString());
+			t.append(", should have be one of: ");
+			valuesToTextArray(t);
+			error(t.toString());
 		}
 	}
 
-	@Override
-	public void setDataType(DataType dataType) {
-		this.dataType = dataType;
-
-		final Class<?> expectedClass;
-		final String expected;
-		if(dataType == DataType.text || dataType == DataType.identifier) {
-			expected = DataType.text.toString();
-			expectedClass = String.class;
-
-			for(final Object value : values) {
-				if(value.getClass() != expectedClass) {
-					error("Invalid data type for value: " + value + ", expected " + expected);
-				}
-			}
-
-			this.dataType = dataType;
-		} else {
-			error("Regular expressions cannot be applied to " + dataType.name() + " properties");
-		}
-	}
 }

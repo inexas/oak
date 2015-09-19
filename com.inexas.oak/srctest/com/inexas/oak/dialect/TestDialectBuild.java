@@ -89,7 +89,7 @@ public class TestDialectBuild {
 				+ "				key:gender;"
 				+ "				Constraint{"
 				+ "					type:choice;"
-				+ "					value[m,f]"
+				+ "					value[\"m\",\"f\"]"
 				+ "				}"
 				+ "			}"
 				+ "		}"

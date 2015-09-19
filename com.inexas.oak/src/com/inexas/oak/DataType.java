@@ -411,7 +411,7 @@ public enum DataType {
 	 * @param result
 	 *            Where to place the processed String.
 	 */
-	public static void escapeForOak(String string, boolean quote, TextBuilder result) {
+	public static void escapeForOak(String string, boolean quote, Text result) {
 		if(string == null) {
 			result.append("null");
 		} else {
@@ -427,17 +427,19 @@ public enum DataType {
 				case '\n':
 					result.append("\\n");
 					break;
-				case '\\':
-					result.append("\\\\");
-					break;
 				case '\"':
 					result.append("\\\"");
 					break;
-				case '\r':
-					// Discard
+				case '\\':
+					result.append("\\\\");
 					break;
 				default:
-					result.append(c);
+					if(c < ' ' || c >= '~') {
+						// Must be four digits
+						result.append("\\u" + Integer.toHexString(c | 0x10000).substring(1));
+					} else {
+						result.append(c);
+					}
 				}
 			}
 			if(quote) {
@@ -457,48 +459,206 @@ public enum DataType {
 		return this == bool ? "boolean" : name();
 	}
 
-	public static void toString(Object value, TextBuilder tb) {
+	public static void toString(Object value, Text t) {
 		if(value == null) {
-			tb.append("null");
+			t.append("null");
 		} else {
 			final Class<? extends Object> clazz = value.getClass();
 			final DataType type = getDataType(clazz);
 			if(type == null) {
 				throw new RuntimeException("Invalid type: " + clazz.getName());
 			}
-			type.toMarkup(value, tb);
+			type.toMarkup(value, t);
 		}
 	}
 
 	/**
-	 * Given a value it to Oak markup for this type.
+	 * Convert a list of values to an Oak markup String, e.g.
+	 * "[ true, null, false ]".
+	 *
+	 * @param values
+	 *            The list of values
+	 * @return An Oak markup representation of the values.
+	 * @see #parse(String)
+	 */
+	public String toString(List<Object> values) {
+		assert values != null : "Arrays can't be null, only empty";
+
+		final Text t = new Text(true);
+
+		t.append('[');
+		if(values.size() > 0) {
+			t.space();
+			for(final Object value : values) {
+				t.delimit();
+				toMarkup(value, t);
+			}
+			t.space();
+		}
+		t.append(']');
+
+		return t.toString();
+
+	}
+
+	/**
+	 * Convert a value to an Oak markup representation.
 	 *
 	 * @param value
-	 *            The value to convert.
-	 * @param result
-	 *            Where the markup is inserted.
+	 *            The value to represent.
+	 * @return E.g. `/Some/Path`
+	 * @see #parse(String)
 	 */
-	public void toMarkup(Object value, TextBuilder result) {
+	public final String toString(Object value) {
+		final Text t = new Text();
+		toMarkup(value, t);
+		return t.toString();
+	}
+
+	/**
+	 * Convert a value to an Oak markup representation.
+	 *
+	 * @param value
+	 *            The value to represent.
+	 * @param tb
+	 *            The buffer in which to write the markup.
+	 */
+	public void toMarkup(Object value, Text t) {
 		if(value == null) {
-			result.append("null");
-		} else if(this == text) {
-			escapeForOak((String)value, true, result);
-		} else if(this == identifier || this == path) {
-			result.append(value.toString());
+			t.append("null");
 		} else {
-			result.append(value.toString());
+			switch(this) {
+			case z:
+			case Z:
+			case f:
+			case F:
+			case bool:
+				t.append(value.toString());
+				break;
+
+			case cardinality:
+				((Cardinality)value).toString(t);
+				break;
+
+			case text:
+				escapeForOak((String)value, true, t);
+				break;
+
+			case identifier:
+				t.append(value.toString());
+				break;
+
+			case path:
+				((Path)value).toString(t);
+				break;
+
+			case datetime:
+				t.append('@');
+				t.append(DateU.formatStandardDatetime((LocalDateTime)value));
+				break;
+
+			case date:
+				t.append('@');
+				t.append(DateU.formatStandardDate((LocalDate)value));
+				break;
+
+			case time:
+				t.append('@');
+				t.append(DateU.formatStandardTime((LocalTime)value));
+				break;
+
+			case any:
+			default:
+				throw new UnexpectedException("asString: " + this);
+			}
 		}
+	}
+
+	/**
+	 * In Oak it is possible to embed a tab character as an ASCII 8 or as a \t
+	 * but internally we store this in ASCII. The same goes for newlines and
+	 * other tables (see the Oak reference). Here we convert external format to
+	 * internal format.
+	 *
+	 * @param source
+	 *            The text to process, may be null. E.g. "Hello\tworld" (with
+	 *            the quotes)
+	 * @return Return an internal format string.
+	 */
+	@Nullable
+	public static String textToInternalFormat(@Nullable String source) throws ParsingException {
+		final String result;
+
+		assert source == null
+				|| source.length() >= 2
+				&& source.charAt(0) == '"'
+				&& source.charAt(source.length() - 1) == '"';
+
+				if(source == null) {
+			result = null;
+		} else {
+			final Text t = new Text();
+			final char[] ca = source.toCharArray();
+			final int length = ca.length - 1; // 1 because remove quotes
+
+			for(int i = 1; i < length; i++) { // 1 because remove quotes
+				final char c = ca[i];
+				if(c == '\\') {
+					if(i == length - 1) {
+						error("Invalid text " + source + ", escape at end of line");
+					} else {
+						i++;
+						final char next = ca[i];
+						if(next == 't') {
+							t.append('\t');
+						} else if(next == 'n') {
+							t.append('\n');
+						} else if(next == '"') {
+							t.append('"');
+						} else if(next == '\\') {
+							t.append('\\');
+						} else if(next == 'u') {
+							// Unicode, 1-4 hex characters...
+							i++;
+
+							final Text hex = new Text();
+							hex.append(source);
+							hex.setCursor(i);
+							final int start = i;
+							if(hex.consumeAscii(Text.ASCII_0_F)) {
+								final int end = start + Math.min(4, hex.cursor() - start);
+								final String string = hex.getString(start, end);
+								final char u = (char)Integer.parseInt(string, 16);
+								t.append(u);
+								i = end - 1;
+							} else {
+								error("Invalid text " + source + ", incorrect unicode");
+							}
+						} else {
+							error("Invalid text: \\" + next);
+						}
+					}
+				} else {
+					t.append(c);
+				}
+			}
+			result = t.toString();
+		}
+
+		return result;
 	}
 
 	/**
 	 * Parse a string and set the value accordingly.
 	 *
+	 * @param <T>
+	 *            Type of object to parse
 	 * @param string
 	 *            The string to parse. May be null. The string should be in Oak
 	 *            markup so "a string", `/Some/Path`, etc.
 	 * @return The parsed value.
-	 * @see asString(T)
-	 * @see asString(List<T)
+	 * @see #toString(List)
+	 *
 	 * @throws ParsingException
 	 *             Thrown if the string cannot be parsed correctly.
 	 */
@@ -649,106 +809,40 @@ public enum DataType {
 	}
 
 	/**
-	 * Convert a list of values to an Oak markup String, e.g.
-	 * "[ true, null, false ]".
-	 *
-	 * @param values
-	 *            The list of values
-	 * @return An Oak markup representation of the values.
-	 * @see parse(String)
-	 */
-	public String asString(List<Object> values) {
-		assert values != null : "Arrays can't be null, only empty";
-
-		final TextBuilder tb = new TextBuilder(true);
-
-		tb.append('[');
-		if(values.size() > 0) {
-			tb.space();
-			for(final Object value : values) {
-				tb.delimit();
-				asString(value, tb);
-			}
-			tb.space();
-		}
-		tb.append(']');
-
-		return tb.toString();
-
-	}
-
-	/**
-	 * Convert a value to an Oak markup representation.
+	 * Parse a string value and covert it to its proper data type.
 	 *
 	 * @param value
-	 *            The value to represent.
-	 * @return E.g. `/Some/Path`
-	 * @see parse(String)
+	 * @return The parsed value.
+	 * @throws ParsingException
+	 *             Thrown if not Advisory is available and there was an error
+	 *             parsing.
 	 */
-	public String asString(Object value) {
-		final TextBuilder tb = new TextBuilder();
-		asString(value, tb);
-		return tb.toString();
-	}
+	@SuppressWarnings("unchecked")
+	public static <T> T parseValue(String value) throws ParsingException {
+		final T result;
 
-	/**
-	 * Convert a value to an Oak markup representation.
-	 *
-	 * @param value
-	 *            The value to represent.
-	 * @param tb
-	 *            The buffer in which to write the markup.
-	 * @see parse(String)
-	 */
-	public void asString(Object value, TextBuilder tb) {
-		if(value == null) {
-			tb.append("null");
+		assert value != null;
+
+		/*
+		 * todo Restructure the whole class so I've got parse and parseArray as
+		 * static methods and the share code properly.
+		 */
+		if("null".equals(value)) {
+			result = null;
 		} else {
-			switch(this) {
-			case z:
-			case Z:
-			case f:
-			case F:
-			case bool:
-				tb.append(value.toString());
-				break;
+			final List<Object> list = new ArrayList<>();
+			final Text t = new Text();
+			t.append(value);
 
-			case cardinality:
-				((Cardinality)value).toString(tb);
-				break;
-
-			case text:
-				escapeForOak((String)value, true, tb);
-				break;
-
-			case identifier:
-				tb.append((String)value);
-				break;
-
-			case path:
-				((Path)value).toString(tb);
-				break;
-
-			case datetime:
-				tb.append('@');
-				tb.append(DateU.formatStandardDateTime((LocalDateTime)value));
-				break;
-
-			case date:
-				tb.append('@');
-				tb.append(DateU.formatStandardDate((LocalDate)value));
-				break;
-
-			case time:
-				tb.append('@');
-				tb.append(DateU.formatStandardTime((LocalTime)value));
-				break;
-
-			case any:
-			default:
-				throw new UnexpectedException("asString: " + this);
+			if(any(t, list) && t.isEof()) {
+				result = (T)list.get(0);
+			} else {
+				error("Count not parse value: " + value);
+				result = null;
 			}
 		}
+
+		return result;
 	}
 
 	/**
@@ -762,34 +856,35 @@ public enum DataType {
 	 *            The type of the array, may be 'any'.
 	 * @return A potentially empty but not null list of values.
 	 */
-	public static Object[] parseArray(String string, DataType type) {
+	@SuppressWarnings("unchecked")
+	public static <T> List<T> parseArray(String string, DataType type) {
 		final List<?> result;
 
-		final TextBuilder tb = new TextBuilder();
-		tb.append(string);
-		if(tb.consume('[')
-				&& (result = elementList(tb, type)) != null
-				&& (tb.ws() && tb.consume(']'))
-				&& tb.isEof()) {
+		final Text t = new Text();
+		t.append(string);
+		if(t.consume('[')
+				&& (result = elementList(t, type)) != null
+				&& (t.ws() && t.consume(']'))
+				&& t.isEof()) {
 			// OK
 		} else {
 			throw new ParsingException("Invalid array: " + string);
 		}
 
-		return result.toArray(new Object[result.size()]);
+		return (List<T>)result;
 	}
 
-	private static List<Object> elementList(TextBuilder tb, DataType type) {
+	private static List<Object> elementList(Text t, DataType type) {
 		final List<Object> result = new ArrayList<>();
 
 		// elementList: ( WS? value ( WS? ',' WS? value )* WS? )?
-		if(tb.ws() && value(tb, type, result)) {
+		if(t.ws() && value(t, type, result)) {
 			while(true) {
-				final int save = tb.cursor();
-				if(tb.ws() && tb.consume(',') && tb.ws() && value(tb, type, result)) {
+				final int save = t.cursor();
+				if(t.ws() && t.consume(',') && t.ws() && value(t, type, result)) {
 					continue;
 				}
-				tb.setCursor(save);
+				t.setCursor(save);
 				break;
 			}
 		}
@@ -809,12 +904,12 @@ public enum DataType {
 	 * @return Return true if a value has been added to the valueList and the
 	 *         cursor advanced or false and the cursor is as it was.
 	 */
-	private static boolean value(TextBuilder tb, DataType type, List<Object> valueList) {
+	private static boolean value(Text t, DataType type, List<Object> valueList) {
 		boolean result;
 
-		if(tb.isEof()) {
+		if(t.isEof()) {
 			result = false;
-		} else if(tb.consume("null")) {
+		} else if(t.consume("null")) {
 			valueList.add(null);
 			result = true;
 		} else {
@@ -823,43 +918,43 @@ public enum DataType {
 			case Z:
 			case f:
 			case F:
-				result = number(tb, type, valueList);
+				result = number(t, type, valueList);
 				break;
 
 			case text:
-				result = text(tb, valueList);
+				result = text(t, valueList);
 				break;
 
 			case identifier:
-				result = identifier(tb, valueList);
+				result = identifier(t, valueList);
 				break;
 
 			case path:
-				result = path(tb, valueList);
+				result = path(t, valueList);
 				break;
 
 			case datetime:
-				result = datetime(tb, valueList);
+				result = datetime(t, valueList);
 				break;
 
 			case date:
-				result = date(tb, valueList);
+				result = date(t, valueList);
 				break;
 
 			case time:
-				result = time(tb, valueList);
+				result = time(t, valueList);
 				break;
 
 			case bool:
-				result = bool(tb, valueList);
+				result = bool(t, valueList);
 				break;
 
 			case cardinality:
-				result = cardinality(tb, valueList);
+				result = cardinality(t, valueList);
 				break;
 
 			case any:
-				result = any(tb, valueList);
+				result = any(t, valueList);
 				break;
 
 			default:
@@ -870,7 +965,7 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean any(TextBuilder tb, List<Object> valueList) {
+	private static boolean any(Text t, List<Object> valueList) {
 		final boolean result;
 
 		// value
@@ -890,33 +985,33 @@ public enum DataType {
 		 * 
 		 * We know we're not EOF and "null" has been dealt with by the caller.
 		 */
-		final char c = tb.peek();
+		final char c = t.peek();
 		if(c == '"') { // Text
-			result = text(tb, valueList);
+			result = text(t, valueList);
 		} else if(c == '`') { // Path
-			result = path(tb, valueList);
+			result = path(t, valueList);
 		} else if(c == '@') { // Temporal
-			result = datetime(tb, valueList) // Must be first
-					|| date(tb, valueList)
-					|| time(tb, valueList);
+			result = datetime(t, valueList) // Must be first
+					|| date(t, valueList)
+					|| time(t, valueList);
 		} else if(c >= '0' && c <= '9' || c == '.' || c == '-') {
-			result = cardinality(tb, valueList) ||
-					number(tb, DataType.any, valueList);
+			result = cardinality(t, valueList) ||
+					number(t, DataType.any, valueList);
 		} else {
-			result = bool(tb, valueList) // Must be first
-					|| identifier(tb, valueList);
+			result = bool(t, valueList) // Must be first
+					|| identifier(t, valueList);
 		}
 
 		return result;
 	}
 
-	private static boolean datetime(TextBuilder tb, List<Object> valueList) {
+	private static boolean datetime(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(tb.consume('@') && date(tb) && tb.ws() && time(tb)) {
-			final String string = tb.getString(start + 1); // Jump the'@'
-			final LocalDateTime value = DateU.parseStandardDateTime(string);
+		final int start = t.cursor();
+		if(t.consume('@') && date(t) && t.ws() && time(t)) {
+			final String string = t.getString(start + 1); // Jump the'@'
+			final LocalDateTime value = DateU.parseStandardDatetime(string);
 			valueList.add(value);
 			result = true;
 		} else {
@@ -926,12 +1021,12 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean date(TextBuilder tb, List<Object> valueList) {
+	private static boolean date(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(tb.consume('@') && date(tb)) {
-			final String string = tb.getString(start + 1); // Jump the'@'
+		final int start = t.cursor();
+		if(t.consume('@') && date(t)) {
+			final String string = t.getString(start + 1); // Jump the'@'
 			final LocalDate value = DateU.parseStandardDate(string);
 			valueList.add(value);
 			result = true;
@@ -942,32 +1037,32 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean date(TextBuilder tb) {
+	private static boolean date(Text t) {
 		final boolean result;
 
 		// yyyy '/' MM '/' dd
 
-		final int save = tb.cursor();
-		if(tb.consumeAscii(TextBuilder.ASCII_0_9)
-				&& tb.consume('/')
-				&& tb.consumeAscii(TextBuilder.ASCII_0_9)
-				&& tb.consume('/')
-				&& tb.consumeAscii(TextBuilder.ASCII_0_9)) {
+		final int save = t.cursor();
+		if(t.consumeAscii(Text.ASCII_0_9)
+				&& t.consume('/')
+				&& t.consumeAscii(Text.ASCII_0_9)
+				&& t.consume('/')
+				&& t.consumeAscii(Text.ASCII_0_9)) {
 			result = true;
 		} else {
 			result = false;
-			tb.setCursor(save);
+			t.setCursor(save);
 		}
 
 		return result;
 	}
 
-	private static boolean time(TextBuilder tb, List<Object> valueList) {
+	private static boolean time(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(tb.consume('@') && time(tb)) {
-			final String string = tb.getString(start + 1); // Jump the'@'
+		final int start = t.cursor();
+		if(t.consume('@') && time(t)) {
+			final String string = t.getString(start + 1); // Jump the'@'
 			final LocalTime value = DateU.parseStandardTime(string);
 			valueList.add(value);
 			result = true;
@@ -978,36 +1073,36 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean time(TextBuilder tb) {
+	private static boolean time(Text t) {
 		final boolean result;
 
 		// HH ':' mm ( : ss )?
 
 		// Try for HH:mm...
-		int reset = tb.cursor();
-		if(tb.consumeAscii(TextBuilder.ASCII_0_9)
-				&& tb.consume(':')
-				&& tb.consumeAscii(TextBuilder.ASCII_0_9)) {
+		int reset = t.cursor();
+		if(t.consumeAscii(Text.ASCII_0_9)
+				&& t.consume(':')
+				&& t.consumeAscii(Text.ASCII_0_9)) {
 			result = true;
-			reset = tb.cursor();
+			reset = t.cursor();
 
 			// Try for :ss...
-			if(tb.consume(':') && tb.consumeAscii(TextBuilder.ASCII_0_9)) {
-				reset = tb.cursor();
+			if(t.consume(':') && t.consumeAscii(Text.ASCII_0_9)) {
+				reset = t.cursor();
 			}
 		} else {
 			result = false;
 		}
 
-		tb.setCursor(reset);
+		t.setCursor(reset);
 
 		return result;
 	}
 
-	private static boolean cardinality(TextBuilder tb, List<Object> valueList) {
+	private static boolean cardinality(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final Cardinality value = Cardinality.parse(tb);
+		final Cardinality value = Cardinality.parse(t);
 		if(value == null) {
 			result = false;
 		} else {
@@ -1018,10 +1113,10 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean path(TextBuilder tb, List<Object> valueList) {
+	private static boolean path(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final Path value = Path.parse(tb);
+		final Path value = Path.parse(t);
 		if(value == null) {
 			result = false;
 		} else {
@@ -1032,13 +1127,13 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean identifier(TextBuilder tb, List<Object> valueList) {
+	private static boolean identifier(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(Identifier.consume(tb)) {
-			final String token = tb.getString(start);
-			valueList.add(token);
+		final int start = t.cursor();
+		if(Identifier.consume(t)) {
+			final String string = t.getString(start);
+			valueList.add(new Identifier(string));
 			result = true;
 		} else {
 			result = false;
@@ -1047,12 +1142,13 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean text(TextBuilder tb, List<Object> valueList) {
+	private static boolean text(Text t, List<Object> valueList) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(tb.consumeString()) {
-			final String textValue = tb.getString(start);
+		final int start = t.cursor();
+		if(t.consumeString()) {
+			// +/- 1s: drop the quotes
+			final String textValue = unescape(t, start + 1, t.cursor() - 1);
 			valueList.add(textValue);
 			result = true;
 		} else {
@@ -1063,13 +1159,64 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean bool(TextBuilder tb, List<Object> valueList) {
+	/**
+	 * Convert a potentially escaped string to text.
+	 *
+	 * @param t
+	 *            The source string.
+	 * @param start
+	 *            Starting offset.
+	 * @param end
+	 *            Ending offset.
+	 * @return Return the un-escaped string which may be zero-length but not
+	 *         null.
+	 */
+	private static String unescape(Text t, int start, int end) {
+		final Text result = new Text();
+
+		/*
+		 * We know that there's a starting and ending quote that's been removed
+		 * from the string but otherwise we can't trust the contents.
+		 */
+		for(int i = start; i < end; i++) {
+			final char c = t.charAt(i);
+			final char escaped;
+			if(c == '\\') {
+				if(i < end - 1) {
+					i++;
+					final char next = t.charAt(i);
+					if(next == 't') {
+						escaped = '\t';
+					} else if(next == 'n') {
+						escaped = '\n';
+					} else if(next == '"') {
+						escaped = '"';
+					} else if(next == '\\') {
+						escaped = '\\';
+					} else {
+						error("Invalid escape: '\\" + next + '\'');
+						escaped = next;
+					}
+				} else {
+					error("Unterminated string");
+					escaped = c;
+				}
+			} else {
+				escaped = c;
+			}
+			result.append(escaped);
+		}
+
+		return result.toString();
+	}
+
+	private static boolean bool(Text t, List<Object> valueList) {
 		final boolean result;
 
-		if(tb.consume("true")) {
+		if(t.consume("true")) {
 			valueList.add(Boolean.TRUE);
 			result = true;
-		} else if(tb.consume("false")) {
+		} else if(t.consume("false")) {
 			valueList.add(Boolean.FALSE);
 			result = true;
 		} else {
@@ -1088,44 +1235,44 @@ public enum DataType {
 	 * @return A Temporal or null if none found.
 	 */
 	@Nullable
-	private static Temporal temporal(TextBuilder tb) {
+	private static Temporal temporal(Text t) {
 		Temporal result;
 
-		final int save = tb.cursor();
-		tb.consume('@');
+		final int save = t.cursor();
+		t.consume('@');
 		final int start = save + 1;
 
 		// yyyy/MM/dd HH:mm:ss
 
 		try {
-			if(date(tb)) {
-				final int save2 = tb.cursor();
-				tb.ws();
-				if(time(tb)) {
-					final String string = tb.getString(start);
-					result = DateU.parseStandardDateTime(string);
+			if(date(t)) {
+				final int save2 = t.cursor();
+				t.ws();
+				if(time(t)) {
+					final String string = t.getString(start);
+					result = DateU.parseStandardDatetime(string);
 				} else {
-					tb.setCursor(save2);
-					final String string = tb.getString(start);
+					t.setCursor(save2);
+					final String string = t.getString(start);
 					result = DateU.parseStandardDate(string);
 				}
-			} else if(time(tb)) {
-				final String string = tb.getString(start);
+			} else if(time(t)) {
+				final String string = t.getString(start);
 				result = DateU.parseStandardTime(string);
 			} else {
 				result = null;
-				tb.setCursor(save);
+				t.setCursor(save);
 			}
 		} catch(final DateTimeParseException e) {
 			result = null;
-			tb.setCursor(save);
+			t.setCursor(save);
 		}
 
 		return result;
 	}
 
 	private static boolean number(
-			TextBuilder tb,
+			Text t,
 			DataType requiredType,
 			List<Object> valueList) {
 		// posNumber
@@ -1137,21 +1284,21 @@ public enum DataType {
 		// ;
 		final boolean result;
 
-		assert !tb.isEof() : "Should have been checked by caller";
+		assert !t.isEof() : "Should have been checked by caller";
 
-		if(binary(tb, valueList, requiredType) || hex(tb, valueList, requiredType)) {
+		if(binary(t, valueList, requiredType) || hex(t, valueList, requiredType)) {
 			// ?todo I could allow negatives here
 			// ( binary | hex | '0' )
 			result = true;
 		} else {
 			// ( Int DecPart | Int | DecPart ) ( 'e' Int )? [zZfF]?
 
-			final int start = tb.cursor();
+			final int start = t.cursor();
 
-			if((tb.consumeInt() && (decPart(tb) || true) && (exponent(tb) || true))
-					|| (tb.consume('-') || true) && decPart(tb) && (exponent(tb) || true)) {
-				final String string = tb.getString(start);
-				final Object value = deriveType(string, requiredType, tb, 10);
+			if((t.consumeInt() && (decPart(t) || true) && (exponent(t) || true))
+					|| (t.consume('-') || true) && decPart(t) && (exponent(t) || true)) {
+				final String string = t.getString(start);
+				final Object value = deriveType(string, requiredType, t, 10);
 				valueList.add(value);
 				result = true;
 			} else {
@@ -1162,66 +1309,66 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean exponent(TextBuilder tb) {
+	private static boolean exponent(Text t) {
 		final boolean result;
 
 		// 'e' Int
-		final int save = tb.cursor();
-		if(tb.consume('e') && tb.consumeInt()) {
+		final int save = t.cursor();
+		if(t.consume('e') && t.consumeInt()) {
 			result = true;
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean decPart(TextBuilder tb) {
+	private static boolean decPart(Text t) {
 		final boolean result;
 
 		// '.' Digits+
-		final int save = tb.cursor();
-		if(tb.consume('.') && tb.consumeAscii(TextBuilder.ASCII_0_9)) {
+		final int save = t.cursor();
+		if(t.consume('.') && t.consumeAscii(Text.ASCII_0_9)) {
 			result = true;
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean hex(TextBuilder tb, List<Object> valueList, DataType requiredType) {
+	private static boolean hex(Text t, List<Object> valueList, DataType requiredType) {
 		final boolean result;
 
 		// '0x' HexDigit+ [zZfF]?
-		final int save = tb.cursor();
-		if(tb.consume("0x") && tb.consumeAscii(TextBuilder.ASCII_0_F)) {
-			final String string = tb.getString(save + 2);
-			final Object value = deriveType(string, requiredType, tb, 16);
+		final int save = t.cursor();
+		if(t.consume("0x") && t.consumeAscii(Text.ASCII_0_F)) {
+			final String string = t.getString(save + 2);
+			final Object value = deriveType(string, requiredType, t, 16);
 			valueList.add(value);
 			result = true;
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean binary(TextBuilder tb, List<Object> valueList, DataType requiredType) {
+	private static boolean binary(Text t, List<Object> valueList, DataType requiredType) {
 		final boolean result;
 
 		// '0b' [01]+ [zZfF]?
-		final int save = tb.cursor();
-		if(tb.consume("0b") && tb.consumeAscii(TextBuilder.ASCII_0_1)) {
-			final String string = tb.getString(save + 2);
-			final Object value = deriveType(string, requiredType, tb, 2);
+		final int save = t.cursor();
+		if(t.consume("0b") && t.consumeAscii(Text.ASCII_0_1)) {
+			final String string = t.getString(save + 2);
+			final Object value = deriveType(string, requiredType, t, 2);
 			valueList.add(value);
 			result = true;
 		} else {
-			tb.setCursor(save);
+			t.setCursor(save);
 			result = false;
 		}
 
@@ -1249,13 +1396,13 @@ public enum DataType {
 	private static Object deriveType(
 			String string,
 			DataType requiredType,
-			TextBuilder tb,
+			Text t,
 			int radix) {
 		final Object result;
 
 		// Figure out the correct type...
 		final DataType derivedType;
-		if(tb.isEof()) {
+		if(t.isEof()) {
 			if(requiredType == DataType.any) {
 				if(string.indexOf('.') >= 0 || string.indexOf('e') >= 0) {
 					derivedType = DataType.f;
@@ -1266,9 +1413,9 @@ public enum DataType {
 				derivedType = requiredType;
 			}
 		} else {
-			final char c = tb.peek();
+			final char c = t.peek();
 			if(c == 'z' || c == 'Z' || c == 'f' || c == 'F') {
-				tb.consume(c);
+				t.consume(c);
 				derivedType = DataType.valueOf(String.valueOf(c));
 				if(!(requiredType == DataType.any || requiredType == derivedType)) {
 					throw new ParsingException("Incompatible type: " + string + c);
@@ -1305,6 +1452,23 @@ public enum DataType {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Add message to Advisory if there is one otherwise throw an exception.
+	 *
+	 * @param message
+	 *            Error message
+	 * @throws ParsingException
+	 *             Thrown only if there is not Advisory.
+	 */
+	private static void error(String message) throws ParsingException {
+		final Advisory advisory = Context.getButDontThrow(Advisory.class);
+		if(advisory != null) {
+			advisory.error(message);
+		} else {
+			throw new ParsingException(message);
+		}
 	}
 
 }

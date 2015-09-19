@@ -63,10 +63,10 @@ load
 	;
 
 pair
-	:	Identifier Colon value Semi	// E.g. myKey: 32; 
-	|	Identifier object				// E.g. MyKey { ... }
-	|	Identifier array				// E.g. myKey [ 1, 2, 3 ]
-	|	Identifier Semi				// Shorthand for myKey: true; 
+	:	IdentifierLiteral Colon value Semi	// E.g. myKey: 32; 
+	|	IdentifierLiteral object				// E.g. MyKey { ... }
+	|	IdentifierLiteral array				// E.g. myKey [ 1, 2, 3 ]
+	|	IdentifierLiteral Semi				// Shorthand for myKey: true; 
 	;
 
 array
@@ -80,7 +80,6 @@ object
 	
 value
 	:	literal
-	|	identifier
 	|	expr
 	|	cardinality
 	;
@@ -88,7 +87,7 @@ value
 // Members are in operator precedence order
 expr
 	:	primary
-	|	Identifier Paren ( expr ( Comma expr)* )? Nerap // Function
+	|	IdentifierLiteral Paren ( expr ( Comma expr)* )? Nerap // Function
 	|	(Minus|Not|Comp) expr // Unary
 	|	expr (Multiply|Divide|Mod) expr
 	|	expr (Plus|Minus) expr
@@ -109,7 +108,8 @@ primary
 	;
 		
 literal
-	:	IntegerLiteral
+	:	IdentifierLiteral
+	|	IntegerLiteral
 	|	BinaryIntegerLiteral
 	|	HexIntegerLiteral
 	|	BigIntegerLiteral
@@ -126,7 +126,7 @@ literal
 	;
 
 
-identifier: Identifier;
+identifier: IdentifierLiteral;
 
 // Lexer
 
@@ -145,7 +145,7 @@ LINE_COMMENT
 
 // I D E N T I F I E R
 
-Identifier: [A-Za-z_][0-9A-Za-z_]* ;
+IdentifierLiteral: [A-Za-z_][0-9A-Za-z_]* ;
 
 // P A T H
 
@@ -177,12 +177,12 @@ fragment TextCharacter
 	;
 
 fragment EscapeSequence
-	:	'\\' [btnfr"\\]
+	:	'\\' [tn"\\]
 	|	UnicodeEscape
 	;
 
 fragment UnicodeEscape
-	:	'\\' 'u' HexDigit HexDigit HexDigit HexDigit
+	:	'\\' 'u' HexDigit HexDigit? HexDigit? HexDigit?
 	;
 	
 

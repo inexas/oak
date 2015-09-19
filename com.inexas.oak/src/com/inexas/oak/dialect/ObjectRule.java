@@ -6,6 +6,7 @@ import java.util.*;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.*;
+import com.inexas.oak.path.*;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
@@ -163,7 +164,11 @@ public class ObjectRule extends Rule {
 						final DataType dataType = subject.dataType;
 						switch(dataType) {
 						case identifier:
+							parameterType = Identifier.class;
+							break;
 						case path:
+							parameterType = Path.class;
+							break;
 						case text:
 							parameterType = String.class;
 							break;
@@ -263,7 +268,7 @@ public class ObjectRule extends Rule {
 	}
 
 	private String getConstructorName(Class<?> constructorClass, Class<?>[] parameterTypes) {
-		final TextBuilder result = new TextBuilder();
+		final Text result = new Text();
 		result.append("public ");
 		result.append(constructorClass.getSimpleName());
 		addParameters(parameterTypes, result);
@@ -273,7 +278,7 @@ public class ObjectRule extends Rule {
 
 	private String getStaticConstructorName(Class<?> constructorClass, Class<?>[] parameterTypes) {
 		// static new
-		final TextBuilder result = new TextBuilder();
+		final Text result = new Text();
 		result.append("public static ");
 		final String typeName = constructorClass.getSimpleName();
 		result.append(typeName);
@@ -283,7 +288,7 @@ public class ObjectRule extends Rule {
 		return result.toString();
 	}
 
-	private void addParameters(Class<?>[] parameterTypes, TextBuilder result) {
+	private void addParameters(Class<?>[] parameterTypes, Text result) {
 		result.append('(');
 
 		for(int i = 0; i < relationshipCount; i++) {
@@ -322,13 +327,13 @@ public class ObjectRule extends Rule {
 	}
 
 	/**
-	 * @param string
+	 * @param identifier
 	 *            ForExample.
 	 * @param result
 	 *            As the name says.
 	 * @return forExample.
 	 */
-	private void firstCharToLower(String string, TextBuilder result) {
+	private void firstCharToLower(String string, Text result) {
 		final char c = string.charAt(0);
 		if(c <= 'Z') {
 			result.append((char)(c + ('a' - 'A')));

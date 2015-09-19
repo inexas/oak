@@ -1,9 +1,8 @@
 package com.inexas.oak.ast;
 
-import java.time.temporal.Temporal;
 import java.util.List;
 import com.inexas.oak.*;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 public class AstToStringVisitor extends AstVisitor.Base {
 	public static String[] operatorToString = new String[OakLexer.Usr + 1];
@@ -40,12 +39,12 @@ public class AstToStringVisitor extends AstVisitor.Base {
 		}
 	}
 
-	private final TextBuilder tb;
+	private final Text t;
 	private State currentState;
 	private boolean spacer;
 
 	public AstToStringVisitor(boolean pretty) {
-		tb = new TextBuilder(pretty);
+		t = new Text(pretty);
 	}
 
 	/**
@@ -58,12 +57,12 @@ public class AstToStringVisitor extends AstVisitor.Base {
 
 		if(libraries.size() > 0) {
 			for(final Class<?> libary : libraries) {
-				tb.append("#load \"");
-				tb.append(libary.getName());
-				tb.append('"');
-				tb.newline();
+				t.append("#load \"");
+				t.append(libary.getName());
+				t.append('"');
+				t.newline();
 			}
-			tb.newline();
+			t.newline();
 		}
 	}
 
@@ -72,9 +71,9 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void enter(ObjectNode node) {
-		tb.append('{');
-		tb.newline();
-		tb.indentMore();
+		t.append('{');
+		t.newline();
+		t.indentMore();
 	}
 
 	/**
@@ -82,9 +81,9 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void exit(ObjectNode node) {
-		tb.indentLess();
-		tb.indent();
-		tb.append('}');
+		t.indentLess();
+		t.indent();
+		t.append('}');
 	}
 
 	/**
@@ -93,14 +92,14 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	@Override
 	public void enter(ObjectPairNode node) {
 		if(spacer) {
-			tb.newline();
+			t.newline();
 		}
-		tb.indent();
-		tb.append(node.getName());
-		tb.space();
-		tb.append('{');
-		tb.newline();
-		tb.indentMore();
+		t.indent();
+		t.append(node.getName());
+		t.space();
+		t.append('{');
+		t.newline();
+		t.indentMore();
 	}
 
 	/**
@@ -109,10 +108,10 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	@Override
 	public void exit(ObjectPairNode node) {
 		spacer = true;
-		tb.indentLess();
-		tb.indent();
-		tb.append('}');
-		tb.newline();
+		t.indentLess();
+		t.indent();
+		t.append('}');
+		t.newline();
 	}
 
 	/**
@@ -152,18 +151,18 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void delimit() {
-		if(tb.pretty) {
+		if(t.pretty) {
 			if(currentState.count == 9) {
 				currentState.count = 0;
-				tb.append(',');
-				tb.newline();
-				tb.indent();
+				t.append(',');
+				t.newline();
+				t.indent();
 			} else {
-				tb.append(", ");
+				t.append(", ");
 				currentState.count++;
 			}
 		} else {
-			tb.append(',');
+			t.append(',');
 		}
 	}
 
@@ -172,9 +171,9 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void operator(int operator) {
-		tb.space();
-		tb.append(operatorToString[operator]);
-		tb.space();
+		t.space();
+		t.append(operatorToString[operator]);
+		t.space();
 	}
 
 	/**
@@ -182,8 +181,8 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void enter(FunctionNode node) {
-		tb.append(node.getName());
-		tb.append('(');
+		t.append(node.getName());
+		t.append('(');
 	}
 
 	/**
@@ -191,7 +190,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void exit(FunctionNode node) {
-		tb.append(')');
+		t.append(')');
 	}
 
 	/**
@@ -201,7 +200,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	public void enter(UnaryNode node) {
 		final int operator = node.getOperator();
 		if(operator != OakLexer.Plus) {
-			tb.append(operatorToString[operator]);
+			t.append(operatorToString[operator]);
 		}
 	}
 
@@ -211,10 +210,10 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	@Override
 	public void enter(ValuePairNode node) {
 		push();
-		tb.indent();
-		tb.append(node.getName());
-		tb.append(':');
-		tb.space();
+		t.indent();
+		t.append(node.getName());
+		t.append(':');
+		t.space();
 	}
 
 	/**
@@ -222,8 +221,8 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void exit(ValuePairNode node) {
-		tb.append(';');
-		tb.newline();
+		t.append(';');
+		t.newline();
 		pop();
 	}
 
@@ -234,31 +233,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	public void visit(ConstantNode node) {
 		final Object value = node.getValue();
 		final DataType type = node.getType();
-		final String string;
-		if(value == null) {
-			string = "null";
-		} else {
-			if(type.temporal) {
-				tb.append('@');
-				if(type == DataType.date) {
-					string = ConstantNode.dateFormatter.format((Temporal)value);
-				} else if(type == DataType.time) {
-					string = ConstantNode.timeFormatterSecs.format((Temporal)value);
-				} else {
-					string = ConstantNode.dateTimeFormatterSecs.format((Temporal)value);
-				}
-			} else if(type == DataType.text) {
-				final TextBuilder valueAsString = new TextBuilder();
-				valueAsString.append('"');
-				valueAsString.append((String)value);
-				valueAsString.append('"');
-				string = valueAsString.toString();
-			} else {
-				string = value.toString();
-			}
-		}
-
-		tb.append(string);
+		type.toMarkup(value, t);
 	}
 
 	/**
@@ -266,7 +241,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void visit(CardinalityNode node) {
-		tb.append(node.cardinality.toString());
+		t.append(node.cardinality.text);
 	}
 
 	/**
@@ -274,7 +249,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void visit(PathNode node) {
-		tb.append(node.path);
+		t.append(node.path);
 	}
 
 	/**
@@ -282,7 +257,7 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public void visit(IdentifierNode identifierNode) {
-		tb.append(identifierNode.identifier);
+		t.append(identifierNode.identifier);
 	}
 
 	/**
@@ -291,42 +266,42 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	 */
 	@Override
 	public String toString() {
-		return tb.toString();
+		return t.toString();
 	}
 
 	private void enterArrayPairNode(PairNode node) {
 		if(spacer) {
-			tb.newline();
+			t.newline();
 		} else {
 			spacer = true;
 		}
-		tb.indent();
-		tb.append(node.getName());
-		tb.space();
-		tb.append('[');
-		tb.newline();
-		tb.indentMore();
-		tb.indent();
+		t.indent();
+		t.append(node.getName());
+		t.space();
+		t.append('[');
+		t.newline();
+		t.indentMore();
+		t.indent();
 		push();
 	}
 
 	private void exitArrayPairNode() {
 		pop();
-		tb.newline();
-		tb.indentLess();
-		tb.indent();
-		tb.append(']');
-		tb.newline();
+		t.newline();
+		t.indentLess();
+		t.indent();
+		t.append(']');
+		t.newline();
 	}
 
 	private void push() {
-		if(tb.pretty) {
+		if(t.pretty) {
 			currentState = new State();
 		}
 	}
 
 	private void pop() {
-		if(tb.pretty) {
+		if(t.pretty) {
 			currentState = currentState.previousState;
 		}
 	}

@@ -4,7 +4,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.NotImplementedException;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Locus;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 public abstract class Node implements Locus {
 	protected Node parent;
@@ -28,7 +28,7 @@ public abstract class Node implements Locus {
 	public abstract DataType getType();
 
 	public String getPath() {
-		final TextBuilder result = new TextBuilder();
+		final Text result = new Text();
 		getPath(result);
 		return result.toString();
 	}
@@ -67,7 +67,7 @@ public abstract class Node implements Locus {
 		return visitor.toString();
 	}
 
-	private void getPath(TextBuilder result) {
+	private void getPath(Text result) {
 		if(parent == null) {
 			result.append('/');
 		} else {

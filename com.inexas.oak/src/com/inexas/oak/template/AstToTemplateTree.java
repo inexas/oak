@@ -50,12 +50,12 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				// Root Object
 				relation = rootMap.get(context);
 				if(relation == null) {
-					final TextBuilder tb = new TextBuilder();
+					final Text t = new Text();
 					for(final Relationship relationship : rootMap.values()) {
-						tb.delimit();
-						tb.append(relationship.subjectKey);
+						t.delimit();
+						t.append(relationship.subjectKey);
 					}
-					error(node, "No such root object: '" + context + "', expected: " + tb.toString());
+					error(node, "No such root object: '" + context + "', expected: " + t.toString());
 				}
 			} else {
 				if(state.relation == null) {

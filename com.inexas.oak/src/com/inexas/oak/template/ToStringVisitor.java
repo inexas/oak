@@ -1,7 +1,7 @@
 package com.inexas.oak.template;
 
 import com.inexas.oak.DataType;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 /**
  * Visits a Dialect AST and produces a String version of it that will transform
@@ -12,10 +12,10 @@ import com.inexas.util.TextBuilder;
  * todo Insert a line break between type changes
  */
 public class ToStringVisitor implements DialectVisitor {
-	private final TextBuilder tb;
+	private final Text t;
 
 	public ToStringVisitor(boolean pretty) {
-		tb = new TextBuilder(pretty);
+		t = new Text(pretty);
 	}
 
 	/**
@@ -23,7 +23,7 @@ public class ToStringVisitor implements DialectVisitor {
 	 */
 	@Override
 	public String toString() {
-		return tb.toString();
+		return t.toString();
 	}
 
 	/**
@@ -49,19 +49,19 @@ public class ToStringVisitor implements DialectVisitor {
 	public void enter(Objet object) {
 		startObject("Object", object.key);
 
-		tb.indent();
-		tb.append("class:");
-		tb.space();
-		tb.append('"');
-		tb.append(object.templateClass.getName());
-		tb.append('"');
-		tb.append(';');
-		tb.newline();
+		t.indent();
+		t.append("class:");
+		t.space();
+		t.append('"');
+		t.append(object.templateClass.getName());
+		t.append('"');
+		t.append(';');
+		t.newline();
 
 		if(object.isRoot) {
-			tb.indent();
-			tb.append("root;");
-			tb.newline();
+			t.indent();
+			t.append("root;");
+			t.newline();
 		}
 	}
 
@@ -97,12 +97,12 @@ public class ToStringVisitor implements DialectVisitor {
 		startObject("Property", property.key);
 
 		if(property.type != DataType.text) {
-			tb.indent();
-			tb.append("type:");
-			tb.space();
-			tb.append(property.type.name());
-			tb.append(';');
-			tb.newline();
+			t.indent();
+			t.append("type:");
+			t.space();
+			t.append(property.type.name());
+			t.append(';');
+			t.newline();
 		}
 	}
 
@@ -119,31 +119,31 @@ public class ToStringVisitor implements DialectVisitor {
 	 */
 	@Override
 	public void visit(Constraint constraint) {
-		constraint.toMarkup(tb);
+		constraint.toMarkup(t);
 	}
 
 	private void startObject(String name, String key) {
-		tb.indent();
-		tb.append(name);
-		tb.space();
-		tb.append('{');
-		tb.newline();
-		tb.indentMore();
+		t.indent();
+		t.append(name);
+		t.space();
+		t.append('{');
+		t.newline();
+		t.indentMore();
 
 		if(key != null) {
-			tb.indent();
-			tb.append("key:");
-			tb.space();
-			tb.append(key);
-			tb.append(';');
-			tb.newline();
+			t.indent();
+			t.append("key:");
+			t.space();
+			t.append(key);
+			t.append(';');
+			t.newline();
 		}
 	}
 
 	private void endObject() {
-		tb.indentLess();
-		tb.indent();
-		tb.append('}');
-		tb.newline();
+		t.indentLess();
+		t.indent();
+		t.append('}');
+		t.newline();
 	}
 }

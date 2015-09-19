@@ -51,14 +51,14 @@ public class TestConstraints {
 
 	@Test
 	public void testRegexpNonStringValues() {
-		final Constraint constraint = new RegexpConstraint("a", new Integer(2), "c");
+		final Constraint constraint = new RegexpConstraint("\"a\"", "2", "\"c\"");
 		assertNotNull(constraint);
-		assertTrue(getFirstMessage().indexOf("Constraint value not a string") >= 0);
+		assertTrue(getFirstMessage().indexOf("Invalid type") >= 0);
 	}
 
 	@Test
 	public void testRegexp1() {
-		final Constraint constraint = new RegexpConstraint("b", "a+");
+		final Constraint constraint = new RegexpConstraint("\"b\"", "\"a+\"");
 		constraint.validate("b");
 		constraint.validate("aaaa");
 		assertNull(getFirstMessage());
@@ -66,29 +66,29 @@ public class TestConstraints {
 
 	@Test
 	public void testRegexp2() {
-		final Constraint constraint = new RegexpConstraint("b", "a+");
+		final Constraint constraint = new RegexpConstraint("\"b\"", "\"a+\"");
 		constraint.validate("bb");
 		assertTrue(getFirstMessage().indexOf("Invalid value") >= 0);
 	}
 
 	@Test
 	public void testRegexpSingleValueToString() {
-		final Constraint constraint = new RegexpConstraint("a");
+		final Constraint constraint = new RegexpConstraint("\"a\"");
 		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n", constraint.toString());
 	}
 
 	@Test
 	public void testRegexpMultiValueToString() {
-		final Constraint constraint = new RegexpConstraint("a", "b");
+		final Constraint constraint = new RegexpConstraint("\"a\"", "\"b\"");
 		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n", constraint.toString());
 	}
 
 	@Test
 	public void constraintToString() {
-		final Constraint constraint = new ChoiceConstraint("a\n\\\tb", "b", null);
+		final Constraint constraint = new ChoiceConstraint("\"a\"", "\"b\"", "null");
 		final String expected = "Constraint {\n"
 				+ "\ttype: choice;\n"
-				+ "\tvalue [\"a\\n\\\tb\", \"b\", null ]\n"
+				+ "\tvalue [\"a\", \"b\", null ]\n"
 				+ "}\n";
 		assertEquals(expected, constraint.toString());
 

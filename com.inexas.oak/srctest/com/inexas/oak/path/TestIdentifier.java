@@ -46,7 +46,7 @@ public class TestIdentifier {
 		final Advisory advisory = new Advisory(string);
 		Context.attach(advisory);
 
-		assertTrue(Identifier.parse("ab123456789012345678901234567890x"));
+		assertFalse(Identifier.parse("ab123456789012345678901234567890x"));
 		assertFalse(advisory.isEmpty());
 
 		Context.detach(advisory);

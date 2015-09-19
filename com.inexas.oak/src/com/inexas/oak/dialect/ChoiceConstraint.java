@@ -1,9 +1,7 @@
 package com.inexas.oak.dialect;
 
-import java.math.*;
-import com.inexas.oak.DataType;
 import com.inexas.oak.template.Constraint;
-import com.inexas.util.*;
+import com.inexas.util.Text;
 
 /**
  * A choice constraint is given a list of choices in the values array. The value
@@ -11,6 +9,21 @@ import com.inexas.util.*;
  */
 public class ChoiceConstraint extends Constraint {
 	public final static String KEY = "choice";
+
+	/**
+	 * This constructor is called when a Dialect is loaded from a rulebase and
+	 * the constraints are written as strings. The Property type is not known
+	 * yet so we can covert them to their proper types but not check them.
+	 *
+	 * @param options
+	 *            String versions of the options, e.g. "`/Some/Path`"
+	 */
+	public ChoiceConstraint(String... options) {
+		super(options);
+		if(options == null || options.length <= 0) {
+			error("Choice constraint must have at least two options");
+		}
+	}
 
 	public ChoiceConstraint(Object... options) {
 		super(options);
@@ -34,12 +47,12 @@ public class ChoiceConstraint extends Constraint {
 		}
 
 		if(!found) {
-			final TextBuilder tb = new TextBuilder(true);
-			tb.append("Invalid value for choice constraint: '");
-			tb.append(value == null ? "<null>" : value.toString());
-			tb.append(", should have been one of: ");
-			valuesToTextArray(tb);
-			error(tb.toString());
+			final Text t = new Text(true);
+			t.append("Invalid value for choice constraint: '");
+			t.append(value == null ? "<null>" : value.toString());
+			t.append("', should have been one of: ");
+			valuesToTextArray(t);
+			error(t.toString());
 		}
 	}
 
@@ -56,32 +69,32 @@ public class ChoiceConstraint extends Constraint {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void toMarkup(TextBuilder tb) {
-		tb.indent();
-		tb.append("Constraint");
-		tb.space();
-		tb.append('{');
-		tb.newline();
-		tb.indentMore();
+	public void toMarkup(Text t) {
+		t.indent();
+		t.append("Constraint");
+		t.space();
+		t.append('{');
+		t.newline();
+		t.indentMore();
 
-		tb.indent();
-		tb.append("type:");
-		tb.space();
-		tb.append(KEY);
-		tb.append(';');
-		tb.newline();
+		t.indent();
+		t.append("type:");
+		t.space();
+		t.append(KEY);
+		t.append(';');
+		t.newline();
 
 		// value [ "set", "map", "list" ]
-		tb.indent();
-		tb.append("value");
-		tb.space();
-		valuesToTextArray(tb);
-		tb.newline();
+		t.indent();
+		t.append("value");
+		t.space();
+		valuesToTextArray(t);
+		t.newline();
 
-		tb.indentLess();
-		tb.indent();
-		tb.append('}');
-		tb.newline();
+		t.indentLess();
+		t.indent();
+		t.append('}');
+		t.newline();
 	}
 
 	/**
@@ -89,69 +102,9 @@ public class ChoiceConstraint extends Constraint {
 	 */
 	@Override
 	public String toString() {
-		final TextBuilder result = new TextBuilder(true);
+		final Text result = new Text(true);
 		toMarkup(result);
 		return result.toString();
-	}
-
-	@Override
-	public void setDataType(DataType dataType) {
-		this.dataType = dataType;
-
-		final Class<?> expectedClass;
-		final String expected;
-		switch(dataType) {
-		case text:
-		case identifier:
-		case path:
-			expected = DataType.text.toString();
-			expectedClass = String.class;
-			break;
-
-		case z:
-			expected = DataType.z.toString();
-			expectedClass = Long.class;
-			break;
-
-		case Z:
-			expected = DataType.Z.toString();
-			expectedClass = BigInteger.class;
-			break;
-
-		case f:
-			expected = DataType.f.toString();
-			expectedClass = Double.class;
-			break;
-
-		case F:
-			expected = DataType.Z.toString();
-			expectedClass = BigDecimal.class;
-			break;
-
-		case cardinality:
-			expected = DataType.cardinality.toString();
-			expectedClass = Cardinality.class;
-			break;
-
-			// $CASES-OMITTED$
-		default:
-			error("Choice with " + dataType.name() + " does not make sense");
-			expected = null;
-			expectedClass = null;
-			break;
-		}
-
-		if(expectedClass != null) {
-			for(final Object value : values) {
-				if(value != null) {
-					if(value.getClass() != expectedClass) {
-						error("Invalid data type for value: " + value + ", expected " + expected);
-					}
-				}
-			}
-		}
-
-		this.dataType = dataType;
 	}
 
 }

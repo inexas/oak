@@ -1,5 +1,6 @@
 package com.inexas.oak.dialect;
 
+
 public abstract class Rule implements Comparable<Rule> {
 	public final String key;
 

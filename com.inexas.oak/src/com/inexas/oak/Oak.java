@@ -203,7 +203,7 @@ public class Oak extends AbstractOak {
 	 */
 	private void toAst() throws OakException {
 		Context.pushAttach(advisory);
-	
+
 		if(rootNode == null && !advisory.hasErrors()) {
 			final ParserRuleContext ruleContext = parser.oak();
 			if(!advisory.hasErrors()) {
@@ -213,7 +213,7 @@ public class Oak extends AbstractOak {
 				rootNode = (PairNode)visitor.getRoot();
 			}
 		}
-	
+
 		Context.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);

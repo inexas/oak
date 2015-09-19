@@ -3,6 +3,7 @@ package com.inexas.oak.template;
 import java.util.List;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.Keyed;
+import com.inexas.oak.path.Identifier;
 import com.inexas.tad.Context;
 
 /**
@@ -16,11 +17,11 @@ public class Objet extends Locus.Base implements Keyed {
 	public final List<Member> members;
 
 	public Objet(
-			String key,
+			Identifier key,
 			String templateClass,
 			Boolean isRoot,
 			List<Member> members) {
-		this.key = key;
+		this.key = key.toString();
 		Class<?> tmp;
 		try {
 			tmp = Class.forName(templateClass);

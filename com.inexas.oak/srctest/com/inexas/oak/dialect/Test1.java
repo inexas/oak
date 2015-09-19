@@ -10,6 +10,8 @@
 
 package com.inexas.oak.dialect;
 
+import com.inexas.oak.path.Identifier;
+
 /**
  * @author kwhittingham
  */
@@ -17,8 +19,8 @@ public class Test1 {
 	String key1;
 	Boolean key2;
 
-	public Test1(String key1, Boolean key2) {
-		this.key1 = key1;
+	public Test1(Identifier key1, Boolean key2) {
+		this.key1 = key1.toString();
 		this.key2 = key2;
 	}
 }

@@ -240,6 +240,11 @@ public class TestExpression {
 
 	@Test
 	public void testString() throws OakException {
+		// Escape codes...
+		doTest(
+				"\"a \\t \\n \\u0262 c\"",
+				"\"a \\t \\n \\u262 c\"");
+
 		// Literal...
 		doTest("\"abc\"", "\"abc\"");
 
@@ -249,8 +254,6 @@ public class TestExpression {
 		// Unicode...
 		doTest("\"ABC\"", "\"A\\u0042C\"");
 
-		// Escape codes...
-		doTest("\"a\\bc\bde\tfg\nhi\fjk\rlm\"nop\"", "\"a\\\\bc\\bde\\tfg\\nhi\\fjk\\rlm\\\"nop\"");
 	}
 
 	@Test
@@ -260,9 +263,9 @@ public class TestExpression {
 
 	@Test
 	public void testDates() throws OakException {
-		doTest("@12:15:00", "@12:15:00");
-		doTest("@2012/4/30 02:05:06", "@2012/4/30 02:05:06");
-		doTest("@2012/4/30", "@2012/4/30");
+		doTest("@12:15", "@12:15:00");
+		doTest("@2012/04/30 02:05:06", "@2012/4/30 02:05:06");
+		doTest("@2012/04/30", "@2012/4/30");
 	}
 
 	@Test

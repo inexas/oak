@@ -2,6 +2,7 @@ package com.inexas.oak.template;
 
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.dialect.*;
+import com.inexas.oak.path.Identifier;
 import com.inexas.tad.Context;
 import com.inexas.util.Cardinality;
 
@@ -13,11 +14,11 @@ public class Member implements Keyed {
 	public final boolean subjectIsObject;
 
 	public Member(
-			String key,
+			Identifier identifier,
 			Property property,
 			Cardinality cardinality,
-			String collectionType) {
-		this.key = key;
+			Identifier collectionType) {
+		this.key = identifier == null ? null : identifier.toString();
 		this.property = property;
 
 		// Exactly one of key and property must be null
@@ -46,19 +47,19 @@ public class Member implements Keyed {
 			this.collectionType = this.cardinality.to == 1 ? CollectionType.singleton : CollectionType.list;
 		} else {
 			// String is checked by parser
-			this.collectionType = CollectionType.valueOf(collectionType);
+			this.collectionType = CollectionType.valueOf(collectionType.toString());
 		}
 
 		// Sanity check collection type against cardinality...
 		if(this.cardinality.to == 1) {
 			if(this.collectionType != CollectionType.singleton) {
-				error("Cardinality of " + this.cardinality.toString() +
+				error("Cardinality of " + this.cardinality.text +
 						" should have a collection type of singleton for: " + key);
 			}
 		} else {
 			assert this.cardinality.to > 1;
 			if(this.collectionType == CollectionType.singleton) {
-				error("Cardinality of " + this.cardinality.toString() + " should be list, map or set");
+				error("Cardinality of " + this.cardinality.text + " should be list, map or set");
 			}
 		}
 	}

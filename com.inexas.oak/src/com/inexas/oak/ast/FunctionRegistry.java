@@ -366,29 +366,29 @@ public class FunctionRegistry implements Tad {
 
 	private String toKey(String methodName, int parameterCount) {
 		// methodName:numParams...
-		final TextBuilder tb = new TextBuilder();
-		tb.append(methodName);
-		tb.append(':');
-		tb.append(parameterCount);
-		return tb.toString();
+		final Text t = new Text();
+		t.append(methodName);
+		t.append(':');
+		t.append(parameterCount);
+		return t.toString();
 	}
 
 	private String toSignature(DataType returnType, String methodName, DataType[] parameterTypes) {
 		// methodName(f64,...)
-		final TextBuilder tb = new TextBuilder();
-		tb.append(methodName);
-		tb.append('(');
+		final Text t = new Text();
+		t.append(methodName);
+		t.append('(');
 		for(final DataType parameterType : parameterTypes) {
-			tb.delimit();
-			tb.append(parameterType.getJavaClass().getSimpleName());
+			t.delimit();
+			t.append(parameterType.getJavaClass().getSimpleName());
 		}
 		if(returnType == null) {
-			tb.append(')');
+			t.append(')');
 		} else {
-			tb.append("):");
-			tb.append(returnType.name());
+			t.append("):");
+			t.append(returnType.name());
 		}
-		return tb.toString();
+		return t.toString();
 	}
 
 }

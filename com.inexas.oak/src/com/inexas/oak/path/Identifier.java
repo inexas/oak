@@ -14,7 +14,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.oak.ParsingException;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.tad.Context;
-import com.inexas.util.TextBuilder;
+import com.inexas.util.Text;
 
 /**
  * [A-Za-z_][A-Za-z0-9_]{1,32}
@@ -22,8 +22,8 @@ import com.inexas.util.TextBuilder;
 public class Identifier implements Comparable<Identifier> {
 	private final static int MAX_LENGTH = 32;
 	private final static byte FIRST =
-			TextBuilder.ASCII_A_Z | TextBuilder.ASCII_a_z | TextBuilder.ASCII_UNDERLINE;
-	private final static byte SUBSEQUENT = FIRST | TextBuilder.ASCII_0_9;
+			Text.ASCII_A_Z | Text.ASCII_a_z | Text.ASCII_UNDERLINE;
+	private final static byte SUBSEQUENT = FIRST | Text.ASCII_0_9;
 	private final String string;
 
 	/**
@@ -41,27 +41,27 @@ public class Identifier implements Comparable<Identifier> {
 	public static boolean parse(String string) {
 		final boolean result;
 
-		final TextBuilder tb = new TextBuilder();
-		tb.append(string);
-		if(consume(tb) && tb.isEof()) {
+		final Text t = new Text();
+		t.append(string);
+		if(t.length() <= MAX_LENGTH && consume(t) && t.isEof()) {
 			result = true;
 		} else {
 			result = false;
-			error(1, tb.cursor(), "Unrecognized input");
+			error(1, t.cursor(), "Unrecognized input");
 		}
 
 		return result;
 	}
 
-	public static boolean consume(TextBuilder tb) {
+	public static boolean consume(Text t) {
 		final boolean result;
 
-		final int start = tb.cursor();
-		if(tb.consumeAscii(FIRST) && (tb.consumeAscii(SUBSEQUENT) || true)) {
+		final int start = t.cursor();
+		if(t.consumeAscii(FIRST) && (t.consumeAscii(SUBSEQUENT) || true)) {
 			result = true;
-			final int end = tb.cursor();
+			final int end = t.cursor();
 			if(end - start > MAX_LENGTH) {
-				error(1, 1, "Identifier too long: " + tb.subSequence(start, end));
+				error(1, 1, "Identifier too long: " + t.subSequence(start, end));
 			}
 		} else {
 			result = false;
@@ -71,7 +71,7 @@ public class Identifier implements Comparable<Identifier> {
 	}
 
 	public Identifier(String string) {
-		assert parse(string);
+		parse(string);
 		this.string = string;
 	}
 
@@ -126,6 +126,10 @@ public class Identifier implements Comparable<Identifier> {
 		} else {
 			throw new ParsingException(message);
 		}
+	}
+
+	public int length() {
+		return string.length();
 	}
 
 }

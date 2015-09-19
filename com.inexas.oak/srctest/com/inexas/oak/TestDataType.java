@@ -90,18 +90,18 @@ public class TestDataType {
 
 	private void doValueTest(boolean expectedResult, Object expectedObject, String toTest)
 			throws RuntimeException {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(toTest);
+		final Text t = new Text();
+		t.append(toTest);
 		final List<Object> list = new ArrayList<>();
 		// value() is private (and should be)
 		try {
 			final Method method = DataType.class.getDeclaredMethod(
 					"value",
-					tb.getClass(),
+					t.getClass(),
 					DataType.class,
 					List.class);
 			method.setAccessible(true);
-			final Boolean result = (Boolean)method.invoke(null, tb, DataType.any, list);
+			final Boolean result = (Boolean)method.invoke(null, t, DataType.any, list);
 
 			if(expectedResult) {
 				assertTrue(result.booleanValue());
@@ -119,13 +119,13 @@ public class TestDataType {
 	}
 
 	private void doDateTest(Object expectedResult, String methodName, String toTest) {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(toTest);
+		final Text t = new Text();
+		t.append(toTest);
 		// date() is private (and should be)
 		try {
-			final Method method = DataType.class.getDeclaredMethod(methodName, TextBuilder.class);
+			final Method method = DataType.class.getDeclaredMethod(methodName, Text.class);
 			method.setAccessible(true);
-			final Object result = method.invoke(null, tb);
+			final Object result = method.invoke(null, t);
 			assertEquals(expectedResult, result);
 		} catch(final InvocationTargetException e) {
 			throw (RuntimeException)e.getCause();
@@ -136,18 +136,18 @@ public class TestDataType {
 	}
 
 	private void doCardinalityTest(Cardinality expected, String toTest) {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(toTest);
+		final Text t = new Text();
+		t.append(toTest);
 		try {
 			// private static boolean cardinality(TextBuilder, List<Object>
 			// valueList)
 			final Method method = DataType.class.getDeclaredMethod(
 					"cardinality",
-					TextBuilder.class,
+					Text.class,
 					List.class);
 			method.setAccessible(true);
 			final List<Object> list = new ArrayList<>();
-			final Boolean result = (Boolean)method.invoke(null, tb, list);
+			final Boolean result = (Boolean)method.invoke(null, t, list);
 			assertTrue(result.booleanValue());
 			assertEquals(expected, list.get(0));
 		} catch(final InvocationTargetException e) {
@@ -159,28 +159,34 @@ public class TestDataType {
 	}
 
 	private void doNumberTest(Object expected, DataType type, String toTest) {
-		final TextBuilder tb = new TextBuilder();
-		tb.append(toTest);
+		final Text t = new Text();
+		t.append(toTest);
 		// number() is private (and should be)
 		try {
 			// private static Object number(TextBuilder)
 			final Method method = DataType.class.getDeclaredMethod(
 					"number",
-					TextBuilder.class,
+					Text.class,
 					DataType.class,
 					List.class);
 			method.setAccessible(true);
 			final List<Object> list = new ArrayList<>();
-			final Boolean result = (Boolean)method.invoke(null, tb, type, list);
+			final Boolean result = (Boolean)method.invoke(null, t, type, list);
 			assertTrue(result.booleanValue());
 			assertEquals(expected, list.get(0));
-			assertEquals(toTest.length(), tb.cursor());
+			assertEquals(toTest.length(), t.cursor());
 		} catch(final InvocationTargetException e) {
 			throw (RuntimeException)e.getCause();
 		} catch(final Exception e) {
 			System.err.println(e.getClass().getSimpleName() + ": " + e.getMessage());
 			fail();
 		}
+	}
+
+	private void doArrayTest(String string, DataType type, Object... expected) {
+		final List<Object> actualList = DataType.parseArray(string, type);
+		final Object[] actualArray = actualList.toArray(new Object[actualList.size()]);
+		assertArrayEquals(expected, actualArray);
 	}
 
 	@Test
@@ -329,7 +335,7 @@ public class TestDataType {
 	public void testValue() {
 		doValueTest(false, "", "");
 		doValueTest(true, Path.parse("`path`"), "`path`"); // Path
-		doValueTest(true, "\"ab\\nc\"", "\"ab\\nc\""); // Text
+		doValueTest(true, "ab\nc", "\"ab\\nc\""); // Text
 		doValueTest(false, "", "\"abc");
 	}
 
@@ -390,20 +396,49 @@ public class TestDataType {
 
 	@Test
 	public void testArray() {
-		assertArrayEquals(
-				new Object[] { Boolean.TRUE, Boolean.FALSE, null },
-				DataType.parseArray("[ true, false, null ]", DataType.bool));
-		assertArrayEquals(
-				new Object[] {},
-				DataType.parseArray("[ ]", DataType.z));
-		assertArrayEquals(
-				new Object[] { new Long(1), new Long(2) },
-				DataType.parseArray("[1,2]", DataType.z));
-		assertArrayEquals(
-				new Object[] { new BigDecimal(1), new BigDecimal(2) },
-				DataType.parseArray("[1,2F]", DataType.F));
-		assertArrayEquals(
-				new Object[] { "\"abc\"", new Long(1), new BigInteger("2"), null },
-				DataType.parseArray("[\"abc\", 1, 2Z, null]", DataType.any));
+		doArrayTest("[ true, false, null ]", DataType.bool, Boolean.TRUE, Boolean.FALSE, null);
+		doArrayTest("[ ]", DataType.z);
+		doArrayTest("[1,2]", DataType.z, new Long(1), new Long(2));
+		doArrayTest("[1,2F]", DataType.F, new BigDecimal(1), new BigDecimal(2));
+		doArrayTest("[\"abc\", 1, 2Z, null]", DataType.any,
+				"abc", new Long(1), new BigInteger("2"), null);
+	}
+
+	@Test
+	public void testTextToInternalFormat() {
+		assertNull(DataType.textToInternalFormat(null));
+		assertEquals("", DataType.textToInternalFormat("\"\""));
+		assertEquals("a", DataType.textToInternalFormat("\"a\""));
+		assertEquals("\t", DataType.textToInternalFormat("\"\\t\""));
+		assertEquals("\n", DataType.textToInternalFormat("\"\\n\""));
+		assertEquals("\"", DataType.textToInternalFormat("\"\\\"\""));
+		assertEquals("\\", DataType.textToInternalFormat("\"\\\\\""));
+
+		assertEquals("a \t \n c", DataType.textToInternalFormat("\"a \\t \\n c\""));
+
+		assertEquals("\t", DataType.textToInternalFormat("\"\\u9\""));
+		assertEquals("\t", DataType.textToInternalFormat("\"\\u0009\""));
+		assertEquals("\t1", DataType.textToInternalFormat("\"\\u00091\""));
+		assertEquals("A", DataType.textToInternalFormat("\"\\u0041\""));
+	}
+
+	@Test(expected = AssertionError.class)
+	public void testTextToInternalFormat1() {
+		DataType.textToInternalFormat("");
+	}
+
+	@Test(expected = ParsingException.class)
+	public void testTextToInternalFormat2() {
+		DataType.textToInternalFormat("\"\\\"");
+	}
+
+	@Test(expected = ParsingException.class)
+	public void testTextToInternalFormat3() {
+		DataType.textToInternalFormat("\" \\x \"");
+	}
+
+	@Test(expected = ParsingException.class)
+	public void testTextToInternalFormat4() {
+		DataType.textToInternalFormat("\" \\ug \"");
 	}
 }

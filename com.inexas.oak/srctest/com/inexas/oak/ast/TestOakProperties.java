@@ -194,7 +194,7 @@ public class TestOakProperties {
 
 	@Test
 	public void testTime() throws OakException {
-		doTest("a:@01:02:00;", "a: @01:02;");
+		doTest("a:@01:02;", "a: @01:02;");
 	}
 
 	@Test
@@ -204,7 +204,7 @@ public class TestOakProperties {
 
 	@Test
 	public void testText() throws OakException {
-		doTest("a:\"a\nc\";", "a: \"a\nc\";");
+		doTest("a:\"a\\nc\";", "a: \"a\nc\";");
 	}
 
 	@Test

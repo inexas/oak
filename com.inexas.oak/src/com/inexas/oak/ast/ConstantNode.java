@@ -2,24 +2,15 @@ package com.inexas.oak.ast;
 
 import java.math.*;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.Temporal;
-import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang3.StringEscapeUtils;
 import com.inexas.oak.DataType;
-import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.OakParser.LiteralContext;
-import com.inexas.oak.path.Path;
-import com.inexas.tad.Context;
-import com.inexas.util.Cardinality;
+import com.inexas.oak.path.*;
+import com.inexas.util.*;
 
 public class ConstantNode extends ExpressionNode {
-	public final static DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("y/M/d");
-	public final static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-	public final static DateTimeFormatter timeFormatterSecs = DateTimeFormatter.ofPattern("HH:mm:ss");
-	public final static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("y/M/d HH:mm");
-	public final static DateTimeFormatter dateTimeFormatterSecs =
-			DateTimeFormatter.ofPattern("y/M/d HH:mm:ss");
 	public final DataType type;
 	private final Object value;
 
@@ -81,6 +72,12 @@ public class ConstantNode extends ExpressionNode {
 		super(context);
 		this.value = StringEscapeUtils.unescapeJava(value);
 		type = DataType.text;
+	}
+
+	ConstantNode(ParserRuleContext context, Identifier value) {
+		super(context);
+		this.value = value;
+		type = DataType.identifier;
 	}
 
 	ConstantNode(ParserRuleContext context, LocalDateTime value) {
@@ -152,10 +149,10 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public String getIdentifierValue() {
-		final String result;
+	public Identifier getIdentifierValue() {
+		final Identifier result;
 		if(type == DataType.identifier) {
-			result = (String)value;
+			result = (Identifier)value;
 		} else {
 			error("Wrong data type. Expected identifier but is: " + type);
 			result = null;
@@ -289,10 +286,8 @@ public class ConstantNode extends ExpressionNode {
 		return value;
 	}
 
-	private static void error(ParserRuleContext context, String message) {
-		final Advisory advisory = Context.get(Advisory.class);
-		final Token token = context.getStart();
-		advisory.error(token.getStartIndex(), token.getCharPositionInLine(), message);
+	public static Node toIdentifierConstant(LiteralContext context, String text) {
+		return new ConstantNode(context, new Identifier(text));
 	}
 
 	public static Node toIntegerConstant(LiteralContext context, String text) {
@@ -338,7 +333,7 @@ public class ConstantNode extends ExpressionNode {
 	}
 
 	public static Node toTextConstant(LiteralContext context, String text) {
-		return new ConstantNode(context, text);
+		return new ConstantNode(context, DataType.textToInternalFormat(text));
 	}
 
 	public static Node toPathConstant(LiteralContext context, String text) {
@@ -346,74 +341,18 @@ public class ConstantNode extends ExpressionNode {
 	}
 
 	public static Node toDate(LiteralContext context, String text) {
-		final Temporal temporal = LocalDate.parse(text, dateFormatter);
-		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, DataType.date);
+		final Temporal temporal = DateU.parseStandardDate(text);
+		return new ConstantNode(context, temporal, DataType.date);
 	}
 
 	public static Node toTime(LiteralContext context, String text) {
-		final Temporal temporal;
-
-		int colonCount = 0;
-		final char[] ca = text.toCharArray();
-		for(final char c : ca) {
-			if(c == ':') {
-				colonCount++;
-			}
-		}
-		if(colonCount == 1) {
-			temporal = LocalTime.parse(text, timeFormatter);
-		} else if(colonCount == 2) {
-			temporal = LocalTime.parse(text, timeFormatterSecs);
-		} else {
-			error(context, "Can't parse date/time: " + text);
-			temporal = null;
-		}
-
-		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, DataType.time);
+		final Temporal temporal = DateU.parseStandardTime(text);
+		return new ConstantNode(context, temporal, DataType.time);
 	}
 
 	public static Node toDateTime(LiteralContext context, String text) {
-		// todo Simplify this using toDate and toTime
-		final boolean containsDate = text.indexOf('/') > 0;
-		int colonCount = 0;
-		final char[] ca = text.toCharArray();
-		for(final char c : ca) {
-			if(c == ':') {
-				colonCount++;
-			}
-		}
-
-		final Temporal temporal;
-		final DataType dataType;
-		if(containsDate) {
-			if(colonCount == 0) {
-				dataType = DataType.date;
-				temporal = LocalDate.parse(text, dateFormatter);
-			} else {
-				dataType = DataType.datetime;
-				if(colonCount == 1) {
-					temporal = LocalDateTime.parse(text, dateTimeFormatter);
-				} else if(colonCount == 2) {
-					temporal = LocalDateTime.parse(text, dateTimeFormatterSecs);
-				} else {
-					error(context, "Can't parse date/time: " + text);
-					temporal = null;
-				}
-			}
-		} else {
-			dataType = DataType.time;
-			if(colonCount == 1) {
-				temporal = LocalTime.parse(text, timeFormatter);
-			} else if(colonCount == 2) {
-				temporal = LocalTime.parse(text, timeFormatterSecs);
-			} else {
-				error(context, "Can't parse date/time: " + text);
-				temporal = null;
-			}
-		}
-
-		return temporal == null ? new ErrorNode(context) : new ConstantNode(context, temporal, dataType);
-
+		final Temporal temporal = DateU.parseStandardDatetime(text);
+		return new ConstantNode(context, temporal, DataType.datetime);
 	}
 
 	private static String removeOptionalPostFix(String string, char postFix) {
