@@ -15,9 +15,9 @@ import com.inexas.util.*;
 public enum DataType {
 	// @formatter:off
 	// Keep z first and the order: z, Z, f, F for getCommonType()
-	z(				true,	false,	Long.class),
+	z(				true,	false,	Integer.class),
 	Z(				true,	false,	BigInteger.class),
-	f(				true,	false,	Double.class),
+	f(				true,	false,	Float.class),
 	F(				true,	false,	BigDecimal.class),
 	text(			false,	false,	String.class),
 	identifier(		false,	false,	Identifier.class),
@@ -93,7 +93,7 @@ public enum DataType {
 	}
 
 	/**
-	 * Can't override valueOf() so uUse this method instead as it treats boolean
+	 * Can't override valueOf() so use this method instead as it treats boolean
 	 * properly. If an error is detected the Advisory is updated.
 	 *
 	 * @param key
@@ -251,7 +251,7 @@ public enum DataType {
 					} else if(to == Float.class) {
 						result = new Float(((Number)value).floatValue());
 					} else if(to == Double.class) {
-						result = new Double(((Number)value).doubleValue());
+						result = new Double(((Number)value).floatValue());
 					} else if(to == BigDecimal.class) {
 						// Use intValue() to avoid precision errors
 						result = new BigDecimal(((Number)value).intValue());
@@ -271,7 +271,7 @@ public enum DataType {
 					} else if(to == Float.class) {
 						result = new Float(((Number)value).floatValue());
 					} else if(to == Double.class) {
-						result = new Double(((Number)value).doubleValue());
+						result = new Double(((Number)value).floatValue());
 					} else if(to == BigDecimal.class) {
 						// Use longValue() to avoid precision errors
 						result = new BigDecimal(((Number)value).longValue());
@@ -292,7 +292,7 @@ public enum DataType {
 						}
 						result = new Float(f1);
 					} else if(to == Double.class) {
-						final double d = bi.doubleValue();
+						final float d = bi.floatValue();
 						if(d == Double.NEGATIVE_INFINITY || d == Double.POSITIVE_INFINITY) {
 							throw new OverflowException(bi, to);
 						}
@@ -322,7 +322,7 @@ public enum DataType {
 						final BigDecimal bd = BigDecimal.valueOf(fl);
 						result = bd.toBigInteger();
 					} else if(to == Double.class) {
-						result = new Double(((Number)value).doubleValue());
+						result = new Double(((Number)value).floatValue());
 					} else if(to == BigDecimal.class) {
 						result = BigDecimal.valueOf(fl);
 					} else {
@@ -330,7 +330,7 @@ public enum DataType {
 					}
 
 				} else if(from == Double.class) { // Double -> ...
-					final double d = ((Double)value).doubleValue();
+					final float d = ((Double)value).floatValue();
 					if(to == Integer.class) {
 						if(d < Integer.MIN_VALUE || d > Integer.MAX_VALUE || d % 1 > 0) {
 							throw new OverflowException((Number)value, to);
@@ -348,10 +348,10 @@ public enum DataType {
 						final BigDecimal bd = BigDecimal.valueOf(d);
 						result = bd.toBigInteger();
 					} else if(to == Float.class) { // OK
-						if(d < -Float.MAX_VALUE || d > Float.MAX_VALUE) {
+						if(d < -(double)Float.MAX_VALUE || d > (double)Float.MAX_VALUE) {
 							throw new OverflowException((Number)value, to);
 						}
-						result = new Float((float)d);
+						result = new Float(d);
 					} else if(to == BigDecimal.class) { // OK
 						result = BigDecimal.valueOf(d);
 					} else {
@@ -380,7 +380,7 @@ public enum DataType {
 						if(bd.compareTo(BigDecimal_MIN_DOUBLE) < 0 || bd.compareTo(BigDecimal_MAX_DOUBLE) > 0) {
 							throw new OverflowException(bd, to);
 						}
-						result = new Double(bd.doubleValue());
+						result = new Double(bd.floatValue());
 					} else {
 						throw new TypeMismatchException(value.getClass(), to);
 					}
@@ -431,7 +431,7 @@ public enum DataType {
 					result.append("\\\"");
 					break;
 				case '\\':
-					result.append("\\\\");
+					result.append("\\");
 					break;
 				default:
 					if(c < ' ' || c >= '~') {
@@ -782,7 +782,7 @@ public enum DataType {
 					throw new ParsingException("Invalid time, missing leading '@': " + string);
 				}
 				try {
-					result = (T)DateU.parseStandardDate(string.substring(1));
+					result = (T)DateU.parseStandardTime(string.substring(1));
 				} catch(final DateTimeParseException e) {
 					throw new ParsingException("Invalid time: " + string);
 				}
@@ -793,7 +793,7 @@ public enum DataType {
 					throw new ParsingException("Invalid datetime, missing leading '@': " + string);
 				}
 				try {
-					result = (T)DateU.parseStandardDate(string.substring(1));
+					result = (T)DateU.parseStandardDatetime(string.substring(1));
 				} catch(final DateTimeParseException e) {
 					throw new ParsingException("Invalid datetime: " + string);
 				}
@@ -971,7 +971,7 @@ public enum DataType {
 		// value
 		// : Text
 		// | Path
-		// | Date | Time | DateTime
+		// | Date | Time | Datetime
 		// | 'null'
 		// | 'true' | 'false'
 		// | z | Z | f | F

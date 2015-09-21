@@ -56,7 +56,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		 * and a positive number that is too large to fit in a long. In Java
 		 * weird things happen too. For example long l = Long.MIN_VALUE; l = -1;
 		 * l is still negative!
-		 * 
+		 *
 		 * The only solution to this problem is perhaps to use Z and F all over
 		 * and then convert to long, int, short, ... After all this isn't a
 		 * calculation engine.
@@ -101,8 +101,8 @@ public class AntlrToAstVisitor extends OakBaseListener {
 			constant = ConstantNode.toPathConstant(ctx, text);
 			break;
 
-		case OakLexer.DateTimeLiteral:
-			constant = ConstantNode.toDateTime(ctx, text.substring(1, text.length()));
+		case OakLexer.DatetimeLiteral:
+			constant = ConstantNode.toDatetime(ctx, text.substring(1, text.length()));
 			break;
 
 		case OakLexer.DateLiteral:

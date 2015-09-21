@@ -120,9 +120,9 @@ public class FunctionRegistry implements Tad {
 					case z:
 						final Class<?> clazz = parameterTypes[i];
 						if(clazz == BigDecimal.class) {
-							parameters[i] = new BigDecimal(((Long)argument).doubleValue());
-						} else if(clazz == Double.class) {
-							parameters[i] = new Double(((Long)argument).doubleValue());
+							parameters[i] = new BigDecimal(((Integer)argument).intValue());
+						} else if(clazz == Float.class) {
+							parameters[i] = new Float(((Integer)argument).intValue());
 						} else {
 							parameters[i] = argument;
 						}
@@ -184,20 +184,20 @@ public class FunctionRegistry implements Tad {
 					break;
 
 				case z: {
-					final Long l = DataType.convert(returnValue, Long.class);
-					result = new ConstantNode(context, l);
+					final Integer i = DataType.convert(returnValue, Integer.class);
+					result = new ConstantNode(context, i);
 					break;
 				}
 
 				case Z: {
-					final BigInteger bi = DataType.convert(returnValue, Long.class);
+					final BigInteger bi = DataType.convert(returnValue, BigInteger.class);
 					result = new ConstantNode(context, bi);
 					break;
 				}
 
 				case f: {
-					final Double d = DataType.convert(returnValue, Double.class);
-					result = new ConstantNode(context, d);
+					final Float f = DataType.convert(returnValue, Float.class);
+					result = new ConstantNode(context, f);
 					break;
 				}
 
@@ -247,16 +247,16 @@ public class FunctionRegistry implements Tad {
 		typeMap.put(int.class, DataType.z);
 		typeMap.put(Integer.class, DataType.z);
 
-		typeMap.put(long.class, DataType.z);
-		typeMap.put(Long.class, DataType.z);
+		typeMap.put(long.class, DataType.Z);
+		typeMap.put(Long.class, DataType.Z);
 
 		typeMap.put(BigInteger.class, DataType.Z);
 
 		typeMap.put(float.class, DataType.f);
 		typeMap.put(Float.class, DataType.f);
 
-		typeMap.put(double.class, DataType.f);
-		typeMap.put(Double.class, DataType.f);
+		typeMap.put(double.class, DataType.F);
+		typeMap.put(Double.class, DataType.F);
 
 		typeMap.put(BigDecimal.class, DataType.F);
 

@@ -21,12 +21,12 @@ public class TestExpression {
 		}
 
 		@Function
-		public static Long echo(Long x) {
+		public static Integer echo(Integer x) {
 			return x;
 		}
 
 		@Function
-		public static Double echo(Double x) {
+		public static Float echo(Float x) {
 			return x;
 		}
 
@@ -46,12 +46,12 @@ public class TestExpression {
 		}
 
 		@Function
-		public static long primitive(long x) {
+		public static int primitive(int x) {
 			return x;
 		}
 
 		@Function
-		public static double primitive(double x) {
+		public static float primitive(float x) {
 			return x;
 		}
 
@@ -61,17 +61,17 @@ public class TestExpression {
 		}
 
 		@Function
-		public static long plus(long x, long y) {
+		public static int plus(int x, int y) {
 			return x + y;
 		}
 
 		@Function
-		public static long minus(long x, long y) {
+		public static int minus(int x, int y) {
 			return x - y;
 		}
 
 		@Function
-		public static double minus(double x, double y) {
+		public static float minus(float x, float y) {
 			return x - y;
 		}
 	}
@@ -133,7 +133,7 @@ public class TestExpression {
 		// Shifts...
 		doTest("4", "2<<1");
 		doTest("1", "2>>1");
-		doTest("" + (-1L >>> 1), "-1>>>1");
+		doTest("" + (-1 >>> 1), "-1>>>1");
 
 		// Comparisons...
 		doTest("true", "2<3");

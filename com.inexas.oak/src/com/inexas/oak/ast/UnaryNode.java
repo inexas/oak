@@ -61,7 +61,7 @@ public class UnaryNode extends ExpressionNode {
 		case OakLexer.Minus:
 			switch(type) {
 			case z:
-				result = new ConstantNode(context, -((Long)value).intValue());
+				result = new ConstantNode(context, -((Number)value).intValue());
 				break;
 
 			case Z:
@@ -69,7 +69,7 @@ public class UnaryNode extends ExpressionNode {
 				break;
 
 			case f:
-				result = new ConstantNode(context, -((Number)value).doubleValue());
+				result = new ConstantNode(context, -((Number)value).floatValue());
 				break;
 			case F:
 				result = new ConstantNode(context, ((BigDecimal)value).negate());
@@ -91,7 +91,7 @@ public class UnaryNode extends ExpressionNode {
 
 		case OakLexer.Comp:
 			if(type == DataType.z) {
-				result = new ConstantNode(context, ~((Long)value).longValue());
+				result = new ConstantNode(context, ~((Integer)value).intValue());
 			} else {
 				// There's already an error in the advisory from the ctor
 				result = new ConstantNode(context, 0);

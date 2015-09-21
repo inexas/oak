@@ -117,7 +117,7 @@ literal
 	|	BigFloatingPointLiteral
 	|	TextLiteral
 	|	PathLiteral
-	|	DateTimeLiteral
+	|	DatetimeLiteral
 	|	DateLiteral
 	|	TimeLiteral
 	|	True
@@ -188,7 +188,7 @@ fragment UnicodeEscape
 
 // T E M P O R A L   C O N S T R U C T S
 
-DateTimeLiteral
+DatetimeLiteral
 	:	'@' Date WS Time
 	;
 

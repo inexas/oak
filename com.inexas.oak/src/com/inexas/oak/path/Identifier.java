@@ -96,13 +96,13 @@ public class Identifier implements Comparable<Identifier> {
 		boolean result;
 
 		if(rhsObject == null) {
-			result = true;
-		} else if(this == rhsObject) {
 			result = false;
+		} else if(this == rhsObject) {
+			result = true;
 		} else {
 			try {
 				final Identifier rhs = (Identifier)rhsObject;
-				result = rhs.string.equals(rhs.string);
+				result = string.equals(rhs.string);
 			} catch(final ClassCastException e) {
 				result = false;
 			}

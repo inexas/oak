@@ -32,25 +32,25 @@ public class ConstantNode extends ExpressionNode {
 		type = DataType.bool;
 	}
 
-	ConstantNode(ParserRuleContext context, long value) {
+	ConstantNode(ParserRuleContext context, int value) {
 		super(context);
-		this.value = new Long(value);
+		this.value = new Integer(value);
 		type = DataType.z;
 	}
 
-	ConstantNode(ParserRuleContext context, Long value) {
+	ConstantNode(ParserRuleContext context, Integer value) {
 		super(context);
 		this.value = value;
 		type = DataType.z;
 	}
 
-	ConstantNode(ParserRuleContext context, double value) {
+	ConstantNode(ParserRuleContext context, float value) {
 		super(context);
-		this.value = new Double(value);
+		this.value = new Float(value);
 		type = DataType.f;
 	}
 
-	ConstantNode(ParserRuleContext context, Double value) {
+	ConstantNode(ParserRuleContext context, Float value) {
 		super(context);
 		this.value = value;
 		type = DataType.f;
@@ -215,10 +215,10 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public Double getFloat() {
-		final Double result;
+	public Float getFloat() {
+		final Float result;
 		if(type == DataType.z) {
-			result = (Double)value;
+			result = (Float)value;
 		} else {
 			error("Wrong data type. Expected decimal but is: " + type);
 			result = null;
@@ -295,21 +295,21 @@ public class ConstantNode extends ExpressionNode {
 		final String noUnderlines = text.replace("_", "");
 		final String noPostfix = removeOptionalPostFix(noUnderlines, 'z');
 		// todo Check for negative, check for too big perhaps parse to BigInt?
-		return new ConstantNode(context, new Long(noPostfix));
+		return new ConstantNode(context, new Integer(noPostfix));
 	}
 
 	public static Node toBinaryIntegerConstant(LiteralContext context, String text) {
 		final String noUnderlines = text.replace("_", "");
 		final String noPrefix = noUnderlines.substring(2);
 		// todo Check for negative, check for too big perhaps parse to BigInt?
-		return new ConstantNode(context, Long.parseLong(noPrefix, 2));
+		return new ConstantNode(context, Integer.parseInt(noPrefix, 2));
 	}
 
 	public static Node toHexIntegerConstant(LiteralContext context, String text) {
 		final String noUnderlines = text.replace("_", "");
 		final String noPrefix = noUnderlines.substring(2);
 		// todo Check for negative, check for too big perhaps parse to BigInt?
-		return new ConstantNode(context, Long.parseLong(noPrefix, 16));
+		return new ConstantNode(context, Integer.parseInt(noPrefix, 16));
 	}
 
 	public static Node toBigIntegerConstant(LiteralContext context, String text) {
@@ -322,14 +322,14 @@ public class ConstantNode extends ExpressionNode {
 		final String noUnderlines = text.replace("_", "");
 		final String noPostfix = removeOptionalPostFix(noUnderlines, 'f');
 		// todo Check for too big perhaps parse to BigDec?
-		return new ConstantNode(context, Double.parseDouble(noPostfix));
+		return new ConstantNode(context, Float.parseFloat(noPostfix));
 	}
 
 	public static Node toBigFloatingPointConstant(LiteralContext context, String text) {
 		final String noUnderlines = text.replace("_", "");
 		final String noPostfix = removeOptionalPostFix(noUnderlines, 'F');
 		// todo Check for too big perhaps parse to BigDec?
-		return new ConstantNode(context, Double.parseDouble(noPostfix));
+		return new ConstantNode(context, Float.parseFloat(noPostfix));
 	}
 
 	public static Node toTextConstant(LiteralContext context, String text) {
@@ -350,7 +350,7 @@ public class ConstantNode extends ExpressionNode {
 		return new ConstantNode(context, temporal, DataType.time);
 	}
 
-	public static Node toDateTime(LiteralContext context, String text) {
+	public static Node toDatetime(LiteralContext context, String text) {
 		final Temporal temporal = DateU.parseStandardDatetime(text);
 		return new ConstantNode(context, temporal, DataType.datetime);
 	}

@@ -11,9 +11,9 @@ import com.inexas.oak.DataType.TypeMismatchException;
 public class BinaryNode extends ExpressionNode {
 	private class Converter {
 		private String lhs_text, rhs_text;
-		private long lhs_z, rhs_z;
+		private int lhs_z, rhs_z;
 		private BigInteger lhs_Z, rhs_Z;
-		private double lhs_f, rhs_f;
+		private float lhs_f, rhs_f;
 		private BigDecimal lhs_F, rhs_F;
 		private boolean lhsBoolean, rhsBoolean;
 		private final Object lhsValue, rhsValue;
@@ -38,8 +38,8 @@ public class BinaryNode extends ExpressionNode {
 			}
 			switch(commonType) {
 			case z:
-				lhs_z = ((Number)lhsValue).longValue();
-				rhs_z = ((Number)rhsValue).longValue();
+				lhs_z = ((Number)lhsValue).intValue();
+				rhs_z = ((Number)rhsValue).intValue();
 				break;
 
 			case Z:
@@ -48,8 +48,8 @@ public class BinaryNode extends ExpressionNode {
 				break;
 
 			case f:
-				lhs_f = ((Number)lhsValue).doubleValue();
-				rhs_f = ((Number)rhsValue).doubleValue();
+				lhs_f = ((Number)lhsValue).floatValue();
+				rhs_f = ((Number)rhsValue).floatValue();
 				break;
 
 			case F:
@@ -84,7 +84,7 @@ public class BinaryNode extends ExpressionNode {
 			if(value.getClass() == BigInteger.class) {
 				result = (BigInteger)value;
 			} else {
-				result = BigInteger.valueOf(((Long)value).longValue());
+				result = BigInteger.valueOf(((Integer)value).intValue());
 			}
 			return result;
 		}
@@ -93,11 +93,11 @@ public class BinaryNode extends ExpressionNode {
 			final BigDecimal result;
 			final Class<?> clazz = value.getClass();
 			if(clazz == Long.class) {
-				result = BigDecimal.valueOf(((Long)value).longValue());
+				result = BigDecimal.valueOf(((Long)value).intValue());
 			} else if(clazz == BigInteger.class) {
 				result = new BigDecimal((BigInteger)value);
-			} else if(clazz == Double.class) {
-				result = BigDecimal.valueOf(((Double)value).doubleValue());
+			} else if(clazz == Float.class) {
+				result = BigDecimal.valueOf(((Float)value).floatValue());
 			} else {
 				assert clazz == BigDecimal.class;
 				result = (BigDecimal)value;
@@ -391,7 +391,7 @@ public class BinaryNode extends ExpressionNode {
 			ConstantNode tmp = null;
 			try {
 				if(commonType == DataType.z) {
-					final int n = DataType.getInt(new Long(converter.rhs_z));
+					final int n = DataType.getInt(new Integer(converter.rhs_z));
 					tmp = new ConstantNode(lhsContext, converter.lhs_z << n);
 				} else {
 					assert commonType == DataType.Z : commonType.name();
@@ -411,7 +411,7 @@ public class BinaryNode extends ExpressionNode {
 			ConstantNode tmp = null;
 			try {
 				if(commonType == DataType.z) {
-					final int n = DataType.getInt(new Long(converter.rhs_z));
+					final int n = DataType.getInt(new Integer(converter.rhs_z));
 					tmp = new ConstantNode(lhsContext, converter.lhs_z >> n);
 				} else {
 					assert commonType == DataType.Z : commonType.name();

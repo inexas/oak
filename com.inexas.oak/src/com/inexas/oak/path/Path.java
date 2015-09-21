@@ -76,9 +76,9 @@ public class Path {
 			boolean result;
 
 			if(rhsObject == null) {
-				result = true;
-			} else if(this == rhsObject) {
 				result = false;
+			} else if(this == rhsObject) {
+				result = true;
 			} else {
 				try {
 					final Path.Element rhs = (Path.Element)rhsObject;
@@ -119,7 +119,13 @@ public class Path {
 	@Nullable
 	public static Path parse(String string) {
 		final Text t = new Text();
-		t.append(string);
+		if(string != null && string.length() > 0 && string.charAt(0) != '`') {
+			t.append('`');
+			t.append(string);
+			t.append('`');
+		} else {
+			t.append(string);
+		}
 		return parse(t);
 	}
 
@@ -467,9 +473,9 @@ public class Path {
 		boolean result;
 
 		if(rhsObject == null) {
-			result = true;
-		} else if(this == rhsObject) {
 			result = false;
+		} else if(this == rhsObject) {
+			result = true;
 		} else {
 			try {
 				final Path rhs = (Path)rhsObject;

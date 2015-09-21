@@ -60,7 +60,7 @@ public class TestFunclib {
 	}
 
 	@Function
-	public static String intLong(long l1, Long l2) {
-		return Long.toString(l1 * l2.longValue());
+	public static String intInt(int i1, int i2) {
+		return Integer.toString(i1 * i2);
 	}
 }

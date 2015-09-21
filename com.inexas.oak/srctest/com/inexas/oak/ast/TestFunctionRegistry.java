@@ -44,13 +44,13 @@ public class TestFunctionRegistry {
 
 		assertEquals(DataType.z, argumentTypes[0]);
 		assertEquals(DataType.z, argumentTypes[1]);
-		assertEquals(DataType.z, argumentTypes[2]);
-		assertEquals(DataType.z, argumentTypes[3]);
+		assertEquals(DataType.Z, argumentTypes[2]);
+		assertEquals(DataType.Z, argumentTypes[3]);
 		assertEquals(DataType.Z, argumentTypes[4]);
 		assertEquals(DataType.f, argumentTypes[5]);
 		assertEquals(DataType.f, argumentTypes[6]);
-		assertEquals(DataType.f, argumentTypes[7]);
-		assertEquals(DataType.f, argumentTypes[8]);
+		assertEquals(DataType.F, argumentTypes[7]);
+		assertEquals(DataType.F, argumentTypes[8]);
 		assertEquals(DataType.F, argumentTypes[9]);
 		assertEquals(DataType.text, argumentTypes[10]);
 		assertEquals(DataType.bool, argumentTypes[11]);
@@ -61,8 +61,8 @@ public class TestFunctionRegistry {
 		assertEquals(DataType.cardinality, argumentTypes[16]);
 
 		assertEquals("allTypes("
-				+ "Long, Long, Long, Long, BigInteger, "
-				+ "Double, Double, Double, Double, BigDecimal, "
+				+ "Integer, Integer, BigInteger, BigInteger, BigInteger, "
+				+ "Float, Float, BigDecimal, BigDecimal, BigDecimal, "
 				+ "String, "
 				+ "Boolean, Boolean, "
 				+ "LocalDateTime, LocalDate, LocalTime, Cardinality):text", allTypes.signature);
@@ -105,12 +105,12 @@ public class TestFunctionRegistry {
 		register.register(TestFunclib.class);
 		final ExpressionNode[] parameters = {
 				new ConstantNode(null, 2),
-				new ConstantNode(null, 3L)
+				new ConstantNode(null, 3)
 		};
-		final Function function = register.getFunction("intLong", parameters);
-		assertEquals("intLong(Long, Long):text", function.signature);
+		final Function function = register.getFunction("intInt", parameters);
+		assertEquals("intInt(Integer, Integer):text", function.signature);
 
-		final ConstantNode node = function.invoke(null, new Object[] { new Long(2), new Long(3) });
+		final ConstantNode node = function.invoke(null, new Object[] { new Integer(2), new Integer(3) });
 		assertEquals(DataType.text, node.getType());
 		assertEquals("6", node.getString());
 	}

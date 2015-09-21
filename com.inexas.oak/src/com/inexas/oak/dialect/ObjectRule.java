@@ -179,7 +179,7 @@ public class ObjectRule extends Rule {
 							parameterType = BigInteger.class;
 							break;
 						case f:
-							parameterType = Double.class;
+							parameterType = Float.class;
 							break;
 						case F:
 							parameterType = BigDecimal.class;
@@ -246,12 +246,12 @@ public class ObjectRule extends Rule {
 				} catch(final SecurityException e1) {
 					error(this,
 							"Error accessing " + getConstructorName(templateClass, parameterTypes)
-									+ " in " + templateClass.getName() + ' ' + e.getMessage());
+							+ " in " + templateClass.getName() + ' ' + e.getMessage());
 				}
 			} catch(final SecurityException e) {
 				error(this,
 						"Error accessing " + getStaticConstructorName(templateClass, parameterTypes)
-						+ " in " + templateClass.getName() + ' ' + e.getMessage());
+								+ " in " + templateClass.getName() + ' ' + e.getMessage());
 			}
 		}
 	}

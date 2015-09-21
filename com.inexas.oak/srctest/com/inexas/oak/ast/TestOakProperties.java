@@ -198,7 +198,7 @@ public class TestOakProperties {
 	}
 
 	@Test
-	public void testDateTime() throws OakException {
+	public void testDatetime() throws OakException {
 		doTest("a:@2012/12/12 10:20:39;", "a: @2012/12/12 10:20:39;");
 	}
 
