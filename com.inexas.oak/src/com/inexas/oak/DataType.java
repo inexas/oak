@@ -8,7 +8,6 @@ import java.util.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.oak.path.*;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 
@@ -594,58 +593,58 @@ public enum DataType {
 				&& source.charAt(0) == '"'
 				&& source.charAt(source.length() - 1) == '"';
 
-				if(source == null) {
-			result = null;
-		} else {
-			final Text t = new Text();
-			final char[] ca = source.toCharArray();
-			final int length = ca.length - 1; // 1 because remove quotes
+		if(source == null) {
+					result = null;
+				} else {
+					final Text t = new Text();
+					final char[] ca = source.toCharArray();
+					final int length = ca.length - 1; // 1 because remove quotes
 
-			for(int i = 1; i < length; i++) { // 1 because remove quotes
-				final char c = ca[i];
-				if(c == '\\') {
-					if(i == length - 1) {
-						error("Invalid text " + source + ", escape at end of line");
-					} else {
-						i++;
-						final char next = ca[i];
-						if(next == 't') {
-							t.append('\t');
-						} else if(next == 'n') {
-							t.append('\n');
-						} else if(next == '"') {
-							t.append('"');
-						} else if(next == '\\') {
-							t.append('\\');
-						} else if(next == 'u') {
-							// Unicode, 1-4 hex characters...
-							i++;
-
-							final Text hex = new Text();
-							hex.append(source);
-							hex.setCursor(i);
-							final int start = i;
-							if(hex.consumeAscii(Text.ASCII_0_F)) {
-								final int end = start + Math.min(4, hex.cursor() - start);
-								final String string = hex.getString(start, end);
-								final char u = (char)Integer.parseInt(string, 16);
-								t.append(u);
-								i = end - 1;
+					for(int i = 1; i < length; i++) { // 1 because remove quotes
+						final char c = ca[i];
+						if(c == '\\') {
+							if(i == length - 1) {
+								error("Invalid text " + source + ", escape at end of line");
 							} else {
-								error("Invalid text " + source + ", incorrect unicode");
+								i++;
+								final char next = ca[i];
+								if(next == 't') {
+									t.append('\t');
+								} else if(next == 'n') {
+									t.append('\n');
+								} else if(next == '"') {
+									t.append('"');
+								} else if(next == '\\') {
+									t.append('\\');
+								} else if(next == 'u') {
+									// Unicode, 1-4 hex characters...
+									i++;
+
+									final Text hex = new Text();
+									hex.append(source);
+									hex.setCursor(i);
+									final int start = i;
+									if(hex.consumeAscii(Text.ASCII_0_F)) {
+										final int end = start + Math.min(4, hex.cursor() - start);
+										final String string = hex.getString(start, end);
+										final char u = (char)Integer.parseInt(string, 16);
+										t.append(u);
+										i = end - 1;
+									} else {
+										error("Invalid text " + source + ", incorrect unicode");
+									}
+								} else {
+									error("Invalid text: \\" + next);
+								}
 							}
 						} else {
-							error("Invalid text: \\" + next);
+							t.append(c);
 						}
 					}
-				} else {
-					t.append(c);
+					result = t.toString();
 				}
-			}
-			result = t.toString();
-		}
 
-		return result;
+				return result;
 	}
 
 	/**
@@ -682,7 +681,7 @@ public enum DataType {
 
 			case identifier:
 				// Verify
-				Identifier.parse(string);
+				Identifier.isValid(string);
 				result = (T)string;
 				break;
 
@@ -982,7 +981,7 @@ public enum DataType {
 		/*
 		 * Try and parse a value, we don't know the type so use the first
 		 * character as an indicator to jump to the right type.
-		 * 
+		 *
 		 * We know we're not EOF and "null" has been dealt with by the caller.
 		 */
 		final char c = t.peek();
@@ -1446,7 +1445,7 @@ public enum DataType {
 		case F:
 			result = new BigDecimal(string);
 			break;
-		// $CASES-OMITTED$
+			// $CASES-OMITTED$
 		default:
 			throw new UnexpectedException("toType: " + derivedType);
 		}

@@ -1,4 +1,7 @@
 /**
+ * NOTE: This is no longer used as we parse paths by 'hand' as it's easier
+ * and faster. But it does serve to document the BNF.
+ * 
  * Recognizer for paths, e.g. role:/sys/admin
  */
 grammar Path;

@@ -1,9 +1,9 @@
 package com.inexas.oak.template;
 
 import java.util.List;
+import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.Keyed;
-import com.inexas.oak.path.Identifier;
 import com.inexas.tad.Context;
 
 /**

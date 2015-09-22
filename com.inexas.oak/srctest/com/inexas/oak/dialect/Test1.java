@@ -10,7 +10,7 @@
 
 package com.inexas.oak.dialect;
 
-import com.inexas.oak.path.Identifier;
+import com.inexas.oak.Identifier;
 
 /**
  * @author kwhittingham

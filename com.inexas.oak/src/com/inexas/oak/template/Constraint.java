@@ -5,7 +5,6 @@ import java.util.*;
 import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.*;
-import com.inexas.oak.path.Identifier;
 import com.inexas.tad.Context;
 import com.inexas.util.*;
 

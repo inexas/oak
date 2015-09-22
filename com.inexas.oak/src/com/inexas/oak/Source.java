@@ -1,4 +1,4 @@
-package com.inexas.oak.path;
+package com.inexas.oak;
 
 public interface Source {
 

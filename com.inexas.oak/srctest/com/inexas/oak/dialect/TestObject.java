@@ -1,6 +1,6 @@
 package com.inexas.oak.dialect;
 
-import com.inexas.oak.path.Identifier;
+import com.inexas.oak.Identifier;
 
 public class TestObject {
 	String p;

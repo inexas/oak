@@ -529,7 +529,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				} else {
 					advisory.error(node,
 							"Wrong data type; expected path but got: " + rule.dataType
-							+ " '" + (value == null ? "null" : value.toString()));
+									+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);
 				}
 			}
@@ -550,7 +550,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				} else {
 					advisory.error(node,
 							"Wrong data type; expected path but got: " + rule.dataType
-							+ " '" + (value == null ? "null" : value.toString()));
+									+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);
 				}
 			}

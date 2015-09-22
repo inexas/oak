@@ -3,6 +3,7 @@ package com.inexas.oak.path;
 import static org.junit.Assert.*;
 import java.util.*;
 import org.junit.*;
+import com.inexas.oak.*;
 
 public class TestPath {
 	private class TestSource implements Source {

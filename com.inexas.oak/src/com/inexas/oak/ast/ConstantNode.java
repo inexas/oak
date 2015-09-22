@@ -5,9 +5,8 @@ import java.time.*;
 import java.time.temporal.Temporal;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.apache.commons.lang3.StringEscapeUtils;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.oak.ast.OakParser.LiteralContext;
-import com.inexas.oak.path.*;
 import com.inexas.util.*;
 
 public class ConstantNode extends ExpressionNode {
@@ -160,10 +159,10 @@ public class ConstantNode extends ExpressionNode {
 		return result;
 	}
 
-	public String getPathValue() {
-		final String result;
-		if(type == DataType.identifier || type == DataType.path) {
-			result = (String)value;
+	public Path getPathValue() {
+		final Path result;
+		if(type == DataType.path) {
+			result = (Path)value;
 		} else {
 			error("Wrong data type. Expected path but is: " + type);
 			result = null;

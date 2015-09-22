@@ -12,7 +12,7 @@ package com.inexas.oak.path;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import com.inexas.oak.ParsingException;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.tad.Context;
 
@@ -20,24 +20,24 @@ public class TestIdentifier {
 
 	@Test
 	public void test() {
-		assertTrue(Identifier.parse("A"));
-		assertTrue(Identifier.parse("P"));
-		assertTrue(Identifier.parse("Z"));
-		assertTrue(Identifier.parse("a"));
-		assertTrue(Identifier.parse("p"));
-		assertTrue(Identifier.parse("z"));
-		assertTrue(Identifier.parse("_"));
+		assertTrue(Identifier.isValid("A"));
+		assertTrue(Identifier.isValid("P"));
+		assertTrue(Identifier.isValid("Z"));
+		assertTrue(Identifier.isValid("a"));
+		assertTrue(Identifier.isValid("p"));
+		assertTrue(Identifier.isValid("z"));
+		assertTrue(Identifier.isValid("_"));
 
-		assertTrue(Identifier.parse("A0a_"));
-		assertTrue(Identifier.parse("A5b"));
-		assertTrue(Identifier.parse("A9z"));
+		assertTrue(Identifier.isValid("A0a_"));
+		assertTrue(Identifier.isValid("A5b"));
+		assertTrue(Identifier.isValid("A9z"));
 
-		assertTrue(Identifier.parse("ab123456789012345678901234567890"));
+		assertTrue(Identifier.isValid("ab123456789012345678901234567890"));
 	}
 
 	@Test(expected = ParsingException.class)
 	public void testTooLong() {
-		assertTrue(Identifier.parse("ab123456789012345678901234567890x"));
+		assertTrue(Identifier.isValid("ab123456789012345678901234567890x"));
 	}
 
 	@Test
@@ -46,7 +46,7 @@ public class TestIdentifier {
 		final Advisory advisory = new Advisory(string);
 		Context.attach(advisory);
 
-		assertFalse(Identifier.parse("ab123456789012345678901234567890x"));
+		assertFalse(Identifier.isValid("ab123456789012345678901234567890x"));
 		assertFalse(advisory.isEmpty());
 
 		Context.detach(advisory);

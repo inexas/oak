@@ -2,10 +2,9 @@ package com.inexas.oak.template;
 
 import java.util.List;
 import com.inexas.exception.ImplementMeException;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.Locus;
 import com.inexas.oak.dialect.Keyed;
-import com.inexas.oak.path.Identifier;
 
 public class Property extends Locus.Base implements Keyed {
 	public final String key;
