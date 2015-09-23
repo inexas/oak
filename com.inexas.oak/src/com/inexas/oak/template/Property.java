@@ -7,20 +7,19 @@ import com.inexas.oak.advisory.Locus;
 import com.inexas.oak.dialect.Keyed;
 
 public class Property extends Locus.Base implements Keyed {
-	public final String key;
+	public final Identifier key;
 	public final DataType type;
 	public final Constraint[] constraints;
 
 	public Property(Identifier key, Identifier type, List<Constraint> constraints) {
-		this(
-				key.toString(),
-				type == null ? null : type.toString(),
+		this(key,
+				type == null ? null : type,
 						constraints == null ? null : constraints.toArray(new Constraint[constraints.size()]));
 	}
 
-	public Property(String key, String type, Constraint[] constraints) {
+	public Property(Identifier key, Identifier type, Constraint[] constraints) {
 		this.key = key;
-		this.type = type == null ? DataType.text : DataType.valueOfCorrected(type);
+		this.type = type == null ? DataType.text : DataType.valueOfCorrected(type.toString());
 		this.constraints = constraints;
 	}
 
@@ -28,7 +27,7 @@ public class Property extends Locus.Base implements Keyed {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getKey() {
+	public Identifier getKey() {
 		return key;
 	}
 

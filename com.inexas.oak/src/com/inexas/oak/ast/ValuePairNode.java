@@ -2,13 +2,13 @@ package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.ImplementMeException;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.util.Cardinality;
 
 public class ValuePairNode extends PairNode {
 	private final Node node;
 
-	public ValuePairNode(ParserRuleContext context, String name, Node value) {
+	public ValuePairNode(ParserRuleContext context, Identifier name, Node value) {
 		super(context, name);
 		this.node = value;
 		value.parent = this;

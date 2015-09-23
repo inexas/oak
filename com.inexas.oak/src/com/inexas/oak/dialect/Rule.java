@@ -1,10 +1,11 @@
 package com.inexas.oak.dialect;
 
+import com.inexas.oak.Identifier;
 
 public abstract class Rule implements Comparable<Rule> {
-	public final String key;
+	public final Identifier key;
 
-	protected Rule(String key) {
+	protected Rule(Identifier key) {
 		assert key != null;
 
 		this.key = key;

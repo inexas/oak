@@ -4,7 +4,6 @@ import java.math.*;
 import java.time.*;
 import java.time.temporal.Temporal;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.apache.commons.lang3.StringEscapeUtils;
 import com.inexas.oak.*;
 import com.inexas.oak.ast.OakParser.LiteralContext;
 import com.inexas.util.*;
@@ -69,7 +68,7 @@ public class ConstantNode extends ExpressionNode {
 
 	ConstantNode(ParserRuleContext context, String value) {
 		super(context);
-		this.value = StringEscapeUtils.unescapeJava(value);
+		this.value = value;
 		type = DataType.text;
 	}
 

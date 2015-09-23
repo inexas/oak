@@ -243,9 +243,9 @@ public class Oak extends AbstractOak {
 
 		// Get all the objects first in case of forward references...
 		final Collection<Objet> objects = dialectAst.objectMap.values();
-		final Map<String, ObjectRule> objectMap = new HashMap<>();
+		final Map<Identifier, ObjectRule> objectMap = new HashMap<>();
 		for(final Objet object : objects) {
-			final String key = object.key;
+			final Identifier key = object.key;
 			final ObjectRule rule = new ObjectRule(key, object.templateClass, object.isRoot);
 			objectMap.put(key, rule);
 		}

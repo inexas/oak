@@ -164,10 +164,9 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	}
 
 	/**
-	 * Convert the value(s) to a human readable array and add it to a
-	 * TextBuilder.
+	 * Convert the value(s) to a human readable array and add it to a Text.
 	 *
-	 * @param tb
+	 * @param t
 	 *            Something like "["one", two, 3]" is added.
 	 */
 	protected void valuesToTextArray(Text t) {
@@ -240,7 +239,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 					t.append('"');
 					break;
 
-					// $CASES-OMITTED$
+				// $CASES-OMITTED$
 				default:
 					throw new RuntimeException("Type: " + dataType);
 				}

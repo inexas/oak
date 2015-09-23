@@ -1,14 +1,14 @@
 package com.inexas.oak.dialect;
 
 import java.util.*;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.oak.template.Constraint;
 
 public class PropertyRule extends Rule {
 	public final DataType dataType;
 	public final Constraint[] constraints;
 
-	public PropertyRule(String name, DataType dataType, Constraint... constraints) {
+	public PropertyRule(Identifier name, DataType dataType, Constraint... constraints) {
 		super(name);
 
 		assert dataType != null;

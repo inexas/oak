@@ -7,18 +7,18 @@ import com.inexas.tad.Context;
 import com.inexas.util.Cardinality;
 
 public class Member implements Keyed {
-	public final String key;
+	public final Identifier key;
 	public final Cardinality cardinality;
 	public final CollectionType collectionType;
 	public final Property property;
 	public final boolean subjectIsObject;
 
 	public Member(
-			Identifier identifier,
+			Identifier key,
 			Property property,
 			Cardinality cardinality,
 			Identifier collectionType) {
-		this.key = identifier == null ? null : identifier.toString();
+		this.key = key;
 		this.property = property;
 
 		// Exactly one of key and property must be null
@@ -68,7 +68,7 @@ public class Member implements Keyed {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getKey() {
+	public Identifier getKey() {
 		return key;
 	}
 

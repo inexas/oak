@@ -1,5 +1,6 @@
 package com.inexas.oak.dialect;
 
+import com.inexas.oak.Identifier;
 import com.inexas.util.Cardinality;
 
 /**
@@ -17,7 +18,7 @@ public class Relationship {
 	 * The key of the Object or Property which is a member of the containing
 	 * Object.
 	 */
-	public final String subjectKey;
+	public final Identifier subjectKey;
 
 	/**
 	 * True if the subject of this Relationship is an Object, false if it's a

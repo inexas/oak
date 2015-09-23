@@ -1,9 +1,8 @@
-package com.inexas.oak.path;
+package com.inexas.oak;
 
 import static org.junit.Assert.*;
 import java.util.*;
 import org.junit.*;
-import com.inexas.oak.*;
 
 public class TestPath {
 	private class TestSource implements Source {

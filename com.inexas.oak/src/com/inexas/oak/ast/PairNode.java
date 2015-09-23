@@ -1,6 +1,7 @@
 package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
+import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.OakParser.PairContext;
 import com.inexas.tad.Context;
@@ -9,9 +10,9 @@ import com.inexas.tad.Context;
  * Pair nodes have a name and a value (which may be an array of values)
  */
 public abstract class PairNode extends Node {
-	protected String name;
+	protected Identifier name;
 
-	PairNode(ParserRuleContext context, String name) {
+	PairNode(ParserRuleContext context, Identifier name) {
 		super(context);
 
 		this.name = name;
@@ -46,11 +47,11 @@ public abstract class PairNode extends Node {
 		super(context);
 	}
 
-	public String getName() {
+	public Identifier getName() {
 		return name;
 	}
 
-	void setDetails(PairContext context, String theName) {
+	void setDetails(PairContext context, Identifier theName) {
 		this.context = context;
 		name = theName;
 	}

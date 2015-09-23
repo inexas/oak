@@ -11,7 +11,7 @@ import com.inexas.tad.Context;
  * french word instead.
  */
 public class Objet extends Locus.Base implements Keyed {
-	public final String key;
+	public final Identifier key;
 	public final Class<?> templateClass;
 	public final boolean isRoot;
 	public final List<Member> members;
@@ -21,7 +21,7 @@ public class Objet extends Locus.Base implements Keyed {
 			String templateClass,
 			Boolean isRoot,
 			List<Member> members) {
-		this.key = key.toString();
+		this.key = key;
 		Class<?> tmp;
 		try {
 			tmp = Class.forName(templateClass);
@@ -39,7 +39,7 @@ public class Objet extends Locus.Base implements Keyed {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getKey() {
+	public Identifier getKey() {
 		return key;
 	}
 

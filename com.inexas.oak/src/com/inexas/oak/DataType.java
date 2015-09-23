@@ -519,7 +519,7 @@ public enum DataType {
 	 *
 	 * @param value
 	 *            The value to represent.
-	 * @param tb
+	 * @param t
 	 *            The buffer in which to write the markup.
 	 */
 	public void toMarkup(Object value, Text t) {
@@ -593,58 +593,58 @@ public enum DataType {
 				&& source.charAt(0) == '"'
 				&& source.charAt(source.length() - 1) == '"';
 
-		if(source == null) {
-					result = null;
-				} else {
-					final Text t = new Text();
-					final char[] ca = source.toCharArray();
-					final int length = ca.length - 1; // 1 because remove quotes
+				if(source == null) {
+			result = null;
+		} else {
+			final Text t = new Text();
+			final char[] ca = source.toCharArray();
+			final int length = ca.length - 1; // 1 because remove quotes
 
-					for(int i = 1; i < length; i++) { // 1 because remove quotes
-						final char c = ca[i];
-						if(c == '\\') {
-							if(i == length - 1) {
-								error("Invalid text " + source + ", escape at end of line");
+			for(int i = 1; i < length; i++) { // 1 because remove quotes
+				final char c = ca[i];
+				if(c == '\\') {
+					if(i == length - 1) {
+						error("Invalid text " + source + ", escape at end of line");
+					} else {
+						i++;
+						final char next = ca[i];
+						if(next == 't') {
+							t.append('\t');
+						} else if(next == 'n') {
+							t.append('\n');
+						} else if(next == '"') {
+							t.append('"');
+						} else if(next == '\\') {
+							t.append('\\');
+						} else if(next == 'u') {
+							// Unicode, 1-4 hex characters...
+							i++;
+
+							final Text hex = new Text();
+							hex.append(source);
+							hex.setCursor(i);
+							final int start = i;
+							if(hex.consumeAscii(Text.ASCII_0_F)) {
+								final int end = start + Math.min(4, hex.cursor() - start);
+								final String string = hex.getString(start, end);
+								final char u = (char)Integer.parseInt(string, 16);
+								t.append(u);
+								i = end - 1;
 							} else {
-								i++;
-								final char next = ca[i];
-								if(next == 't') {
-									t.append('\t');
-								} else if(next == 'n') {
-									t.append('\n');
-								} else if(next == '"') {
-									t.append('"');
-								} else if(next == '\\') {
-									t.append('\\');
-								} else if(next == 'u') {
-									// Unicode, 1-4 hex characters...
-									i++;
-
-									final Text hex = new Text();
-									hex.append(source);
-									hex.setCursor(i);
-									final int start = i;
-									if(hex.consumeAscii(Text.ASCII_0_F)) {
-										final int end = start + Math.min(4, hex.cursor() - start);
-										final String string = hex.getString(start, end);
-										final char u = (char)Integer.parseInt(string, 16);
-										t.append(u);
-										i = end - 1;
-									} else {
-										error("Invalid text " + source + ", incorrect unicode");
-									}
-								} else {
-									error("Invalid text: \\" + next);
-								}
+								error("Invalid text " + source + ", incorrect unicode");
 							}
 						} else {
-							t.append(c);
+							error("Invalid text: \\" + next);
 						}
 					}
-					result = t.toString();
+				} else {
+					t.append(c);
 				}
+			}
+			result = t.toString();
+		}
 
-				return result;
+		return result;
 	}
 
 	/**
@@ -810,7 +810,10 @@ public enum DataType {
 	/**
 	 * Parse a string value and covert it to its proper data type.
 	 *
+	 * @param <T>
+	 *            The type of data to be returned.
 	 * @param value
+	 *            The value to parse.
 	 * @return The parsed value.
 	 * @throws ParsingException
 	 *             Thrown if not Advisory is available and there was an error
@@ -848,6 +851,8 @@ public enum DataType {
 	 * Parse a string into a list of data values. White space is supported only
 	 * in between the [square brackets].
 	 *
+	 * @param <T>
+	 *            The type of data to be returned.
 	 * @param string
 	 *            A string representation of an Oak property array, e.g. [ true,
 	 *            null, false ]
@@ -894,7 +899,7 @@ public enum DataType {
 	/**
 	 * Parse a value.
 	 *
-	 * @param tb
+	 * @param t
 	 *            Source.
 	 * @param type
 	 *            The type of the array, may be any..
@@ -981,7 +986,7 @@ public enum DataType {
 		/*
 		 * Try and parse a value, we don't know the type so use the first
 		 * character as an indicator to jump to the right type.
-		 *
+		 * 
 		 * We know we're not EOF and "null" has been dealt with by the caller.
 		 */
 		final char c = t.peek();
@@ -1229,7 +1234,7 @@ public enum DataType {
 	 * There's a bug in this as it requires seconds in the string whereas the
 	 * time() function does not. It seems to be in the Java parser.
 	 *
-	 * @param tb
+	 * @param t
 	 *            Source to parse.
 	 * @return A Temporal or null if none found.
 	 */
@@ -1384,7 +1389,7 @@ public enum DataType {
 	 *            contains a '.' or an 'e' then the type must either be f or F.
 	 * @param requiredType
 	 *            Either z, Z, f, F or any.
-	 * @param tb
+	 * @param t
 	 *            The source. The cursor will be at the end of the number but
 	 *            any type specifier will not have been consumed. If there is
 	 *            one then we'll eat it.
@@ -1445,7 +1450,7 @@ public enum DataType {
 		case F:
 			result = new BigDecimal(string);
 			break;
-			// $CASES-OMITTED$
+		// $CASES-OMITTED$
 		default:
 			throw new UnexpectedException("toType: " + derivedType);
 		}

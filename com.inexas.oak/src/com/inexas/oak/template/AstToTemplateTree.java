@@ -25,7 +25,7 @@ import com.inexas.util.*;
 public class AstToTemplateTree extends AstVisitor.Base {
 	private class State {
 		/** The type of object we are current parsing */
-		final String context;
+		final Identifier context;
 
 		/** This maintains the stack in a linked list */
 		final State previousInChain;
@@ -41,7 +41,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		 * node or a list, map or set of nodes depending on the rule for that
 		 * key.
 		 */
-		final Map<String, Object> contents = new LinkedHashMap<>();
+		final Map<Identifier, Object> contents = new LinkedHashMap<>();
 
 		State(PairNode node) {
 
@@ -86,7 +86,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					+ (seenError ? " ERROR" : "");
 		}
 
-		Relationship getChildRelation(Node node, String name) {
+		Relationship getChildRelation(Node node, Identifier name) {
 			final Relationship result;
 
 			if(relation.subjectIsObject) {
@@ -107,7 +107,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		void add(Node node, Relationship childRelation, Object child) {
 
 			if(!seenError) {
-				final String name = childRelation.subjectKey;
+				final Identifier name = childRelation.subjectKey;
 				switch(childRelation.collection) {
 				case list:
 					@SuppressWarnings("unchecked")
@@ -121,13 +121,13 @@ public class AstToTemplateTree extends AstVisitor.Base {
 
 				case map:
 					@SuppressWarnings("unchecked")
-					Map<String, Object> map = (Map<String, Object>)contents.get(name);
+					Map<Identifier, Object> map = (Map<Identifier, Object>)contents.get(name);
 					if(map == null) {
 						map = new HashMap<>();
 						contents.put(name, map);
 					}
 					try {
-						final String key = ((Keyed)child).getKey();
+						final Identifier key = ((Keyed)child).getKey();
 						if(map.put(key, child) != null) {
 							error(node, "Key already defined in this map: " + key);
 						}
@@ -169,7 +169,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			} else {
 				// Retrieve the parameters...
 				final ObjectRule objectRule = (ObjectRule)relation.subject;
-				final String[] parameterNames = objectRule.getChildNames();
+				final Identifier[] parameterNames = objectRule.getChildNames();
 				final int count = parameterNames.length;
 				final Object[] parameters = new Object[count];
 				for(int i = 0; i < count; i++) {
@@ -197,7 +197,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		Object getPropertyValue(ValuePairNode node) {
 			final Object result;
 
-			final String name = node.getName();
+			final Identifier name = node.getName();
 			final PropertyRule propertyRule = (PropertyRule)relation.subject;
 			if(propertyRule == null) {
 				error(node, "Invalid property: " + name + " in " + context);
@@ -261,9 +261,9 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			if(!seenError) {
 				assert relation.subjectIsObject;
 
-				final Map<String, Object> unprocessedChildren = new HashMap<>(contents);
+				final Map<Identifier, Object> unprocessedChildren = new HashMap<>(contents);
 				for(final Relationship child : ((ObjectRule)relation.subject).getRelationships()) {
-					final String name = child.subjectKey;
+					final Identifier name = child.subjectKey;
 					final Object object = unprocessedChildren.remove(name);
 
 					// Check the cardinality...
@@ -304,7 +304,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				}
 
 				// Check for unprocessed parts...
-				for(final String childName : unprocessedChildren.keySet()) {
+				for(final Identifier childName : unprocessedChildren.keySet()) {
 					error(node, "Invalid member: " + childName);
 				}
 			}
@@ -313,7 +313,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		}
 
 		private String getExpected() {
-			final String[] childNames = ((ObjectRule)relation.subject).getChildNames();
+			final Identifier[] childNames = ((ObjectRule)relation.subject).getChildNames();
 			return childNames.length == 0 ? "no child elements" : StringU.toDelimitedString(childNames);
 		}
 
@@ -325,7 +325,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		 * @param relationName
 		 * @return The best guess relationName
 		 */
-		private Relationship getBestGuess(Node node, String name) {
+		private Relationship getBestGuess(Node node, Identifier name) {
 			final Relationship result;
 
 			// todo Implement something that makes sense
@@ -347,7 +347,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 	}
 
 	private State state;
-	private final Map<String, Relationship> rootMap = new HashMap<>();
+	private final Map<Identifier, Relationship> rootMap = new HashMap<>();
 	private Object root;
 
 	private final List<Pair<Locus, Object>> templates = new ArrayList<>();

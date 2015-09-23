@@ -132,7 +132,7 @@ public class Path {
 	/**
 	 * Parse a path from a TextBuilder. e.g. `/Abc`
 	 *
-	 * @param tb
+	 * @param t
 	 *            Source to parse.
 	 * @return Either a Path or null if a path could not be parsed.
 	 */

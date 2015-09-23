@@ -13,15 +13,16 @@ package com.inexas.oak.dialect;
 import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
+import com.inexas.oak.Identifier;
 import com.inexas.oak.template.Constraint;
 import com.inexas.util.*;
 
 public class Rulebase {
-	public final String name;
+	public final Identifier name;
 	public final ObjectRule[] rules;
 	private final Date now = new Date();
 
-	public Rulebase(String name, ObjectRule[] rules) {
+	public Rulebase(Identifier name, ObjectRule[] rules) {
 		this.name = name;
 		this.rules = rules;
 		Arrays.sort(rules);
@@ -49,15 +50,16 @@ public class Rulebase {
 
 		t.writeline("import static com.inexas.oak.dialect.CollectionType.*;");
 		t.writeline("import com.inexas.oak.DataType;");
+		t.writeline("import com.inexas.oak.*;");
 		t.writeline("import com.inexas.oak.dialect.*;");
 		t.writeline("import com.inexas.util.Cardinality;");
 		t.newline();
 
 		/*
 		 * Instead of using a
-		 *
+		 * 
 		 * t.writeline("@SuppressWarnings(\"unused\")");
-		 *
+		 * 
 		 * in Eclipse, right click on the directory containing the generated
 		 * files Properties > Java Compiler > Ignore optional compile problems
 		 */
@@ -83,7 +85,7 @@ public class Rulebase {
 		t.indentMore();
 		t.indent();
 		t.append(name);
-		t.append("Dialect.rulebase = new Rulebase(\"Dialect\", rules);");
+		t.append("Dialect.rulebase = new Rulebase(new Identifier(\"Dialect\"), rules);");
 		t.newline();
 		t.indentLess();
 		t.writeline("}");
@@ -123,9 +125,9 @@ public class Rulebase {
 			t.indentMore();
 
 			t.indent();
-			t.append('"');
+			t.append("new Identifier(\"");
 			t.append(object.key);
-			t.append("\",");
+			t.append("\"),");
 			t.newline();
 
 			// Inner classes contain $ which become '.'
@@ -158,9 +160,9 @@ public class Rulebase {
 			t.indentMore();
 			t.indentMore();
 			t.indent();
-			t.append('"');
+			t.append("new Identifier(\"");
 			t.append(property.key);
-			t.append("\",");
+			t.append("\"),");
 			t.newline();
 
 			t.indent();

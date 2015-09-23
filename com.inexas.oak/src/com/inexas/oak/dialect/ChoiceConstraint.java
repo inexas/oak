@@ -1,5 +1,6 @@
 package com.inexas.oak.dialect;
 
+import com.inexas.oak.Identifier;
 import com.inexas.oak.template.Constraint;
 import com.inexas.util.Text;
 
@@ -60,9 +61,9 @@ public class ChoiceConstraint extends Constraint {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getKey() {
+	public Identifier getKey() {
 		// todo Do I need keys?
-		return KEY;
+		return new Identifier(KEY);
 	}
 
 	/**

@@ -1,6 +1,6 @@
 package com.inexas.oak.template;
 
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.util.Text;
 
 /**
@@ -122,7 +122,7 @@ public class ToStringVisitor implements DialectVisitor {
 		constraint.toMarkup(t);
 	}
 
-	private void startObject(String name, String key) {
+	private void startObject(String name, Identifier key) {
 		t.indent();
 		t.append(name);
 		t.space();

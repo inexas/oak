@@ -1,12 +1,12 @@
 package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 
 public class ObjectPairNode extends PairNode {
 	private final PairNode[] members;
 
-	public ObjectPairNode(ParserRuleContext context, String name, ObjectNode objectNode) {
+	public ObjectPairNode(ParserRuleContext context, Identifier name, ObjectNode objectNode) {
 		super(context, name);
 		this.members = objectNode.getMembers();
 		for(final PairNode member : members) {

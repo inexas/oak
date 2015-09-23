@@ -48,6 +48,16 @@ defaultTasks 'tasks'
 
 test {
 	enableAssertions true
+
+	beforeTest { descriptor ->
+		logger.lifecycle("Running test: " + descriptor)
+	}
+	
+	include 'com/inexas/oak/**'
+	
+	onOutput { descriptor, event ->
+    	logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+  	}
 }
 
 repositories {
@@ -111,8 +121,8 @@ dependencies {
 	testCompile 'junit:junit:4.11'
 	compile 'org.checkerframework:checker:1.9.4'
 	
-	compile 'com.inexas:util:0.1.3'
-	compile 'com.inexas:tad:0.1.2'
+	compile 'com.inexas:util:0.1.4'
+	compile 'com.inexas:tad:0.1.3'
 	compile 'org.antlr:antlr4-runtime:4.5'
 	compile 'org.apache.commons:commons-lang3:3.3.2'
 }

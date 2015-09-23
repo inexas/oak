@@ -12,100 +12,42 @@ package com.inexas.oak;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
-import com.inexas.util.Text;
+import com.inexas.oak.advisory.Advisory;
+import com.inexas.tad.Context;
 
 public class TestIdentifier {
-	private static final Identifier a = new Identifier("a");
-	private static final Identifier aa = new Identifier("aa");
-	private static final Identifier aPrime = new Identifier("a");
-	private static final Identifier b = new Identifier("b");
-	private static final Text longest;
-	private static final Text tooLong;
-	static {
-		longest = new Text();
-		tooLong = new Text();
-		for(int i = 0; i < Identifier.MAX_LENGTH; i++) {
-			longest.append('A');
-			tooLong.append('A');
-		}
-		tooLong.append('X');
-	}
-
-	private void doConsumeTest(
-			boolean expectedResult,
-			int exepctedConsumeLength,
-			boolean expectedEof,
-			String toTest) {
-		final Text t = new Text(toTest);
-		final boolean actualResult = Identifier.consume(t);
-		if(expectedResult) {
-			assertTrue(actualResult);
-			assertEquals(exepctedConsumeLength, t.cursor());
-			assertTrue(expectedEof == t.isEof());
-		} else {
-			assertFalse(actualResult);
-			assertEquals(exepctedConsumeLength, t.cursor());
-			assertTrue(expectedEof == t.isEof());
-		}
-	}
 
 	@Test
-	public void testConsume() {
-		doConsumeTest(true, 1, true, "a");
-		doConsumeTest(true, 1, true, "z");
-		doConsumeTest(true, 1, true, "A");
-		doConsumeTest(true, 1, true, "Z");
-		doConsumeTest(true, 1, true, "_");
-		doConsumeTest(false, 0, false, "0");
-		doConsumeTest(false, 0, false, "9");
-		doConsumeTest(false, 0, false, "@");
+	public void test() {
+		assertTrue(Identifier.isValid("A"));
+		assertTrue(Identifier.isValid("P"));
+		assertTrue(Identifier.isValid("Z"));
+		assertTrue(Identifier.isValid("a"));
+		assertTrue(Identifier.isValid("p"));
+		assertTrue(Identifier.isValid("z"));
+		assertTrue(Identifier.isValid("_"));
 
-		doConsumeTest(true, 2, true, "aa");
-		doConsumeTest(true, 2, true, "_1");
+		assertTrue(Identifier.isValid("A0a_"));
+		assertTrue(Identifier.isValid("A5b"));
+		assertTrue(Identifier.isValid("A9z"));
 
-		doConsumeTest(true, Identifier.MAX_LENGTH, true, longest.toString());
-
-		doConsumeTest(true, 1, false, "a@");
-	}
-
-	@Test
-	public void testBasics() {
-		assertEquals(a, a);
-		assertEquals(a, aPrime);
-		assertNotEquals(a, b);
+		assertTrue(Identifier.isValid("ab123456789012345678901234567890"));
 	}
 
 	@Test(expected = ParsingException.class)
 	public void testTooLong() {
-		@SuppressWarnings("unused")
-		final Identifier i = new Identifier(tooLong);
+		assertTrue(Identifier.isValid("ab123456789012345678901234567890x"));
 	}
 
 	@Test
-	public void testCompare() {
-		assertTrue(a.compareTo(a) == 0);
-		assertTrue(a.compareTo(aPrime) == 0);
-		assertTrue(a.compareTo(b) < 0);
-		assertTrue(b.compareTo(a) > 0);
-		assertTrue(a.compareTo(aa) < 0);
-	}
+	public void testTooLongAdvisory() {
+		final String string = "ab123456789012345678901234567890x";
+		final Advisory advisory = new Advisory(string);
+		Context.attach(advisory);
 
-	@Test(expected = ParsingException.class)
-	public void testNullString() {
-		@SuppressWarnings("unused")
-		final Identifier i = new Identifier((String)null);
-	}
+		assertFalse(Identifier.isValid("ab123456789012345678901234567890x"));
+		assertFalse(advisory.isEmpty());
 
-	@Test(expected = ParsingException.class)
-	public void testMtString() {
-		@SuppressWarnings("unused")
-		final Identifier i = new Identifier("");
+		Context.detach(advisory);
 	}
-
-	@Test(expected = ParsingException.class)
-	public void testNullIdentifier() {
-		@SuppressWarnings("unused")
-		final Identifier i = new Identifier((Identifier)null);
-	}
-
 }

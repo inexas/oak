@@ -1,7 +1,9 @@
-// Created by Oak: 16AUG15 21:52:27
+// Created by Oak: 22SEP15 16:23:21
 package com.inexas.oak.examples;
+
 import static com.inexas.oak.dialect.CollectionType.*;
 import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.oak.dialect.*;
 import com.inexas.util.Cardinality;
 
@@ -13,30 +15,31 @@ public class PersonDialect {
 	}
 
 	private static void setRules(ObjectRule... rules) {
-		PersonDialect.rulebase = new Rulebase("Dialect", rules);	}
+		PersonDialect.rulebase = new Rulebase(new Identifier("Dialect"), rules);
+	}
 
 	static {
 		try {
 			final ObjectRule _Email = new ObjectRule(
-					"Email",
+					new Identifier("Email"),
 					com.inexas.oak.examples.Email.class,
 					false);
 
 			final ObjectRule _Person = new ObjectRule(
-					"Person",
+					new Identifier("Person"),
 					com.inexas.oak.examples.Person.class,
 					true);
 
 			final PropertyRule _Email_isHome = new PropertyRule(
-					"isHome",
+					new Identifier("isHome"),
 					DataType.bool);
 
 			final PropertyRule _Email_text = new PropertyRule(
-					"text",
+					new Identifier("text"),
 					DataType.text);
 
 			final PropertyRule _Person_userId = new PropertyRule(
-					"userId",
+					new Identifier("userId"),
 					DataType.identifier);
 
 			_Email.setRelationships(

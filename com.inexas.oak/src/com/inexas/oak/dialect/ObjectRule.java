@@ -17,12 +17,12 @@ public class ObjectRule extends Rule {
 	private final boolean isRoot;
 	private Relationship[] relationships;
 	private int relationshipCount;
-	private String[] childNames;
+	private Identifier[] childNames;
 	private Method constructorMethod;
 	private Constructor<?> constructor;
 	private Boolean hasChildren;
 
-	public ObjectRule(String name, Class<?> templateClass, boolean isRoot) {
+	public ObjectRule(Identifier name, Class<?> templateClass, boolean isRoot) {
 		super(name);
 
 		assert templateClass != null;
@@ -65,7 +65,7 @@ public class ObjectRule extends Rule {
 	 *            The name of the Relationship.
 	 * @return The Relationship or null if not found.
 	 */
-	public Relationship getRelationship(String relationshipName) {
+	public Relationship getRelationship(Identifier relationshipName) {
 		Relationship result = null;
 		for(int i = 0; i < relationshipCount; i++) {
 			if(childNames[i].equals(relationshipName)) {
@@ -92,7 +92,7 @@ public class ObjectRule extends Rule {
 		return relationshipCount;
 	}
 
-	public String[] getChildNames() {
+	public Identifier[] getChildNames() {
 		return childNames;
 	}
 
@@ -125,12 +125,12 @@ public class ObjectRule extends Rule {
 
 			// Get the parameter details...
 			final Class<?>[] parameterTypes = new Class<?>[relationshipCount];
-			childNames = new String[relationshipCount];
+			childNames = new Identifier[relationshipCount];
 			for(int i = 0; i < relationshipCount; i++) {
 				final Relationship relationship = relationships[i];
 
 				// Parameter name...
-				final String parameterName = relationship.subjectKey;
+				final Identifier parameterName = relationship.subjectKey;
 				childNames[i] = parameterName;
 
 				// Parameter type...
@@ -245,12 +245,12 @@ public class ObjectRule extends Rule {
 				} catch(final SecurityException e1) {
 					error(this,
 							"Error accessing " + getConstructorName(templateClass, parameterTypes)
-							+ " in " + templateClass.getName() + ' ' + e.getMessage());
+									+ " in " + templateClass.getName() + ' ' + e.getMessage());
 				}
 			} catch(final SecurityException e) {
 				error(this,
 						"Error accessing " + getStaticConstructorName(templateClass, parameterTypes)
-								+ " in " + templateClass.getName() + ' ' + e.getMessage());
+						+ " in " + templateClass.getName() + ' ' + e.getMessage());
 			}
 		}
 	}
@@ -296,7 +296,7 @@ public class ObjectRule extends Rule {
 			final Class<?> parameterType = parameterTypes[i];
 			final String typeName = parameterType.getSimpleName();
 			final Relationship relationship = relationships[i];
-			final String parameterName = childNames[i];
+			final Identifier parameterName = childNames[i];
 			if(relationship.collection != CollectionType.singleton) {
 				final String dataType;
 				if(relationship.subjectIsObject) {
@@ -332,13 +332,13 @@ public class ObjectRule extends Rule {
 	 *            As the name says.
 	 * @return forExample.
 	 */
-	private void firstCharToLower(String string, Text result) {
-		final char c = string.charAt(0);
+	private void firstCharToLower(Identifier identifier, Text result) {
+		final char c = identifier.charAt(0);
 		if(c <= 'Z') {
 			result.append((char)(c + ('a' - 'A')));
-			result.append(string.substring(1));
+			result.append(identifier.toString().substring(1));
 		} else {
-			result.append(string);
+			result.append(identifier);
 		}
 	}
 

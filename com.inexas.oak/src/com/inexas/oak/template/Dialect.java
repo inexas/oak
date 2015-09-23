@@ -5,11 +5,11 @@ import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.Locus;
 
 public class Dialect extends Locus.Base {
-	public final String key;
+	public final Identifier key;
 	public final Map<String, Objet> objectMap;
 
 	public Dialect(Identifier key, Map<String, Objet> objectMap) {
-		this.key = key.toString();
+		this.key = key;
 		this.objectMap = objectMap;
 	}
 

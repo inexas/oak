@@ -59,17 +59,16 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	}
 
 	/**
-	 * Consume an identifier.
+	 * Consume an Identifier.
 	 *
 	 * @param t
 	 *            The Text from which to consume; cannot be null.
-	 * @return The parsed identifier.
+	 * @return True if an Identifier has been consumed. The cursor will have
+	 *         been advanced but is not necessarily at EOF.
 	 * @throws ParsingException
-	 *             Thrown if string cannot be fully parsed Unless an Advisory is
-	 *             present in which case it is updated and false is returned.
-	 *
-	 * @param t
-	 * @return
+	 *             Thrown if the Identifier is too long unless an Advisory is
+	 *             present in which case it is updated and true is returned to
+	 *             allow parsing to continue.
 	 */
 	public static boolean consume(Text t) {
 		final boolean result;
@@ -111,7 +110,7 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	}
 
 	/**
-	 * @param text
+	 * @param t
 	 *            Text to construct from.
 	 */
 	public Identifier(Text t) {
@@ -213,6 +212,15 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 		} else {
 			throw new ParsingException(message);
 		}
+	}
+
+	/**
+	 * @param index
+	 *            The index of the desired character, zero-based.
+	 * @return Return the character at the index. Or throw an exception.
+	 */
+	public char charAt(int index) {
+		return ca[index];
 	}
 
 }

@@ -4,6 +4,7 @@ import java.util.Stack;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import com.inexas.exception.UnexpectedException;
+import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.FunctionRegistry.FunctionException;
 import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
@@ -235,14 +236,14 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		final int childCount = ctx.getChildCount();
 		if(childCount == 4) {
 			// Either an expression, literal or path...
-			final String name = ctx.getChild(0).getText();
+			final Identifier name = new Identifier(ctx.getChild(0).getText());
 			node = new ValuePairNode(ctx, name, stack.pop());
 
 		} else if(childCount == 2) {
 			// ObjectName Body
 			// ArrayName ElementList
 			// BooleanName TrueOrFalse
-			final String name = ctx.getChild(0).getText();
+			final Identifier name = new Identifier(ctx.getChild(0).getText());
 			final ParseTree child = ctx.getChild(1);
 			if(child instanceof ObjectContext) {
 				node = new ObjectPairNode(ctx, name, (ObjectNode)stack.pop());

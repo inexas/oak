@@ -17,30 +17,38 @@ import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.template.Constraint;
 import com.inexas.tad.Context;
 
-/**
- * @author kwhittingham
- *
- */
 public class TestConstraints {
+	private Advisory advisory;
 
-	/**
-	 * @return
-	 */
 	private String getFirstMessage() {
-		final Advisory advisory = Context.get(Advisory.class);
-		return advisory.getFirstError();
+		final Advisory a = Context.get(Advisory.class);
+		return a.getFirstError();
 	}
 
 	@Before
-	public void setUp() {
-		final Advisory advisory = new Advisory("Unit test");
+	public void before() {
+		advisory = new Advisory("Unit test");
 		Context.attach(advisory);
 	}
 
-	@SuppressWarnings("deprecation")
 	@After
-	public void tearDown() {
-		Context.detachAll();
+	public void after() {
+		Context.detach(advisory);
+		advisory = null;
+	}
+
+	@Test
+	public void testConstraintToString() {
+		final Constraint constraint = new ChoiceConstraint("\"a\"", "\"b\"",
+				"null");
+		final String expected = "Constraint {\n"
+				+ "\ttype: choice;\n"
+				+ "\tvalue [\"a\", \"b\", null ]\n"
+				+ "}\n";
+		assertEquals(expected, constraint.toString());
+
+		constraint.setDataType(DataType.text);
+		assertEquals(expected, constraint.toString());
 	}
 
 	@Test
@@ -51,7 +59,8 @@ public class TestConstraints {
 
 	@Test
 	public void testRegexpNonStringValues() {
-		final Constraint constraint = new RegexpConstraint("\"a\"", "2", "\"c\"");
+		final Constraint constraint = new RegexpConstraint("\"a\"", "2",
+				"\"c\"");
 		assertNotNull(constraint);
 		assertTrue(getFirstMessage().indexOf("Invalid type") >= 0);
 	}
@@ -74,26 +83,15 @@ public class TestConstraints {
 	@Test
 	public void testRegexpSingleValueToString() {
 		final Constraint constraint = new RegexpConstraint("\"a\"");
-		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n", constraint.toString());
+		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n",
+				constraint.toString());
 	}
 
 	@Test
 	public void testRegexpMultiValueToString() {
 		final Constraint constraint = new RegexpConstraint("\"a\"", "\"b\"");
-		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n", constraint.toString());
-	}
-
-	@Test
-	public void constraintToString() {
-		final Constraint constraint = new ChoiceConstraint("\"a\"", "\"b\"", "null");
-		final String expected = "Constraint {\n"
-				+ "\ttype: choice;\n"
-				+ "\tvalue [\"a\", \"b\", null ]\n"
-				+ "}\n";
-		assertEquals(expected, constraint.toString());
-
-		constraint.setDataType(DataType.text);
-		assertEquals(expected, constraint.toString());
+		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n",
+				constraint.toString());
 	}
 
 }

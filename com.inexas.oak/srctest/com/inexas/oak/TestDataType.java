@@ -405,7 +405,7 @@ public class TestDataType {
 		assertEquals("\t", DataType.textToInternalFormat("\"\\t\""));
 		assertEquals("\n", DataType.textToInternalFormat("\"\\n\""));
 		assertEquals("\"", DataType.textToInternalFormat("\"\\\"\""));
-		assertEquals("\\", DataType.textToInternalFormat("\"\\\\\""));
+		assertEquals(" \\ ", DataType.textToInternalFormat("\" \\\\ \""));
 
 		assertEquals("a \t \n c", DataType.textToInternalFormat("\"a \\t \\n c\""));
 

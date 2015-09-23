@@ -1,6 +1,7 @@
 package com.inexas.oak.dialect;
 
 import java.util.regex.*;
+import com.inexas.oak.Identifier;
 import com.inexas.oak.template.Constraint;
 import com.inexas.util.Text;
 
@@ -79,8 +80,8 @@ public class RegexpConstraint extends Constraint {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public String getKey() {
-		return KEY;
+	public Identifier getKey() {
+		return new Identifier(KEY);
 	}
 
 	/**
