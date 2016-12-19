@@ -3,10 +3,8 @@ package com.inexas.oak.ast;
 import java.math.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.oak.*;
-import com.inexas.oak.DataType.NullValueException;
-import com.inexas.oak.DataType.OverflowException;
-import com.inexas.oak.DataType.TypeMismatchException;
+import com.inexas.oak.DataType;
+import com.inexas.oak.DataType.*;
 
 public class BinaryNode extends ExpressionNode {
 	private class Converter {
@@ -142,6 +140,7 @@ public class BinaryNode extends ExpressionNode {
 			tmp = lhsNode.getType().getCommnType(rhsNode.getType());
 		} catch(final TypeMismatchException e) {
 			error(e.getMessage());
+			tmp = lhsNode.getType();
 		}
 		commonType = tmp;
 

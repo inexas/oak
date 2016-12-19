@@ -15,25 +15,25 @@ import org.junit.*;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.template.Constraint;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 public class TestConstraints {
 	private Advisory advisory;
 
 	private String getFirstMessage() {
-		final Advisory a = Context.get(Advisory.class);
+		final Advisory a = TadContext.get(Advisory.class);
 		return a.getFirstError();
 	}
 
 	@Before
 	public void before() {
 		advisory = new Advisory("Unit test");
-		Context.attach(advisory);
+		TadContext.attach(advisory);
 	}
 
 	@After
 	public void after() {
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		advisory = null;
 	}
 
@@ -83,14 +83,16 @@ public class TestConstraints {
 	@Test
 	public void testRegexpSingleValueToString() {
 		final Constraint constraint = new RegexpConstraint("\"a\"");
-		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n",
+		assertEquals(
+				"Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n",
 				constraint.toString());
 	}
 
 	@Test
 	public void testRegexpMultiValueToString() {
 		final Constraint constraint = new RegexpConstraint("\"a\"", "\"b\"");
-		assertEquals("Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n",
+		assertEquals(
+				"Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n",
 				constraint.toString());
 	}
 

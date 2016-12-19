@@ -3,7 +3,7 @@ package com.inexas.oak.template;
 import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.dialect.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.Cardinality;
 
 public class Member implements Keyed {
@@ -23,9 +23,7 @@ public class Member implements Keyed {
 
 		// Exactly one of key and property must be null
 		if(!((key == null) ^ (property == null))) {
-			error(key == null ?
-					"Member must have either key or property" :
-					"Member can't have both key and property");
+			error(key == null ? "Member must have either key or property" : "Member can't have both key and property");
 		}
 
 		if(key != null && key.charAt(0) <= 'Z') {
@@ -91,7 +89,7 @@ public class Member implements Keyed {
 	}
 
 	private void error(String message) {
-		final Advisory advisory = Context.get(Advisory.class);
+		final Advisory advisory = TadContext.get(Advisory.class);
 		advisory.error(this, message);
 	}
 

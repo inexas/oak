@@ -26,8 +26,7 @@ public interface AstVisitor {
 				System.out.println(indent + '>'
 						+ node.getClass().getSimpleName()
 						+ ':' + (node.getLine() + 1)
-						+ ((node instanceof PairNode) ? " " + ((PairNode)node).name : "")
-						);
+						+ ((node instanceof PairNode) ? " " + ((PairNode)node).name : ""));
 				indent += ". ";
 			}
 			return true;
@@ -179,6 +178,14 @@ public interface AstVisitor {
 		 * {@inheritDoc}
 		 */
 		@Override
+		public void visit(SymbolNode symbolNode) {
+			// Do nothing
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
 		public void visit(PathNode node) {
 			// Do nothing
 		}
@@ -215,9 +222,9 @@ public interface AstVisitor {
 	 * @param node
 	 *            The node to be visited.
 	 * @return Always return true so that this can be used with an assert to
-	 *         conditionally compile out the call, e.g.
-	 *         "assert enterEveryNode(this);". If you don't then it an assertion
-	 *         error will be thrown.
+	 *         conditionally compile out the call, e.g. "assert
+	 *         enterEveryNode(this);". If you don't then it an assertion error
+	 *         will be thrown.
 	 */
 	boolean enterEveryNode(Node node);
 
@@ -228,9 +235,9 @@ public interface AstVisitor {
 	 * @param node
 	 *            The visited node.
 	 * @return Always returns true so that this can be used with an assert to
-	 *         conditionally compile out the call, e.g.
-	 *         "assert exitEveryNode(this);". If you don't then it an assertion
-	 *         error will be thrown.
+	 *         conditionally compile out the call, e.g. "assert
+	 *         exitEveryNode(this);". If you don't then it an assertion error
+	 *         will be thrown.
 	 */
 	boolean exitEveryNode(Node node);
 
@@ -297,6 +304,8 @@ public interface AstVisitor {
 	void visit(PathNode node);
 
 	void visit(IdentifierNode identifierNode);
+
+	void visit(SymbolNode symbolNode);
 
 	void visit(ConstantNode node);
 

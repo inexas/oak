@@ -13,7 +13,7 @@ package com.inexas.oak;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 public class TestIdentifier {
 
@@ -43,11 +43,11 @@ public class TestIdentifier {
 	public void testTooLongAdvisory() {
 		final String string = "ab123456789012345678901234567890x";
 		final Advisory advisory = new Advisory(string);
-		Context.attach(advisory);
+		TadContext.attach(advisory);
 
 		assertFalse(Identifier.isValid("ab123456789012345678901234567890x"));
 		assertFalse(advisory.isEmpty());
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 	}
 }

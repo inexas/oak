@@ -6,7 +6,7 @@ import java.util.*;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.*;
 
 /**
@@ -28,7 +28,7 @@ public class ObjectRule extends Rule {
 		assert templateClass != null;
 
 		if(!Character.isUpperCase(name.charAt(0))) {
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error(this, "Object names must start with an upper case letter: + '" + name + '\'');
 		}
 
@@ -243,14 +243,16 @@ public class ObjectRule extends Rule {
 							+ getStaticConstructorName(templateClass, parameterTypes)
 							+ "\n...in " + templateClass.getName());
 				} catch(final SecurityException e1) {
-					error(this,
+					error(
+							this,
 							"Error accessing " + getConstructorName(templateClass, parameterTypes)
 									+ " in " + templateClass.getName() + ' ' + e.getMessage());
 				}
 			} catch(final SecurityException e) {
-				error(this,
+				error(
+						this,
 						"Error accessing " + getStaticConstructorName(templateClass, parameterTypes)
-						+ " in " + templateClass.getName() + ' ' + e.getMessage());
+								+ " in " + templateClass.getName() + ' ' + e.getMessage());
 			}
 		}
 	}
@@ -343,7 +345,7 @@ public class ObjectRule extends Rule {
 	}
 
 	private void error(Object locus, String message) {
-		final Advisory advisory = Context.get(Advisory.class);
+		final Advisory advisory = TadContext.get(Advisory.class);
 		advisory.error(locus, message);
 	}
 }

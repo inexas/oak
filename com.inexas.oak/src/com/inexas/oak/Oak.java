@@ -9,7 +9,7 @@ import com.inexas.oak.advisory.OakException;
 import com.inexas.oak.ast.*;
 import com.inexas.oak.dialect.*;
 import com.inexas.oak.template.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 public class Oak extends AbstractOak {
 	private Dialect dialectAst;
@@ -40,14 +40,14 @@ public class Oak extends AbstractOak {
 	 *
 	 * @param string
 	 *            The String to parse.
-	 * @param funclibs
+	 * @param libraries
 	 *            Optional list of function libraries to load.
 	 * @throws OakException
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
-	public Oak(String string, Class<?>... funclibs) throws OakException {
-		super(string, funclibs);
+	public Oak(String string, Library... libraries) throws OakException {
+		super(string, libraries);
 		toAst();
 	}
 
@@ -66,9 +66,9 @@ public class Oak extends AbstractOak {
 	public <T> T toObjectTree(Rulebase dialect) throws OakException {
 		final T result;
 
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 		result = toObjectTree(dialect.rules);
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -91,7 +91,7 @@ public class Oak extends AbstractOak {
 	public <T> T toObjectTree(Class<?> dialect) throws OakException {
 		T result;
 
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 
 		try {
 			final Field field = dialect.getDeclaredField("dialect");
@@ -114,7 +114,7 @@ public class Oak extends AbstractOak {
 			result = null;
 		}
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -132,7 +132,7 @@ public class Oak extends AbstractOak {
 	public Rulebase toDialect() throws OakException {
 		final Rulebase result;
 
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 
 		dialectAst = toObjectTree(OakDialect.rulebase.rules);
 		if(dialectAst != null) {
@@ -144,7 +144,7 @@ public class Oak extends AbstractOak {
 			result = null;
 		}
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -172,12 +172,12 @@ public class Oak extends AbstractOak {
 			throw new RuntimeException("Call toObjectTree() first");
 		}
 
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 		visitor.enter(this);
 		rootNode.accept(visitor);
 		visitor.exit(this);
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -202,7 +202,7 @@ public class Oak extends AbstractOak {
 	 *             Thrown on parsing errors.
 	 */
 	private void toAst() throws OakException {
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 
 		if(rootNode == null && !advisory.hasErrors()) {
 			final ParserRuleContext ruleContext = parser.oak();
@@ -214,7 +214,7 @@ public class Oak extends AbstractOak {
 			}
 		}
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}

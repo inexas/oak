@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 public abstract class ExpressionNode extends Node {
 
@@ -76,7 +76,7 @@ public abstract class ExpressionNode extends Node {
 	}
 
 	protected void error(String message) {
-		final Advisory advisory = Context.get(Advisory.class);
+		final Advisory advisory = TadContext.get(Advisory.class);
 		advisory.error(this, message);
 	}
 

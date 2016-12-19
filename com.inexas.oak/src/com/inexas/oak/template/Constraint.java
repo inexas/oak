@@ -5,7 +5,7 @@ import java.util.*;
 import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.*;
 
 public abstract class Constraint extends Locus.Base implements Keyed {
@@ -45,7 +45,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 			break;
 
 		default:
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error("Unrecognised Constraint type: '" + type + '\'');
 			result = null;
 		}
@@ -76,7 +76,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 			break;
 
 		default:
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error("Unrecognised Constraint type: '" + type + '\'');
 			result = null;
 		}
@@ -248,7 +248,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	}
 
 	protected void error(String message) throws ParsingException {
-		final Advisory advisory = Context.getButDontThrow(Advisory.class);
+		final Advisory advisory = TadContext.getButDontThrow(Advisory.class);
 		if(advisory == null) {
 			throw new ParsingException(message);
 		}

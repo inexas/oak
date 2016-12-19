@@ -64,7 +64,7 @@ load
 
 pair
 	:	IdentifierLiteral Colon value Semi	// E.g. myKey: 32; 
-	|	IdentifierLiteral object				// E.g. MyKey { ... }
+	|	IdentifierLiteral object			// E.g. MyKey { ... }
 	|	IdentifierLiteral array				// E.g. myKey [ 1, 2, 3 ]
 	|	IdentifierLiteral Semi				// Shorthand for myKey: true; 
 	;

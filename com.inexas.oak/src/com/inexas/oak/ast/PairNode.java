@@ -4,7 +4,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.oak.ast.OakParser.PairContext;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 /**
  * Pair nodes have a name and a value (which may be an array of values)
@@ -28,17 +28,15 @@ public abstract class PairNode extends Node {
 			final char c = name.charAt(0);
 			final boolean isUpper = c >= 'A' && c <= 'Z';
 			if((this instanceof ObjectArrayPairNode) || (this instanceof ObjectPairNode)) {
-				message = isUpper ?
-						null
+				message = isUpper ? null
 						: "Object names must start with Upper case letter: '" + name + '\'';
 			} else {
-				message = isUpper ?
-						"Property names must start with lower case letter: '" + name + '\''
+				message = isUpper ? "Property names must start with lower case letter: '" + name + '\''
 						: null;
 			}
 		}
 		if(message != null) {
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error(this, message);
 		}
 	}

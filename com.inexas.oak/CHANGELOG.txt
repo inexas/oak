@@ -1,0 +1,3 @@
+!!! 0.1.4
+* Added support for symbols in expressions.
+* Change the Library classes so they are non-static

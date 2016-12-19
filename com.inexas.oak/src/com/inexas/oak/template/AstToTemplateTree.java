@@ -7,7 +7,7 @@ import com.inexas.oak.*;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.ast.*;
 import com.inexas.oak.dialect.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.*;
 
 /**
@@ -15,10 +15,11 @@ import com.inexas.util.*;
  * example the transformation might generate a workflow model.
  *
  * Strategy. We're sent around an Oak AST. We process the input depth first and
- * as we go down a level by entering an object, we push the existing state onto
- * a stack and create a new one. Then, every object and property we encounter
- * are added to the state as we exit the state we use the state we've created to
- * create a new Object.
+ * as we go down a level by entering an Objet, we push the existing State onto a
+ * stack and create a new State. Then, every Objet and Property we encounter are
+ * collected in the current State. Once we're done processing the children we
+ * use the State we've created to create a new Objet and finally pop it off the
+ * stack.
  *
  * todo Add a verifier class, check for at least one Property/Object
  */
@@ -298,7 +299,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 						}
 					}
 					final Cardinality cardinality = child.cardinality;
-					if(!cardinality.isValidCardinality(objectCount)) {
+					if(!cardinality.isValid(objectCount)) {
 						error(node, "Need " + cardinality + " " + name + "(s)" + " in " + context);
 					}
 				}
@@ -355,7 +356,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 	private final Advisory advisory;
 
 	public AstToTemplateTree(Rule[] rules, String[] visitors) {
-		advisory = Context.get(Advisory.class);
+		advisory = TadContext.get(Advisory.class);
 
 		for(final Rule rule : rules) {
 			// Find the possible root(s)...
@@ -527,7 +528,8 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				if(rule.dataType == DataType.path || rule.dataType == DataType.any) {
 					state.add(node, state.relation, value);
 				} else {
-					advisory.error(node,
+					advisory.error(
+							node,
 							"Wrong data type; expected path but got: " + rule.dataType
 									+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);
@@ -548,7 +550,8 @@ public class AstToTemplateTree extends AstVisitor.Base {
 				if(rule.dataType == DataType.identifier || rule.dataType == DataType.any) {
 					state.add(node, state.relation, value);
 				} else {
-					advisory.error(node,
+					advisory.error(
+							node,
 							"Wrong data type; expected path but got: " + rule.dataType
 									+ " '" + (value == null ? "null" : value.toString()));
 					state.add(node, state.relation, null);

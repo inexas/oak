@@ -13,17 +13,16 @@ package com.inexas.oak.ast;
 import static org.junit.Assert.*;
 import org.junit.Test;
 import com.inexas.oak.DataType;
-import com.inexas.oak.ast.FunctionRegistry.Function;
-import com.inexas.oak.ast.FunctionRegistry.FunctionException;
-import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
+import com.inexas.oak.ast.LibraryRegistry.*;
+import com.inexas.oak.ast.LibraryRegistry.Function;
 import com.inexas.oak.ast.testlibs.*;
 
-public class TestFunctionRegistry {
+public class TestLibrary {
 
 	@Test
-	public void testFunctionCreation() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib.class);
+	public void testFunctionCreation() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib());
 		assertEquals(5, register.map.size());
 
 		final Function sf1 = register.map.get("sf1:0")[0];
@@ -69,40 +68,34 @@ public class TestFunctionRegistry {
 	}
 
 	@Test(expected = InvalidMethodException.class)
-	public void testVoidMethod() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib1.class);
+	public void testVoidMethod() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib1());
 	}
 
-	@Test(expected = FunctionException.class)
-	public void testNonPublicMethod() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib2.class);
+	@Test(expected = LibraryException.class)
+	public void testNonPublicMethod() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib2());
 	}
 
-	@Test(expected = InvalidMethodException.class)
-	public void testNonStaticMethod() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib3.class);
-	}
-
-	@Test(expected = FunctionException.class)
-	public void testNoMethod() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib4.class);
+	@Test(expected = LibraryException.class)
+	public void testNoMethod() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib4());
 	}
 
 	@Test(expected = InvalidMethodException.class)
-	public void testDupe() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib.class);
-		register.register(TestFunclib.class);
+	public void testDupe() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib());
+		register.register(new TestFunclib());
 	}
 
 	@Test
-	public void testGet() throws FunctionException, InvalidMethodException {
-		final FunctionRegistry register = new FunctionRegistry();
-		register.register(TestFunclib.class);
+	public void testGet() throws LibraryException, InvalidMethodException {
+		final LibraryRegistry register = new LibraryRegistry();
+		register.register(new TestFunclib());
 		final ExpressionNode[] parameters = {
 				new ConstantNode(null, 2),
 				new ConstantNode(null, 3)

@@ -6,26 +6,26 @@ import java.time.*;
 import java.util.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.*;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 import com.inexas.tad.Tad;
 import com.inexas.util.*;
 
 /**
- * This is a storage place for all the built-in functions and extension.
+ * This is a registry for libraries.
  *
  * Functions are loaded from the class path. They are static methods within a
  * named class.
  */
-public class FunctionRegistry implements Tad {
-	static class FunctionException extends Exception {
+public class LibraryRegistry implements Tad {
+	public static class LibraryException extends Exception {
 		private static final long serialVersionUID = -7905035932384696885L;
 
-		FunctionException(String message) {
+		LibraryException(String message) {
 			super(message);
 		}
 	}
 
-	class InvalidMethodException extends Exception {
+	public static class InvalidMethodException extends Exception {
 		private static final long serialVersionUID = -3033605219136324389L;
 
 		InvalidMethodException(Method method, String message) {
@@ -34,7 +34,7 @@ public class FunctionRegistry implements Tad {
 	}
 
 	class Function {
-		private final static int requiredModifiers = Modifier.STATIC | Modifier.PUBLIC;
+		final Library library;
 		final Method method;
 		final String key;
 		final DataType returnType;
@@ -42,19 +42,20 @@ public class FunctionRegistry implements Tad {
 		final int argumentCount;
 		final DataType[] argumentTypes;
 		final String signature;
-		final String methodName;
+		final String name;
 
 		/**
 		 * @param method
-		 *            Method to load.
+		 *            Function to load.
 		 * @throws InvalidMethodException
 		 */
-		Function(Method method) throws InvalidMethodException {
+		Function(Library library, Method method) throws InvalidMethodException {
+			this.library = library;
 			this.method = method;
 
 			// The method must be static...
-			if((method.getModifiers() & requiredModifiers) != requiredModifiers) {
-				throw new InvalidMethodException(method, "Java method must be public and static");
+			if((method.getModifiers() & Modifier.PUBLIC) != Modifier.PUBLIC) {
+				throw new InvalidMethodException(method, "Java method must be public");
 			}
 
 			// Return type must be valid...
@@ -87,16 +88,15 @@ public class FunctionRegistry implements Tad {
 
 			// Got this far then good enough
 
-			methodName = method.getName();
-			key = toKey(methodName, argumentCount);
+			name = method.getName();
+			key = toKey(name, argumentCount);
 
 			// Static? Check the annotations...
-			final com.inexas.oak.ast.Function annotation =
-					method.getAnnotationsByType(com.inexas.oak.ast.Function.class)[0];
+			final com.inexas.oak.ast.Function annotation = method.getAnnotationsByType(com.inexas.oak.ast.Function.class)[0];
 			isStatic = !annotation.dynamic();
 
 			// Signature...
-			signature = toSignature(returnType, methodName, argumentTypes);
+			signature = toSignature(returnType, name, argumentTypes);
 		}
 
 		ConstantNode invoke(ParserRuleContext context, Object[] arguments) {
@@ -154,7 +154,7 @@ public class FunctionRegistry implements Tad {
 				}
 
 				// Invoke the method
-				final Object returnValue = method.invoke(null, arguments);
+				final Object returnValue = method.invoke(library, arguments);
 
 				// Process the return type...
 				switch(returnType) {
@@ -269,26 +269,19 @@ public class FunctionRegistry implements Tad {
 		typeMap.put(Cardinality.class, DataType.cardinality);
 	}
 
-	void register(Class<?>[] funclibs) throws FunctionException, InvalidMethodException {
-		for(final Class<?> funclib : funclibs) {
-			register(funclib);
+	final Map<String, Function[]> map = new HashMap<>();
+	private final List<Library> libraries = new ArrayList<>();
+
+	void register(Library... libraryCandidates) throws LibraryException, InvalidMethodException {
+		assert libraryCandidates != null;
+
+		for(final Library library : libraryCandidates) {
+			load(library);
 		}
 	}
 
-	final Map<String, Function[]> map = new HashMap<>();
-	private final List<Class<?>> libraries = new ArrayList<>();
-
-	void register(Class<?> funclibClass) throws FunctionException, InvalidMethodException {
-		load(funclibClass);
-		libraries.add(funclibClass);
-	}
-
-	public List<Class<?>> getLibaries() {
-		return libraries;
-	}
-
-	Function getFunction(String name, ExpressionNode[] parameters)
-			throws FunctionException {
+	Function getFunction(String name, ExpressionNode... parameters)
+			throws LibraryException {
 
 		final int parameterCount = parameters.length;
 		final DataType[] parameterTypes = new DataType[parameterCount];
@@ -314,19 +307,19 @@ public class FunctionRegistry implements Tad {
 		}
 
 		final String signature = toSignature(null, name, parameterTypes);
-		throw new FunctionException("Function not found: " + signature);
+		throw new LibraryException("Function not found: " + signature);
 	}
 
-	private void load(Class<?> funclibClass)
-			throws InvalidMethodException, FunctionException {
-		boolean foundAtLeastOne = false;
-		for(final Method method : funclibClass.getMethods()) {
+	private void load(Library library) throws InvalidMethodException, LibraryException {
+		boolean foundSomething = false;
+		final Class<? extends Library> libraryClass = library.getClass();
+		for(final Method method : libraryClass.getMethods()) {
 			// Ignore non-annotated methods...
 			if(method.getAnnotationsByType(com.inexas.oak.ast.Function.class).length == 0) {
 				continue;
 			}
 
-			final Function function = new Function(method);
+			final Function function = new Function(library, method);
 
 			// Find where in the register we need to add the function...
 			final String key = function.key;
@@ -356,11 +349,13 @@ public class FunctionRegistry implements Tad {
 			array[index] = function;
 			map.put(key, array);
 
-			foundAtLeastOne = true;
+			foundSomething = true;
 		}
 
-		if(!foundAtLeastOne) {
-			throw new FunctionException("No functions found in " + funclibClass.getName());
+		if(foundSomething) {
+			libraries.add(library);
+		} else {
+			throw new LibraryException("No functions found in " + libraryClass.getName());
 		}
 	}
 
@@ -373,10 +368,10 @@ public class FunctionRegistry implements Tad {
 		return t.toString();
 	}
 
-	private String toSignature(DataType returnType, String methodName, DataType[] parameterTypes) {
+	private String toSignature(DataType returnType, String functionName, DataType[] parameterTypes) {
 		// methodName(f64,...)
 		final Text t = new Text();
-		t.append(methodName);
+		t.append(functionName);
 		t.append('(');
 		for(final DataType parameterType : parameterTypes) {
 			t.delimit();
@@ -389,6 +384,29 @@ public class FunctionRegistry implements Tad {
 			t.append(returnType.name());
 		}
 		return t.toString();
+	}
+
+	public List<Library> getLlibraries() {
+		return libraries;
+	}
+
+	/**
+	 * This is called by IndentiferNode
+	 *
+	 * @param identifier
+	 * @return
+	 */
+	Object resolve(String identifier) {
+		final Object result;
+
+		/*
+		 * todo Should I use the first, last or first library that can resolve
+		 * the identifier?
+		 */
+		final Library library = libraries.get(0);
+		result = library.resolve(identifier);
+
+		return result;
 	}
 
 }

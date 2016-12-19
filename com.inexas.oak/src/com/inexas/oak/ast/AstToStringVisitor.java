@@ -53,12 +53,12 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	@Override
 	public void enter(Oak oak) {
 		// Are there any libraries?
-		final List<Class<?>> libraries = oak.getRegistry().getLibaries();
+		final List<Library> libraries = oak.getRegistry().getLlibraries();
 
 		if(libraries.size() > 0) {
-			for(final Class<?> libary : libraries) {
+			for(final Library llibrary : libraries) {
 				t.append("#load \"");
-				t.append(libary.getName());
+				t.append(llibrary.getClass().getName());
 				t.append('"');
 				t.newline();
 			}

@@ -11,10 +11,13 @@ public class Property extends Locus.Base implements Keyed {
 	public final DataType type;
 	public final Constraint[] constraints;
 
+	/**
+	 * Oak ctor
+	 */
 	public Property(Identifier key, Identifier type, List<Constraint> constraints) {
 		this(key,
 				type == null ? null : type,
-						constraints == null ? null : constraints.toArray(new Constraint[constraints.size()]));
+				constraints == null ? null : constraints.toArray(new Constraint[constraints.size()]));
 	}
 
 	public Property(Identifier key, Identifier type, Constraint[] constraints) {

@@ -9,75 +9,91 @@ import com.inexas.oak.ast.*;
 
 public class TestExpression {
 
-	public static class TestFunclib {
+	public static class TestFunclib implements Library {
 		@Function(dynamic = true)
-		public static LocalDateTime isDynamic() {
+		public LocalDateTime isDynamic() {
 			return LocalDateTime.now();
 		}
 
 		@Function
-		public static String isStatic() {
+		public String isStatic() {
 			return "x";
 		}
 
 		@Function
-		public static Integer echo(Integer x) {
+		public Integer echo(Integer x) {
 			return x;
 		}
 
 		@Function
-		public static Float echo(Float x) {
+		public Float echo(Float x) {
 			return x;
 		}
 
 		@Function
-		public static BigDecimal echo(BigDecimal x) {
+		public BigDecimal echo(BigDecimal x) {
 			return x;
 		}
 
 		@Function
-		public static Boolean echo(Boolean x) {
+		public Boolean echo(Boolean x) {
 			return x;
 		}
 
 		@Function
-		public static String echo(String x) {
+		public String echo(String x) {
 			return x;
 		}
 
 		@Function
-		public static int primitive(int x) {
+		public int primitive(int x) {
 			return x;
 		}
 
 		@Function
-		public static float primitive(float x) {
+		public float primitive(float x) {
 			return x;
 		}
 
 		@Function
-		public static boolean primitive(boolean x) {
+		public boolean primitive(boolean x) {
 			return x;
 		}
 
 		@Function
-		public static int plus(int x, int y) {
+		public int plus(int x, int y) {
 			return x + y;
 		}
 
 		@Function
-		public static int minus(int x, int y) {
+		public int minus(int x, int y) {
 			return x - y;
 		}
 
 		@Function
-		public static float minus(float x, float y) {
+		public float minus(float x, float y) {
 			return x - y;
+		}
+
+		@Override
+		public Object resolve(String identifier) {
+			final Object result;
+
+			switch(identifier) {
+			case "five":
+				result = new Integer(5);
+				break;
+			default:
+				result = UNRESOLVED;
+				break;
+			}
+
+			return result;
 		}
 	}
 
 	private void doTest(String expected, String toTest) throws OakException {
-		final Expression expression = new Expression(toTest, TestFunclib.class);
+		final Expression expression = new Expression(toTest, new TestFunclib());
 
 		final String got = expression.toString();
 		if(!expected.equals(got)) {
@@ -90,7 +106,7 @@ public class TestExpression {
 
 	private void doTest(String toTest, boolean isStatic, String optimised, String evaluated)
 			throws OakException {
-		final Expression expression = new Expression(toTest, TestFunclib.class);
+		final Expression expression = new Expression(toTest, new TestFunclib());
 
 		String got = expression.toString();
 		if(optimised != null) {
@@ -397,4 +413,8 @@ public class TestExpression {
 		doTest("1.02", "1+2e-2");
 	}
 
+	@Test
+	public void testSymbolResolution() throws OakException {
+		doTest("15", "five * 3");
+	}
 }

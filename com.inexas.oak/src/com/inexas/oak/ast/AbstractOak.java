@@ -3,10 +3,10 @@ package com.inexas.oak.ast;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import org.antlr.v4.runtime.*;
+import com.inexas.oak.Library;
 import com.inexas.oak.advisory.*;
-import com.inexas.oak.ast.FunctionRegistry.FunctionException;
-import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
-import com.inexas.tad.Context;
+import com.inexas.oak.ast.LibraryRegistry.*;
+import com.inexas.tad.TadContext;
 
 /**
  * This is the abstract base for both Oak and Expression
@@ -25,7 +25,7 @@ public abstract class AbstractOak {
 	}
 
 	protected final Advisory advisory;
-	protected final FunctionRegistry registry = new FunctionRegistry();
+	protected final LibraryRegistry registry = new LibraryRegistry();
 	protected OakParser parser;
 
 	/**
@@ -43,7 +43,7 @@ public abstract class AbstractOak {
 	protected AbstractOak(File file) throws OakException {
 
 		advisory = new Advisory(file);
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 
 		if(file.isFile()) {
 			try(final Reader reader = new java.io.FileReader(file)) {
@@ -58,7 +58,7 @@ public abstract class AbstractOak {
 			advisory.error(file.getName() + " is not a file");
 		}
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -72,19 +72,19 @@ public abstract class AbstractOak {
 	 *
 	 * @param string
 	 *            The String to parse.
-	 * @param funclibs
+	 * @param libraries
 	 *            Optional list of function libraries to load.
 	 * @throws OakException
 	 *             Thrown if an error is detected when processing the input
 	 *             file.
 	 */
-	protected AbstractOak(String string, Class<?>... funclibs) throws OakException {
+	protected AbstractOak(String string, Library... libraries) throws OakException {
 
 		advisory = new Advisory(string);
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 
 		try {
-			registry.register(funclibs);
+			registry.register(libraries);
 
 			if(string == null || string.trim().length() == 0) {
 				advisory.error("Null or empty string");
@@ -97,11 +97,11 @@ public abstract class AbstractOak {
 					advisory.error("IO error: " + e.getMessage());
 				}
 			}
-		} catch(FunctionException | InvalidMethodException e) {
+		} catch(LibraryException | InvalidMethodException e) {
 			advisory.error(e.getMessage());
 		}
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
@@ -110,7 +110,7 @@ public abstract class AbstractOak {
 	/**
 	 * @return the registry
 	 */
-	public FunctionRegistry getRegistry() {
+	public LibraryRegistry getRegistry() {
 		return registry;
 	}
 

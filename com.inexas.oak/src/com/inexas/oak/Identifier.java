@@ -13,7 +13,7 @@ package com.inexas.oak;
 import java.io.Serializable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.Text;
 
 /**
@@ -206,7 +206,7 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	}
 
 	private static void error(int line, int column, String message) throws ParsingException {
-		final Advisory advisory = Context.getButDontThrow(Advisory.class);
+		final Advisory advisory = TadContext.getButDontThrow(Advisory.class);
 		if(advisory != null) {
 			advisory.error(line, column, message);
 		} else {

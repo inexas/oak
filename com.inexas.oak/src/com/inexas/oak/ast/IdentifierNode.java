@@ -1,15 +1,15 @@
 package com.inexas.oak.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import com.inexas.oak.DataType;
+import com.inexas.oak.*;
 
 public class IdentifierNode extends Node {
-	public final String identifier;
+	public final Identifier identifier;
 
 	public IdentifierNode(ParserRuleContext context, String identifier) {
 		super(context);
 
-		this.identifier = identifier;
+		this.identifier = new Identifier(identifier);
 	}
 
 	@Override
@@ -24,7 +24,7 @@ public class IdentifierNode extends Node {
 	 */
 	@Override
 	public DataType getType() {
-		return DataType.path;
+		return DataType.identifier;
 	}
 
 }

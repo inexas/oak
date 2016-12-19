@@ -4,19 +4,11 @@ import java.util.Stack;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.oak.Identifier;
+import com.inexas.oak.*;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.oak.ast.FunctionRegistry.FunctionException;
-import com.inexas.oak.ast.FunctionRegistry.InvalidMethodException;
-import com.inexas.oak.ast.OakParser.ArrayContext;
-import com.inexas.oak.ast.OakParser.CardinalityContext;
-import com.inexas.oak.ast.OakParser.ExprContext;
-import com.inexas.oak.ast.OakParser.IdentifierContext;
-import com.inexas.oak.ast.OakParser.LiteralContext;
-import com.inexas.oak.ast.OakParser.LoadContext;
-import com.inexas.oak.ast.OakParser.ObjectContext;
-import com.inexas.oak.ast.OakParser.PairContext;
-import com.inexas.tad.Context;
+import com.inexas.oak.ast.LibraryRegistry.*;
+import com.inexas.oak.ast.OakParser.*;
+import com.inexas.tad.TadContext;
 import com.inexas.util.*;
 
 /**
@@ -38,12 +30,15 @@ public class AntlrToAstVisitor extends OakBaseListener {
 	public void enterLoad(LoadContext ctx) {
 		try {
 			final String className = StringU.removeQuotes(ctx.getChild(1).getText());
-			final Class<?> funclib = Class.forName(className);
-			final FunctionRegistry registry = Context.get(FunctionRegistry.class);
-			registry.register(funclib);
+			final Library library = (Library)Class.forName(className).newInstance();
+			final LibraryRegistry registry = TadContext.get(LibraryRegistry.class);
+			registry.register(library);
 		} catch(final ClassNotFoundException e) {
 			error(ctx, "Function library class not found: " + e.getMessage());
-		} catch(final FunctionException | InvalidMethodException e) {
+		} catch(final IllegalAccessException
+				| InvalidMethodException
+				| InstantiationException
+				| LibraryException e) {
 			error(ctx, e.getMessage());
 		}
 	}
@@ -67,7 +62,11 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		final Node constant;
 		switch(ctx.start.getType()) {
 		case OakLexer.IdentifierLiteral:
-			constant = ConstantNode.toIdentifierConstant(ctx, text);
+			if(inExpression) {
+				constant = new SymbolNode(ctx, text);
+			} else {
+				constant = new IdentifierNode(ctx, text);
+			}
 			break;
 
 		case OakLexer.IntegerLiteral:
@@ -130,6 +129,13 @@ public class AntlrToAstVisitor extends OakBaseListener {
 			throw new UnexpectedException("enterLiteral: " + type);
 		}
 		stack.add(constant);
+	}
+
+	boolean inExpression = false;
+
+	@Override
+	public void enterExpr(ExprContext ctx) {
+		inExpression = true;
 	}
 
 	@Override
@@ -224,6 +230,8 @@ public class AntlrToAstVisitor extends OakBaseListener {
 				stack.add(node);
 			}
 		}
+
+		inExpression = false;
 	}
 
 	@Override
@@ -343,7 +351,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 
 	private void error(ParserRuleContext context, String message) {
 		final Token token = context.getStart();
-		final Advisory advisory = Context.get(Advisory.class);
+		final Advisory advisory = TadContext.get(Advisory.class);
 		advisory.error(token.getLine(), token.getCharPositionInLine() + 1, message);
 	}
 

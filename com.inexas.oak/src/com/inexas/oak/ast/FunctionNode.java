@@ -3,9 +3,9 @@ package com.inexas.oak.ast;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.oak.ast.FunctionRegistry.Function;
-import com.inexas.oak.ast.FunctionRegistry.FunctionException;
-import com.inexas.tad.Context;
+import com.inexas.oak.ast.LibraryRegistry.Function;
+import com.inexas.oak.ast.LibraryRegistry.LibraryException;
+import com.inexas.tad.TadContext;
 
 public class FunctionNode extends ExpressionNode {
 	private final ExpressionNode argumentNodes[];
@@ -20,10 +20,7 @@ public class FunctionNode extends ExpressionNode {
 		this.argumentNodes = argumentNodes;
 		argumentCount = argumentNodes.length;
 
-		final FunctionRegistry functionRegister = Context.get(FunctionRegistry.class);
-		if(functionRegister == null) {
-			throw new RuntimeException("No function register loaded");
-		}
+		final LibraryRegistry functionRegister = TadContext.get(LibraryRegistry.class);
 		try {
 			function = functionRegister.getFunction(name, argumentNodes);
 			type = function.returnType;
@@ -38,8 +35,8 @@ public class FunctionNode extends ExpressionNode {
 					}
 				}
 			}
-		} catch(final FunctionException e) {
-			final Advisory advisory = Context.get(Advisory.class);
+		} catch(final LibraryException e) {
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error(context, e.getMessage());
 		}
 	}
@@ -72,7 +69,7 @@ public class FunctionNode extends ExpressionNode {
 	}
 
 	public String getName() {
-		return function.methodName;
+		return function.name;
 	}
 
 	@Override

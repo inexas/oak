@@ -12,27 +12,28 @@ package com.inexas.oak.ast.testlibs;
 
 import java.math.*;
 import java.time.*;
+import com.inexas.oak.Library;
 import com.inexas.oak.ast.Function;
 import com.inexas.util.Cardinality;
 
-public class TestFunclib {
+public class TestFunclib implements Library {
 
-	public static int notFunction() {
+	public int notFunction() {
 		return 0;
 	}
 
-	@Function()
-	public static int sf1() {
+	@Function
+	public int sf1() {
 		return 0;
 	}
 
 	@Function(dynamic = false)
-	public static int sf2() {
+	public int sf2() {
 		return 0;
 	}
 
 	@Function(dynamic = true)
-	public static int df() {
+	public int df() {
 		return 0;
 	}
 
@@ -60,7 +61,12 @@ public class TestFunclib {
 	}
 
 	@Function
-	public static String intInt(int i1, int i2) {
+	public String intInt(int i1, int i2) {
 		return Integer.toString(i1 * i2);
+	}
+
+	@Override
+	public Object resolve(String identifier) {
+		return UNRESOLVED;
 	}
 }

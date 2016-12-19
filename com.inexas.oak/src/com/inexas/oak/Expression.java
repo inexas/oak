@@ -5,13 +5,13 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import com.inexas.oak.advisory.OakException;
 import com.inexas.oak.ast.*;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 public class Expression extends AbstractOak {
 	private ExpressionNode rootNode;
 
-	public Expression(String string, Class<?>... funclibs) throws OakException {
-		super(string, funclibs);
+	public Expression(String string, Library... libraries) throws OakException {
+		super(string, libraries);
 		toExpression();
 	}
 
@@ -56,8 +56,15 @@ public class Expression extends AbstractOak {
 	 */
 	public ConstantNode evaluate() {
 		assert advisory.isEmpty() : advisory.getFirstError();
+		final ConstantNode result;
 
-		return rootNode.evaluate();
+		TadContext.pushAttach(advisory);
+		TadContext.pushAttach(registry);
+		result = rootNode.evaluate();
+		TadContext.detach(registry);
+		TadContext.detach(advisory);
+
+		return result;
 	}
 
 	/**
@@ -74,20 +81,20 @@ public class Expression extends AbstractOak {
 			throw new RuntimeException("Source file had error messages: " + advisory.getFirstError());
 		}
 
-		Context.pushAttach(advisory);
+		TadContext.pushAttach(advisory);
 		visitor.enter(this);
 		rootNode.accept(visitor);
 		visitor.exit(this);
 
-		Context.detach(advisory);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}
 	}
 
 	private void toExpression() throws OakException {
-		Context.pushAttach(advisory);
-		Context.pushAttach(registry);
+		TadContext.pushAttach(advisory);
+		TadContext.pushAttach(registry);
 
 		final ParserRuleContext ruleContext = parser.expression();
 		if(advisory.isEmpty()) {
@@ -97,8 +104,8 @@ public class Expression extends AbstractOak {
 			rootNode = (ExpressionNode)visitor.getRoot();
 		}
 
-		Context.detach(registry);
-		Context.detach(advisory);
+		TadContext.detach(registry);
+		TadContext.detach(advisory);
 		if(advisory.hasErrors()) {
 			throw new OakException(advisory);
 		}

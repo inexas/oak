@@ -4,7 +4,7 @@ import java.util.List;
 import com.inexas.oak.Identifier;
 import com.inexas.oak.advisory.*;
 import com.inexas.oak.dialect.Keyed;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 
 /**
  * Couldn't use the name Object as it causes too many problems, so use the
@@ -26,7 +26,7 @@ public class Objet extends Locus.Base implements Keyed {
 		try {
 			tmp = Class.forName(templateClass);
 		} catch(final ClassNotFoundException e) {
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error(this, "Template class not found: " + templateClass);
 			tmp = null;
 		}

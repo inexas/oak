@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>com.inexas.oak</name>
-	<comment>My Project Description</comment>
-	<projects>
-	</projects>
+	<comment>Oak - Better than JSON, much better than XML</comment>
+	<projects/>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
+	</natures>
 	<buildSpec>
 		<buildCommand>
-			<name>org.eclipse.xtext.ui.shared.xtextBuilder</name>
-			<arguments>
-			</arguments>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments/>
 		</buildCommand>
 		<buildCommand>
-			<name>org.eclipse.jdt.core.javabuilder</name>
-			<arguments>
-			</arguments>
+			<name>org.eclipse.buildship.core.gradleprojectbuilder</name>
+			<arguments/>
 		</buildCommand>
 	</buildSpec>
-	<natures>
-		<nature>org.springsource.ide.eclipse.gradle.core.nature</nature>
-		<nature>org.eclipse.jdt.core.javanature</nature>
-		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>
-	</natures>
+	<linkedResources/>
 </projectDescription>

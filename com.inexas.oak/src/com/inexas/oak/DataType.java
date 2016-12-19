@@ -8,7 +8,7 @@ import java.util.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.tad.Context;
+import com.inexas.tad.TadContext;
 import com.inexas.util.*;
 
 public enum DataType {
@@ -110,7 +110,7 @@ public enum DataType {
 			}
 		} catch(final IllegalArgumentException e) {
 			// todo Perhaps throw the catch when the Locus is known?
-			final Advisory advisory = Context.get(Advisory.class);
+			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error("Invalid data type: " + key);
 			result = any;
 		}
@@ -472,8 +472,8 @@ public enum DataType {
 	}
 
 	/**
-	 * Convert a list of values to an Oak markup String, e.g.
-	 * "[ true, null, false ]".
+	 * Convert a list of values to an Oak markup String, e.g. "[ true, null,
+	 * false ]".
 	 *
 	 * @param values
 	 *            The list of values
@@ -590,10 +590,10 @@ public enum DataType {
 
 		assert source == null
 				|| source.length() >= 2
-				&& source.charAt(0) == '"'
-				&& source.charAt(source.length() - 1) == '"';
+						&& source.charAt(0) == '"'
+						&& source.charAt(source.length() - 1) == '"';
 
-				if(source == null) {
+		if(source == null) {
 			result = null;
 		} else {
 			final Text t = new Text();
@@ -986,7 +986,7 @@ public enum DataType {
 		/*
 		 * Try and parse a value, we don't know the type so use the first
 		 * character as an indicator to jump to the right type.
-		 * 
+		 *
 		 * We know we're not EOF and "null" has been dealt with by the caller.
 		 */
 		final char c = t.peek();
@@ -1467,7 +1467,7 @@ public enum DataType {
 	 *             Thrown only if there is not Advisory.
 	 */
 	private static void error(String message) throws ParsingException {
-		final Advisory advisory = Context.getButDontThrow(Advisory.class);
+		final Advisory advisory = TadContext.getButDontThrow(Advisory.class);
 		if(advisory != null) {
 			advisory.error(message);
 		} else {
