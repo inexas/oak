@@ -382,10 +382,10 @@ public class TestExpression {
 		// Binary..
 
 		// Arithmetic...
-		doTest("3.0", "1+2F");
-		doTest("2.0", "1*2F");
-		doTest("-1.0", "1-2F");
-		doTest("2.0", "4/2F");
+		doTest("3.0", "1+2.0F");
+		doTest("2.0", "1.0*2F");
+		doTest("-1.0", "1-2.0F");
+		doTest("2", "4/2F");
 
 		// Comparisons...
 		doTest("true", "2<3F");
@@ -416,5 +416,11 @@ public class TestExpression {
 	@Test
 	public void testSymbolResolution() throws OakException {
 		doTest("15", "five * 3");
+	}
+
+	@Test
+	public void testBigDecimalEqual() throws OakException {
+		doTest("true", "5.0F = 5.00F");
+		doTest("false", "5.0F != 5.00F");
 	}
 }

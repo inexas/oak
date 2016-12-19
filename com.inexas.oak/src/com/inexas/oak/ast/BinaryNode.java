@@ -90,8 +90,8 @@ public class BinaryNode extends ExpressionNode {
 		private BigDecimal toBigDecimal(Object value) {
 			final BigDecimal result;
 			final Class<?> clazz = value.getClass();
-			if(clazz == Long.class) {
-				result = BigDecimal.valueOf(((Long)value).intValue());
+			if(clazz == Integer.class) {
+				result = BigDecimal.valueOf(((Integer)value).intValue());
 			} else if(clazz == BigInteger.class) {
 				result = new BigDecimal((BigInteger)value);
 			} else if(clazz == Float.class) {
@@ -582,7 +582,8 @@ public class BinaryNode extends ExpressionNode {
 				compare = converter.lhs_Z.equals(converter.rhs_Z);
 				break;
 			case F:
-				compare = converter.lhs_F.equals(converter.rhs_F);
+				// Beware, don't use equals()
+				compare = converter.lhs_F.compareTo(converter.rhs_F) == 0;
 				break;
 			case identifier:
 			case path:
@@ -616,7 +617,8 @@ public class BinaryNode extends ExpressionNode {
 				compare = !converter.lhs_Z.equals(converter.rhs_Z);
 				break;
 			case F:
-				compare = !converter.lhs_F.equals(converter.rhs_F);
+				// Beware, don't use equals()
+				compare = converter.lhs_F.compareTo(converter.rhs_F) != 0;
 				break;
 			case identifier:
 			case path:

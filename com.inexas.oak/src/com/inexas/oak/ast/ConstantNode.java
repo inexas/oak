@@ -327,7 +327,7 @@ public class ConstantNode extends ExpressionNode {
 		final String noUnderlines = text.replace("_", "");
 		final String noPostfix = removeOptionalPostFix(noUnderlines, 'F');
 		// todo Check for too big perhaps parse to BigDec?
-		return new ConstantNode(context, Float.parseFloat(noPostfix));
+		return new ConstantNode(context, new BigDecimal(noPostfix));
 	}
 
 	public static Node toTextConstant(LiteralContext context, String text) {
