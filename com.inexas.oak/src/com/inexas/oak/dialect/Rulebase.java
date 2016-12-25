@@ -49,17 +49,25 @@ public class Rulebase {
 		t.newline();
 
 		t.writeline("import static com.inexas.oak.dialect.CollectionType.*;");
-		t.writeline("import com.inexas.oak.DataType;");
-		t.writeline("import com.inexas.oak.*;");
-		t.writeline("import com.inexas.oak.dialect.*;");
+		t.writeline("import com.inexas.oak.dialect.Rule;");
 		t.writeline("import com.inexas.util.Cardinality;");
+		t.writeline("import com.inexas.oak.dialect.CollectionType;");
+		t.writeline("import com.inexas.oak.dialect.ObjectRule;");
+		t.writeline("import com.inexas.oak.Identifier;");
+		t.writeline("import com.inexas.oak.DataType;");
+		t.writeline("import com.inexas.oak.dialect.Rulebase;");
+		t.writeline("import com.inexas.oak.dialect.Relationship;");
+		t.writeline("import com.inexas.oak.dialect.PropertyRule;");
+		t.writeline("import com.inexas.oak.dialect.ChoiceConstraint;");
+		t.writeline("import com.inexas.oak.dialect.RegexConstraint;");
+
 		t.newline();
 
 		/*
 		 * Instead of using a
-		 * 
+		 *
 		 * t.writeline("@SuppressWarnings(\"unused\")");
-		 * 
+		 *
 		 * in Eclipse, right click on the directory containing the generated
 		 * files Properties > Java Compiler > Ignore optional compile problems
 		 */
@@ -420,7 +428,7 @@ public class Rulebase {
 		final Class<?> templateClazz = rule.getTemplateClass();
 		final String className = templateClazz.getName().replace('$', '.');
 		final String valiableName = getVariableName(templateClazz.getSimpleName().replace('$', '.'));
-		result = className + ' ' + valiableName;
+		result = className + " _" + valiableName;
 
 		return result;
 	}

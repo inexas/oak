@@ -128,6 +128,11 @@ public class ObjectRule extends Rule {
 			childNames = new Identifier[relationshipCount];
 			for(int i = 0; i < relationshipCount; i++) {
 				final Relationship relationship = relationships[i];
+				if(relationship == null) {
+					// This can happen if we've hit an error, ignore and
+					// keep going in the interest of catching more errors...
+					continue;
+				}
 
 				// Parameter name...
 				final Identifier parameterName = relationship.subjectKey;
@@ -293,9 +298,15 @@ public class ObjectRule extends Rule {
 		result.append('(');
 
 		for(int i = 0; i < relationshipCount; i++) {
+			final Class<?> parameterType = parameterTypes[i];
+			// This can happen if we've hit an error, ignore and
+			// keep going in the interest of catching more errors...
+			if(parameterType == null) {
+				continue;
+			}
+
 			result.delimit();
 
-			final Class<?> parameterType = parameterTypes[i];
 			final String typeName = parameterType.getSimpleName();
 			final Relationship relationship = relationships[i];
 			final Identifier parameterName = childNames[i];

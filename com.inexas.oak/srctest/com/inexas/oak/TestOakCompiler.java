@@ -34,7 +34,7 @@ public class TestOakCompiler {
 
 	@Test
 	public void testOak() throws OakException {
-		final File file = new File(FileU.DATATEST + "oak/OakTest.dialect");
+		final File file = new File(FileU.ROOT + "resources/OakTest.dialect");
 		if(!file.exists()) {
 			throw new RuntimeException("No such file: " + file.getAbsolutePath());
 		}
@@ -46,12 +46,12 @@ public class TestOakCompiler {
 	public void testObject() throws OakException {
 		// doStringBasedTest(""
 		// + "Dialect {"
-		// + "  key:G;"
-		// + "  Object [{"
-		// + "    key:O;"
-		// + "  },{"
-		// + "    key:B;"
-		// + "  }]"
+		// + " key:G;"
+		// + " Object [{"
+		// + " key:O;"
+		// + " },{"
+		// + " key:B;"
+		// + " }]"
 		// + "}");
 		doStringBasedTest(""
 				+ "Dialect {\n"

@@ -726,7 +726,7 @@ public enum DataType {
 					}
 					result = (T)new Long(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid INTEGER (BigInteger): " + string, e);
+					throw new ParsingException("Invalid integer (BigInteger): " + string, e);
 				}
 				break;
 
@@ -753,7 +753,7 @@ public enum DataType {
 					}
 					result = (T)new Long(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid FLOAT (BigDecimal): " + string, e);
+					throw new ParsingException("Invalid float (BigDecimal): " + string, e);
 				}
 				break;
 

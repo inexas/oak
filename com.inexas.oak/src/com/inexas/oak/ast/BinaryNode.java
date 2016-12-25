@@ -315,6 +315,8 @@ public class BinaryNode extends ExpressionNode {
 						converter.rhs_f);
 				break;
 			case F:
+				// !todo There's a bug here if we divide 1 by 3, we need
+				// rounding
 				result = new ConstantNode(lhsContext,
 						converter.lhs_F.divide(converter.rhs_F));
 				break;

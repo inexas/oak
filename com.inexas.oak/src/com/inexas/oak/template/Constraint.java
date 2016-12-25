@@ -24,7 +24,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 * Factory method to construct a new Constraint.
 	 *
 	 * @param type
-	 *            The type of the Constraint: regexp, choice, ...
+	 *            The type of the Constraint: regex, choice, ...
 	 * @param values
 	 *            A list of 0..* strings that will be parsed into objects
 	 *            depending on the type of the Constraint.
@@ -40,8 +40,8 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 			result = new ChoiceConstraint(array);
 			break;
 
-		case RegexpConstraint.KEY:
-			result = new RegexpConstraint(array);
+		case RegexConstraint.KEY:
+			result = new RegexConstraint(array);
 			break;
 
 		default:
@@ -57,7 +57,7 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 	 * Factory method to construct a new Constraint.
 	 *
 	 * @param type
-	 *            The type of the Constraint: regexp, choice, ...
+	 *            The type of the Constraint: regex, choice, ...
 	 * @param values
 	 *            A list of 0..* values depending on the type of the Constraint.
 	 * @return The newly created constraint. However if an error is encountered
@@ -71,8 +71,8 @@ public abstract class Constraint extends Locus.Base implements Keyed {
 			result = new ChoiceConstraint(values);
 			break;
 
-		case RegexpConstraint.KEY:
-			result = new RegexpConstraint(values);
+		case RegexConstraint.KEY:
+			result = new RegexConstraint(values);
 			break;
 
 		default:

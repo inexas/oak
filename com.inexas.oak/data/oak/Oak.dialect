@@ -116,7 +116,7 @@ Dialect {
 				type: identifier;
 				Constraint {
 					type: choice;
-					value [ choice, regexp ]
+					value [ choice, regex ]
 				}
 			}
 		}, {

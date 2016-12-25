@@ -9,13 +9,13 @@ import com.inexas.util.Text;
  * A choice constraint is given a list of choices in the values array. The value
  * must be one of those choices.
  */
-public class RegexpConstraint extends Constraint {
-	public final static String KEY = "regexp";
+public class RegexConstraint extends Constraint {
+	public final static String KEY = "regex";
 
-	public RegexpConstraint(String... regexps) {
-		super(regexps);
+	public RegexConstraint(String... regexs) {
+		super(regexs);
 		if(values.length == 0) {
-			error("Regular expression (regexp) Constraints need at least one regular expression");
+			error("Regular expression (regex) Constraints need at least one regular expression");
 		} else {
 			for(final Object value : values) {
 				try {
@@ -34,7 +34,7 @@ public class RegexpConstraint extends Constraint {
 	 * @param values
 	 *            A list of zero or more objects.
 	 */
-	public RegexpConstraint(Object... values) {
+	public RegexConstraint(Object... values) {
 		super(values);
 	}
 
@@ -113,7 +113,7 @@ public class RegexpConstraint extends Constraint {
 
 		if(!matched) {
 			final Text t = new Text(true);
-			t.append("Invalid value for regexp constraint: '");
+			t.append("Invalid value for regex constraint: '");
 			t.append(value == null ? "<null>" : value.toString());
 			t.append(", should have be one of: ");
 			valuesToTextArray(t);

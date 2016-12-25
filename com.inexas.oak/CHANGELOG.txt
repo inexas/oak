@@ -1,3 +1,7 @@
 !!! 0.1.4
 * Added support for symbols in expressions.
 * Change the Library classes so they are non-static
+
+!!! 0.1.5
+* Improved the project structure: resources, ...
+* Fixed bug: Rulebase static was named dialect
