@@ -50,9 +50,9 @@ public class ObjectRule extends Rule {
 			if(cause instanceof OakException) {
 				throw (OakException)cause;
 			}
-			throw new OakRuntimeException("Error constructing " + key + ": " + e.getMessage(), e);
+			throw new OakRuntimeException("Error constructing Oak Object " + key + ": " + e.getMessage(), e);
 		} catch(final Exception e) {
-			throw new RuntimeException("Error constructing " + key + ": " + e.getMessage(), e);
+			throw new RuntimeException("Error constructing Oak Object " + key + ": " + e.getMessage(), e);
 		}
 
 		return result;
@@ -128,6 +128,11 @@ public class ObjectRule extends Rule {
 			childNames = new Identifier[relationshipCount];
 			for(int i = 0; i < relationshipCount; i++) {
 				final Relationship relationship = relationships[i];
+				if(relationship == null) {
+					// This can happen if we've hit an error, ignore and
+					// keep going in the interest of catching more errors...
+					continue;
+				}
 
 				// Parameter name...
 				final Identifier parameterName = relationship.subjectKey;
@@ -197,6 +202,7 @@ public class ObjectRule extends Rule {
 						case any:
 							parameterType = Object.class;
 							break;
+						case notEvaluated:
 						default:
 							throw new UnexpectedException("Missing case: " + dataType.name());
 						}
@@ -293,9 +299,15 @@ public class ObjectRule extends Rule {
 		result.append('(');
 
 		for(int i = 0; i < relationshipCount; i++) {
+			final Class<?> parameterType = parameterTypes[i];
+			// This can happen if we've hit an error, ignore and
+			// keep going in the interest of catching more errors...
+			if(parameterType == null) {
+				continue;
+			}
+
 			result.delimit();
 
-			final Class<?> parameterType = parameterTypes[i];
 			final String typeName = parameterType.getSimpleName();
 			final Relationship relationship = relationships[i];
 			final Identifier parameterName = childNames[i];

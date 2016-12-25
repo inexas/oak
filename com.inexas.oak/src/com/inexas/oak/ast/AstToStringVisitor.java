@@ -261,6 +261,30 @@ public class AstToStringVisitor extends AstVisitor.Base {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void visit(SymbolNode symbolNode) {
+		t.append(symbolNode.identifier);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void startConditionalTrue() {
+		t.append('?');
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void startConditionalFalse() {
+		t.append(':');
+	}
+
+	/**
 	 *
 	 * @return A parseable representation of the visited Oak file.
 	 */

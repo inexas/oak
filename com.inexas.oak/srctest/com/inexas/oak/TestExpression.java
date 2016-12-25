@@ -11,12 +11,12 @@ public class TestExpression {
 
 	public static class TestFunclib implements Library {
 		@Function(dynamic = true)
-		public LocalDateTime isDynamic() {
+		public LocalDateTime dynamicFunction() {
 			return LocalDateTime.now();
 		}
 
-		@Function
-		public String isStatic() {
+		@Function // Default is static
+		public static String staticFunction() {
 			return "x";
 		}
 
@@ -95,7 +95,7 @@ public class TestExpression {
 	private void doTest(String expected, String toTest) throws OakException {
 		final Expression expression = new Expression(toTest, new TestFunclib());
 
-		final String got = expression.toString();
+		final String got = expression.evaluate().toString();
 		if(!expected.equals(got)) {
 			System.err.println("exp: " + expected);
 			System.err.println("got: " + got);
@@ -104,17 +104,17 @@ public class TestExpression {
 		assertEquals(expected, got);
 	}
 
-	private void doTest(String toTest, boolean isStatic, String optimised, String evaluated)
+	private void doTest(String toTest, boolean isStatic, String unevaluated, String evaluated)
 			throws OakException {
 		final Expression expression = new Expression(toTest, new TestFunclib());
 
 		String got = expression.toString();
-		if(optimised != null) {
-			if(!optimised.equals(got)) {
-				System.err.println("exp: " + optimised);
+		if(unevaluated != null) {
+			if(!unevaluated.equals(got)) {
+				System.err.println("exp: " + unevaluated);
 				System.err.println("got: " + got);
 			}
-			assertEquals(optimised, got);
+			assertEquals(unevaluated, got);
 		}
 		assertTrue(isStatic == expression.isStatic());
 
@@ -293,10 +293,10 @@ public class TestExpression {
 
 	@Test
 	public void testFunctions() throws OakException {
-		doTest("isDynamic()", false, "isDynamic()", null);
+		doTest("dynamicFunction()", false, "dynamicFunction()", null);
 		doTest("1", "minus(2, 1)");
 		doTest("1", "primitive(1)");
-		doTest("isStatic()", true, "\"x\"", "\"x\"");
+		doTest("staticFunction()", true, "staticFunction()", "\"x\"");
 
 		doTest("1", "echo(1)");
 		doTest("1.0", "echo(1.0)");
@@ -316,6 +316,8 @@ public class TestExpression {
 
 	@Test
 	public void testf() throws OakException {
+		doTest("true", "2<3.0");
+
 		// Test type conversion
 		doTest("6.0", "4.0+2");
 		doTest("6.0", "4+2.0");

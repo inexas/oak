@@ -7,6 +7,7 @@ import java.util.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.exception.*;
 import com.inexas.oak.*;
+import com.inexas.oak.advisory.OakRuntimeException;
 import com.inexas.tad.Tad;
 import com.inexas.util.*;
 
@@ -148,6 +149,7 @@ public class LibraryRegistry implements Tad {
 						throw new ImplementMeException();
 
 					case any:
+					case notEvaluated:
 					default:
 						throw new UnexpectedException("invoke: ");
 					}
@@ -213,6 +215,7 @@ public class LibraryRegistry implements Tad {
 				}
 
 				case any:
+				case notEvaluated:
 				default:
 					throw new UnexpectedException("invoke: ");
 				}
@@ -272,7 +275,7 @@ public class LibraryRegistry implements Tad {
 	final Map<String, Function[]> map = new HashMap<>();
 	private final List<Library> libraries = new ArrayList<>();
 
-	void register(Library... libraryCandidates) throws LibraryException, InvalidMethodException {
+	void register(Library... libraryCandidates) throws InvalidMethodException {
 		assert libraryCandidates != null;
 
 		for(final Library library : libraryCandidates) {
@@ -310,8 +313,7 @@ public class LibraryRegistry implements Tad {
 		throw new LibraryException("Function not found: " + signature);
 	}
 
-	private void load(Library library) throws InvalidMethodException, LibraryException {
-		boolean foundSomething = false;
+	private void load(Library library) throws InvalidMethodException {
 		final Class<? extends Library> libraryClass = library.getClass();
 		for(final Method method : libraryClass.getMethods()) {
 			// Ignore non-annotated methods...
@@ -348,15 +350,9 @@ public class LibraryRegistry implements Tad {
 			// Add the function...
 			array[index] = function;
 			map.put(key, array);
-
-			foundSomething = true;
 		}
 
-		if(foundSomething) {
-			libraries.add(library);
-		} else {
-			throw new LibraryException("No functions found in " + libraryClass.getName());
-		}
+		libraries.add(library);
 	}
 
 	private String toKey(String methodName, int parameterCount) {
@@ -391,20 +387,29 @@ public class LibraryRegistry implements Tad {
 	}
 
 	/**
-	 * This is called by IndentiferNode
+	 * This is called by IndentiferNode. Run through all the libraries until
+	 * either we find one that can resolve the symbol or return null.
 	 *
-	 * @param identifier
-	 * @return
+	 * @param symbol
+	 *            The symbol to resolve
+	 * @return The value of the symbol
+	 * @throws OakRuntimeException
 	 */
-	Object resolve(String identifier) {
-		final Object result;
+	Object resolve(String symbol) throws OakRuntimeException {
+		Object result = null;
 
-		/*
-		 * todo Should I use the first, last or first library that can resolve
-		 * the identifier?
-		 */
-		final Library library = libraries.get(0);
-		result = library.resolve(identifier);
+		boolean found = false;
+		for(final Library library : libraries) {
+			result = library.resolve(symbol);
+			if(result != Library.UNRESOLVED) {
+				found = true;
+				break;
+			}
+		}
+
+		if(!found) {
+			throw new OakRuntimeException("Cannot resolve symbole: '" + symbol + '\'');
+		}
 
 		return result;
 	}

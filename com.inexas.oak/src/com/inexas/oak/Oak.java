@@ -94,7 +94,7 @@ public class Oak extends AbstractOak {
 		TadContext.pushAttach(advisory);
 
 		try {
-			final Field field = dialect.getDeclaredField("dialect");
+			final Field field = dialect.getDeclaredField("rulebase");
 			final Rule[] rules = ((Rulebase)field.get(null)).rules;
 			try {
 				result = toObjectTree(rules);
@@ -108,9 +108,9 @@ public class Oak extends AbstractOak {
 				| IllegalArgumentException
 				| IllegalAccessException e) {
 			advisory.error(
-					"Cannot access field 'public static Dialect dialect;' in: "
+					"Cannot access field 'public static Rulebase rulebase;' in: "
 							+ dialect.getName()
-							+ " because: " + e.getMessage());
+							+ ", did you change the file?");
 			result = null;
 		}
 

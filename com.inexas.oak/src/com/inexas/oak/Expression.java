@@ -64,6 +64,10 @@ public class Expression extends AbstractOak {
 		TadContext.detach(registry);
 		TadContext.detach(advisory);
 
+		if(isStatic()) {
+			rootNode = result;
+		}
+
 		return result;
 	}
 

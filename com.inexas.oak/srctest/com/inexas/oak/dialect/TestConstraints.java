@@ -52,47 +52,47 @@ public class TestConstraints {
 	}
 
 	@Test
-	public void testRegexpNoValues() {
-		final Constraint constraint = new RegexpConstraint();
+	public void testRegexNoValues() {
+		final Constraint constraint = new RegexConstraint();
 		assertNotNull(constraint);
 	}
 
 	@Test
-	public void testRegexpNonStringValues() {
-		final Constraint constraint = new RegexpConstraint("\"a\"", "2",
+	public void testRegexNonStringValues() {
+		final Constraint constraint = new RegexConstraint("\"a\"", "2",
 				"\"c\"");
 		assertNotNull(constraint);
 		assertTrue(getFirstMessage().indexOf("Invalid type") >= 0);
 	}
 
 	@Test
-	public void testRegexp1() {
-		final Constraint constraint = new RegexpConstraint("\"b\"", "\"a+\"");
+	public void testRegex1() {
+		final Constraint constraint = new RegexConstraint("\"b\"", "\"a+\"");
 		constraint.validate("b");
 		constraint.validate("aaaa");
 		assertNull(getFirstMessage());
 	}
 
 	@Test
-	public void testRegexp2() {
-		final Constraint constraint = new RegexpConstraint("\"b\"", "\"a+\"");
+	public void testRegex2() {
+		final Constraint constraint = new RegexConstraint("\"b\"", "\"a+\"");
 		constraint.validate("bb");
 		assertTrue(getFirstMessage().indexOf("Invalid value") >= 0);
 	}
 
 	@Test
-	public void testRegexpSingleValueToString() {
-		final Constraint constraint = new RegexpConstraint("\"a\"");
+	public void testRegexSingleValueToString() {
+		final Constraint constraint = new RegexConstraint("\"a\"");
 		assertEquals(
-				"Constraint {\n\ttype: regexp;\n\tvalue: \"a\"\n}\n",
+				"Constraint {\n\ttype: regex;\n\tvalue: \"a\"\n}\n",
 				constraint.toString());
 	}
 
 	@Test
-	public void testRegexpMultiValueToString() {
-		final Constraint constraint = new RegexpConstraint("\"a\"", "\"b\"");
+	public void testRegexMultiValueToString() {
+		final Constraint constraint = new RegexConstraint("\"a\"", "\"b\"");
 		assertEquals(
-				"Constraint {\n\ttype: regexp;\n\tvalue [\"a\", \"b\" ]\n}\n",
+				"Constraint {\n\ttype: regex;\n\tvalue [\"a\", \"b\" ]\n}\n",
 				constraint.toString());
 	}
 

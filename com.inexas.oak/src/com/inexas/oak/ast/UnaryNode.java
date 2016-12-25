@@ -16,8 +16,6 @@ import com.inexas.oak.DataType;
 public class UnaryNode extends ExpressionNode {
 	private final int operator;
 	private final ExpressionNode operand;
-	private final DataType type;
-	private final boolean isStatic;
 
 	public UnaryNode(ParserRuleContext context, int operator, ExpressionNode operand) {
 		super(context);
@@ -55,27 +53,26 @@ public class UnaryNode extends ExpressionNode {
 	public ConstantNode evaluate() {
 		final ConstantNode result;
 
-		final ConstantNode valueConstant = operand.evaluate();
-		final Object value = valueConstant.getValue();
+		final ConstantNode evaluatedOperand = operand.evaluate();
+		final Object operandValue = evaluatedOperand.getValue();
 		switch(operator) {
 		case OakLexer.Minus:
 			switch(type) {
 			case z:
-				result = new ConstantNode(context, -((Number)value).intValue());
+				result = new ConstantNode(context, -((Number)operandValue).intValue());
 				break;
 
 			case Z:
-				result = new ConstantNode(context, ((BigInteger)value).negate());
+				result = new ConstantNode(context, ((BigInteger)operandValue).negate());
 				break;
 
 			case f:
-				result = new ConstantNode(context, -((Number)value).floatValue());
+				result = new ConstantNode(context, -((Number)operandValue).floatValue());
 				break;
 			case F:
-				result = new ConstantNode(context, ((BigDecimal)value).negate());
+				result = new ConstantNode(context, ((BigDecimal)operandValue).negate());
 				break;
 
-			case any:
 			case bool:
 			case cardinality:
 			case date:
@@ -84,6 +81,8 @@ public class UnaryNode extends ExpressionNode {
 			case path:
 			case text:
 			case time:
+			case any:
+			case notEvaluated:
 			default:
 				throw new UnexpectedException("evaluate: " + type);
 			}
@@ -91,7 +90,7 @@ public class UnaryNode extends ExpressionNode {
 
 		case OakLexer.Comp:
 			if(type == DataType.z) {
-				result = new ConstantNode(context, ~((Integer)value).intValue());
+				result = new ConstantNode(context, ~((Integer)operandValue).intValue());
 			} else {
 				// There's already an error in the advisory from the ctor
 				result = new ConstantNode(context, 0);
@@ -99,7 +98,7 @@ public class UnaryNode extends ExpressionNode {
 			break;
 
 		case OakLexer.Not:
-			result = new ConstantNode(context, !((Boolean)value).booleanValue());
+			result = new ConstantNode(context, !((Boolean)operandValue).booleanValue());
 			break;
 
 		default:

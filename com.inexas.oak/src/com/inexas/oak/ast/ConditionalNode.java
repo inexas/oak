@@ -4,8 +4,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.oak.DataType;
 
 public class ConditionalNode extends ExpressionNode {
-	private final boolean isStatic;
-	private final DataType type;
 	private final ExpressionNode condition, trueValue, falseValue;
 
 	/**
@@ -73,7 +71,6 @@ public class ConditionalNode extends ExpressionNode {
 				}
 				break;
 
-			case any:
 			case bool:
 			case cardinality:
 			case date:
@@ -82,6 +79,8 @@ public class ConditionalNode extends ExpressionNode {
 			case path:
 			case text:
 			case time:
+			case any:
+			case notEvaluated:
 			default:
 				throwInvalidTypes();
 				type = null;
@@ -121,7 +120,9 @@ public class ConditionalNode extends ExpressionNode {
 		assert visitor.enterEveryNode(this);
 		visitor.enter(this);
 		condition.accept(visitor);
+		visitor.startConditionalTrue();
 		trueValue.accept(visitor);
+		visitor.startConditionalFalse();
 		falseValue.accept(visitor);
 		visitor.exit(this);
 		assert visitor.exitEveryNode(this);

@@ -9,9 +9,8 @@ import com.inexas.oak.ast.OakParser.LiteralContext;
 import com.inexas.util.*;
 
 public class ConstantNode extends ExpressionNode {
-	public final DataType type;
-	private final Object value;
 
+	// ?todo Used for null value, could use a static for this
 	ConstantNode(ParserRuleContext context) {
 		super(context);
 		value = null;
@@ -112,16 +111,6 @@ public class ConstantNode extends ExpressionNode {
 		super(context);
 		this.value = value;
 		type = DataType.path;
-	}
-
-	@Override
-	public DataType getType() {
-		return type;
-	}
-
-	@Override
-	public boolean isStatic() {
-		return true;
 	}
 
 	@Override

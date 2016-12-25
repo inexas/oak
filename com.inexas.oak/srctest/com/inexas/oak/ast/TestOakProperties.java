@@ -69,7 +69,7 @@ public class TestOakProperties {
 		doTest("a:false;");
 		doTest("a:null;");
 		doTest("a:\"b\";");
-		doTest("a:3;", "a:1+2;");
+		doTest("a:1+2;", "a:1+2;");
 
 		// Test cardinality...
 		doTest("a:0..1;", "a: 0..1;");
@@ -105,15 +105,16 @@ public class TestOakProperties {
 	@Test
 	public void testPretty() throws OakException {
 		doPrettyTest("a [\n\t1, 2, 3\n]\n", "a[1,2,3]");
-		doPrettyTest("a [\n"
-				+ "\t1, 2, 3, 4, 5, 6, 7, 8, 9, 0,\n"
-				+ "\t1, 2, 3, 4, 5, 6, 7, 8, 9, 0,\n"
-				+ "\t1, 2\n]\n",
+		doPrettyTest(
+				"a [\n"
+						+ "\t1, 2, 3, 4, 5, 6, 7, 8, 9, 0,\n"
+						+ "\t1, 2, 3, 4, 5, 6, 7, 8, 9, 0,\n"
+						+ "\t1, 2\n]\n",
 				"a[1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2]");
 		doPrettyTest("a: 1;\n", "a:1;");
 		doPrettyTest("a: true;\n", "a:true;");
 		doPrettyTest("a: \"b\";\n", "a:\"b\";");
-		doPrettyTest("a: 3;\n", "a:1+2;");
+		doPrettyTest("a: 1 + 2;\n", "a:1+2;");
 
 		doPrettyTest("a [\n\t1\n]\n", "a[1]");
 		doPrettyTest("a [\n\t1, 2\n]\n", "a[1,2]");
@@ -121,64 +122,50 @@ public class TestOakProperties {
 
 	@Test
 	public void testPrettyObjectArray() throws OakException {
-		doPrettyTest("A [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t\tc: 3;\n\t}\n]\n",
+		doPrettyTest(
+				"A [\n\t{\n\t\ta: 1;\n\t}, {\n\t\tb: 2;\n\t\tc: 3;\n\t}\n]\n",
 				"A[{a:1;},{b:2;c:3;}]");
 	}
 
 	@Test
 	public void testExpressions() throws OakException {
-		// todo Collapsing (changing 1+1->2) should be optional
 		// Plus
-		doTest("a:2;", "a:1+1;");
-		doTest("a:7;", "a:1+1+5;");
+		doTest("a:1+1;", "a:1+1;");
 
 		// Minus
-		doTest("a:0;", "a:1-1;");
-		doTest("a:-2;", "a:1-1-2;");
+		doTest("a:1-1;", "a:1-1;");
 
 		// Multiply
-		doTest("a:35;", "a:7*5;");
-		doTest("a:30;", "a:2*3*5;");
+		doTest("a:7*5;", "a:7*5;");
 
 		// Divide
-		doTest("a:1;", "a:2/2;");
-		doTest("a:3;", "a:2+2/2;");
+		doTest("a:2/2;", "a:2/2;");
 
 		// Complement
-		doTest("a:-3;", "a:~2;");
+		doTest("a:~2;", "a:~2;");
 
 		// Not
-		doTest("a:false;", "a:!true;");
+		doTest("a:!true;", "a:!true;");
 
 		// Comparisons
-		doTest("a:false;", "a:2>2;");
-		doTest("a:true;", "a:2>=2;");
-		doTest("a:false;", "a:1=2;");
-		doTest("a:true;", "a:1!=2;");
-		doTest("a:true;", "a:2<=2;");
-		doTest("a:false;", "a:2<2;");
+		doTest("a:2>2;", "a:2>2;");
+		doTest("a:2>=2;", "a:2>=2;");
+		doTest("a:1=2;", "a:1=2;");
+		doTest("a:1!=2;", "a:1!=2;");
+		doTest("a:2<=2;", "a:2<=2;");
+		doTest("a:2<2;", "a:2<2;");
 
 		// Logical OR
-		doTest("a:false;", "a:false||false;");
-		doTest("a:true;", "a:true||false;");
-		doTest("a:true;", "a:false||true;");
-		doTest("a:true;", "a:true||true;");
+		doTest("a:false||false;", "a: false || false;");
 
 		// Logical AND
-		doTest("a:false;", "a:false&&false;");
-		doTest("a:false;", "a:true&&false;");
-		doTest("a:false;", "a:false&&true;");
-		doTest("a:true;", "a:true&&true;");
+		doTest("a:false&&false;", "a: false && false;");
 
 		// Logical XOR
-		doTest("a:false;", "a:false^false;");
-		doTest("a:true;", "a:true^false;");
-		doTest("a:true;", "a:false^true;");
-		doTest("a:false;", "a:true^true;");
+		doTest("a:false^false;", "a:false ^ false;");
 
 		// ? :
-		doTest("a:2;", "a:true?2:5;");
-		doTest("a:5;", "a:false?2:5;");
+		doTest("a:true?2:5;", "a: true ? 2 : 5;");
 	}
 
 	@SuppressWarnings("unused")

@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 import org.antlr.v4.runtime.*;
 import com.inexas.oak.Library;
 import com.inexas.oak.advisory.*;
-import com.inexas.oak.ast.LibraryRegistry.*;
+import com.inexas.oak.ast.LibraryRegistry.InvalidMethodException;
 import com.inexas.tad.TadContext;
 
 /**
@@ -97,7 +97,7 @@ public abstract class AbstractOak {
 					advisory.error("IO error: " + e.getMessage());
 				}
 			}
-		} catch(LibraryException | InvalidMethodException e) {
+		} catch(final InvalidMethodException e) {
 			advisory.error(e.getMessage());
 		}
 

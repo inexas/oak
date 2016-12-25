@@ -14,6 +14,7 @@ import com.inexas.util.*;
 public enum DataType {
 	// @formatter:off
 	// Keep z first and the order: z, Z, f, F for getCommonType()
+	//				number	time	Java class
 	z(				true,	false,	Integer.class),
 	Z(				true,	false,	BigInteger.class),
 	f(				true,	false,	Float.class),
@@ -26,7 +27,8 @@ public enum DataType {
 	datetime(		false,	true,	LocalDateTime.class),
 	date(			false,	true,	LocalDate.class),
 	time(			false,	true,	LocalTime.class),
-	any(			false,	false,	Object.class);
+	any(			false,	false,	Object.class),
+	notEvaluated(	false,	false,	null);
 
 	// @formatter:on
 
@@ -148,27 +150,33 @@ public enum DataType {
 	}
 
 	/**
-	 * Given this type and another, find the 'broadest' type
-	 *
+	 * The common type depends on the operation and operands. For something like
+	 * 5z + 6Z then the operands' common type is Z (the broader of the two) and
+	 * the returnType will be Z because of the operation.
+	 * 
 	 * @param rhs
 	 *            The other type.
-	 * @return The broadest type
+	 * @return The common type
 	 * @throws TypeMismatchException
 	 *             Data does not match expected data type.
 	 */
 	public DataType getCommnType(DataType rhs) throws TypeMismatchException {
 		final DataType result;
 
-		result = ordinal() > rhs.ordinal() ? this : rhs;
-		if(numeric || rhs.numeric) {
-			// One numeric then both must be..
-			if(result.ordinal() > F.ordinal()) {
-				throw new TypeMismatchException("Either both must be numeric or neither");
-			}
+		if(this == notEvaluated || rhs == notEvaluated) {
+			result = DataType.notEvaluated;
 		} else {
-			// Neither numeric then both must be the same
-			if(ordinal() != rhs.ordinal()) {
-				throw new TypeMismatchException("Both types must be the same for non-numerics");
+			result = ordinal() > rhs.ordinal() ? this : rhs;
+			if(numeric || rhs.numeric) {
+				// One numeric then both must be..
+				if(result.ordinal() > F.ordinal()) {
+					throw new TypeMismatchException("Either both must be numeric or neither");
+				}
+			} else {
+				// Neither numeric then both must be the same
+				if(ordinal() != rhs.ordinal()) {
+					throw new TypeMismatchException("Both types must be the same for non-numerics");
+				}
 			}
 		}
 
@@ -567,6 +575,7 @@ public enum DataType {
 				break;
 
 			case any:
+			case notEvaluated:
 			default:
 				throw new UnexpectedException("asString: " + this);
 			}
@@ -620,6 +629,7 @@ public enum DataType {
 							// Unicode, 1-4 hex characters...
 							i++;
 
+							// Leave t as it is so create a copy: hex
 							final Text hex = new Text();
 							hex.append(source);
 							hex.setCursor(i);
@@ -726,7 +736,7 @@ public enum DataType {
 					}
 					result = (T)new Long(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid INTEGER (BigInteger): " + string, e);
+					throw new ParsingException("Invalid integer (BigInteger): " + string, e);
 				}
 				break;
 
@@ -753,7 +763,7 @@ public enum DataType {
 					}
 					result = (T)new Long(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid FLOAT (BigDecimal): " + string, e);
+					throw new ParsingException("Invalid float (BigDecimal): " + string, e);
 				}
 				break;
 
@@ -799,6 +809,7 @@ public enum DataType {
 				break;
 
 			case any:
+			case notEvaluated:
 			default:
 				throw new UnexpectedException(string);
 			}
@@ -961,6 +972,7 @@ public enum DataType {
 				result = any(t, valueList);
 				break;
 
+			case notEvaluated:
 			default:
 				throw new UnexpectedException("value: " + type);
 			}

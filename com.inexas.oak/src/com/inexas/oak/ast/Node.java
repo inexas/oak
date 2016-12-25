@@ -22,6 +22,7 @@ public abstract class Node implements Locus {
 		return parent;
 	}
 
+	// !todo Should getType be moved to ExpressionNode
 	/**
 	 * @return Data type, null for objects
 	 */

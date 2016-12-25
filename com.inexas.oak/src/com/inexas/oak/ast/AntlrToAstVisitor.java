@@ -6,7 +6,7 @@ import org.antlr.v4.runtime.tree.*;
 import com.inexas.exception.UnexpectedException;
 import com.inexas.oak.*;
 import com.inexas.oak.advisory.Advisory;
-import com.inexas.oak.ast.LibraryRegistry.*;
+import com.inexas.oak.ast.LibraryRegistry.InvalidMethodException;
 import com.inexas.oak.ast.OakParser.*;
 import com.inexas.tad.TadContext;
 import com.inexas.util.*;
@@ -37,8 +37,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 			error(ctx, "Function library class not found: " + e.getMessage());
 		} catch(final IllegalAccessException
 				| InvalidMethodException
-				| InstantiationException
-				| LibraryException e) {
+				| InstantiationException e) {
 			error(ctx, e.getMessage());
 		}
 	}
@@ -224,11 +223,7 @@ public class AntlrToAstVisitor extends OakBaseListener {
 		}
 
 		if(node != null) {
-			if(node.isStatic()) {
-				stack.add(node.evaluate());
-			} else {
-				stack.add(node);
-			}
+			stack.add(node);
 		}
 
 		inExpression = false;

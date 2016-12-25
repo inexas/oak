@@ -17,11 +17,11 @@ public interface Library {
 	public final static Object UNRESOLVED = new Object();
 
 	/**
-	 * Try to resolve the given identifier.
+	 * Try to resolve a given symbol.
 	 *
-	 * @param identifier
-	 *            The identifier to resolve
-	 * @return Either an object that the identifier resolves to or UNRESOLVED
+	 * @param symbol
+	 *            The symbol to resolve
+	 * @return Either an object that the symbol resolves to or UNRESOLVED
 	 */
-	Object resolve(String identifier);
+	Object resolve(String symbol);
 }

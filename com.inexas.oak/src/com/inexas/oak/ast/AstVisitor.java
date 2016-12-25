@@ -214,6 +214,22 @@ public interface AstVisitor {
 			// Do nothing
 		}
 
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void startConditionalTrue() {
+			// Do nothing
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public void startConditionalFalse() {
+			// Do nothing
+		}
+
 	}
 
 	/**
@@ -310,5 +326,17 @@ public interface AstVisitor {
 	void visit(ConstantNode node);
 
 	void visit(CardinalityNode node);
+
+	/**
+	 * This is called in a conditional ( boolCondition ? trueValue : falseValue
+	 * ) after the condition has been visited but before the true value.
+	 */
+	void startConditionalTrue();
+
+	/**
+	 * This is called in a conditional ( boolCondition ? trueValue : falseValue
+	 * ) after the true value has been visited but before the false value.
+	 */
+	void startConditionalFalse();
 
 }

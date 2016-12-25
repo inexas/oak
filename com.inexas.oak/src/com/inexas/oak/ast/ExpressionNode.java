@@ -6,7 +6,19 @@ import com.inexas.oak.DataType;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.tad.TadContext;
 
+/**
+ * ExpressionNodes form part of an expression AST. They are either static: once
+ * the value has been ascertained then it is fixed, or dynamic, each time the
+ * value is referenced it must be recalculated.
+ *
+ * @author kwhittingham, @date 27 Dec 2016
+ */
 public abstract class ExpressionNode extends Node {
+	/** Use for static ExpressionNodes only */
+	protected Object value;
+	/** Use for static ExpressionNodes only */
+	protected DataType type;
+	protected boolean isStatic;
 
 	public ExpressionNode(ParserRuleContext context) {
 		super(context);
@@ -50,7 +62,9 @@ public abstract class ExpressionNode extends Node {
 	}
 
 	@Override
-	public abstract DataType getType();
+	public DataType getType() {
+		return type;
+	}
 
 	/**
 	 * An expression is static if it always returns the same value. For example:
@@ -58,7 +72,9 @@ public abstract class ExpressionNode extends Node {
 	 *
 	 * @return True if this node will always return the same value
 	 */
-	public abstract boolean isStatic();
+	public boolean isStatic() {
+		return true;
+	}
 
 	/**
 	 * Evaluate the the value of this expression.

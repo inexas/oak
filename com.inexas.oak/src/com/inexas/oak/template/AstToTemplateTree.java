@@ -232,6 +232,9 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					result = node.asAny();
 					break;
 
+				case notEvaluated:
+					throw new UnexpectedException("getPropertyValue: ");
+
 				case date:
 				case time:
 				case datetime:
@@ -604,9 +607,14 @@ public class AstToTemplateTree extends AstVisitor.Base {
 			case time:
 				value = node.getTime();
 				break;
+
 			case any:
 				value = node.getValue();
 				break;
+
+			case notEvaluated:
+				throw new UnexpectedException("getPropertyValue: ");
+
 			default:
 				throw new UnexpectedException("visit: " + rule.dataType);
 			}

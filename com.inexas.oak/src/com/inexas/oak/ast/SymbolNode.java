@@ -14,9 +14,7 @@ import com.inexas.util.Cardinality;
  * @author kwhittingham, @date 19 Dec 2016
  */
 public class SymbolNode extends ExpressionNode {
-	private final String identifier;
-	private ConstantNode value;
-	private DataType type;
+	final String identifier;
 
 	public SymbolNode(ParserRuleContext context, String identifier) {
 		super(context);
@@ -29,18 +27,6 @@ public class SymbolNode extends ExpressionNode {
 		assert visitor.enterEveryNode(this);
 		visitor.visit(this);
 		assert visitor.exitEveryNode(this);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public DataType getType() {
-		if(type == null) {
-			doEvaluate();
-		}
-
-		return type;
 	}
 
 	/**
@@ -60,12 +46,16 @@ public class SymbolNode extends ExpressionNode {
 			doEvaluate();
 		}
 
-		return value;
+		return (ConstantNode)value;
 	}
 
 	public void doEvaluate() {
-		final LibraryRegistry register = TadContext.get(LibraryRegistry.class);
-		final Object resolved = register.resolve(identifier.toString());
+		final String symbol = identifier.toString();
+		final LibraryRegistry register = TadContext.getButDontThrow(LibraryRegistry.class);
+		if(register == null) {
+			throw new RuntimeException("No libraries attached to resolve: " + symbol);
+		}
+		final Object resolved = register.resolve(symbol);
 		type = DataType.getDataType(resolved.getClass());
 		switch(type) {
 		case f:
@@ -101,9 +91,10 @@ public class SymbolNode extends ExpressionNode {
 		case path:
 		case identifier:
 		case any:
+		case notEvaluated:
 		default:
 			if(resolved == Library.UNRESOLVED) {
-				throw new RuntimeException("Cannot resolve identifier: " + identifier.toString());
+				throw new RuntimeException("Cannot resolve identifier: " + symbol);
 			}
 			throw new RuntimeException("evaluate: " + type.name());
 		}

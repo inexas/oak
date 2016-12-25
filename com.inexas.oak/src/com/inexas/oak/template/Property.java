@@ -13,6 +13,13 @@ public class Property extends Locus.Base implements Keyed {
 
 	/**
 	 * Oak ctor
+	 *
+	 * @param key
+	 *            The property key
+	 * @param type
+	 *            Property type
+	 * @param constraints
+	 *            0..* Constraints
 	 */
 	public Property(Identifier key, Identifier type, List<Constraint> constraints) {
 		this(key,

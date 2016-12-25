@@ -1,14 +1,5 @@
 /**
  * 'Oak'
- *
- * This grammar is basically JSON with a few things ironed out
- *
- * * Comments are allowed, same as Java
- *
- * * Keys don't have "quotes"
- *
- * + exprs are supported: "TimeoutInMs: 60*60*1000 "
- *
  */
 grammar Oak;
 
@@ -32,7 +23,7 @@ Eq:			'=';
 Ne:			'!=';
 Shl:		'<<';
 Shr:		'>>';
-Usr:		'>>>';	// Usr must be last math operator
+Usr:		'>>>';	// Usr must be last math operator in this list
 Comma:		',';
 Semi:		';';
 Null:		'null';

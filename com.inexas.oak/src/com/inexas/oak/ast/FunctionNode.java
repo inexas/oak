@@ -11,8 +11,6 @@ public class FunctionNode extends ExpressionNode {
 	private final ExpressionNode argumentNodes[];
 	private Function function;
 	private final int argumentCount;
-	private boolean isStatic;
-	private DataType type;
 
 	public FunctionNode(ParserRuleContext context, String name, ExpressionNode argumentNodes[]) {
 		super(context);
@@ -38,6 +36,7 @@ public class FunctionNode extends ExpressionNode {
 		} catch(final LibraryException e) {
 			final Advisory advisory = TadContext.get(Advisory.class);
 			advisory.error(context, e.getMessage());
+			type = DataType.any;
 		}
 	}
 

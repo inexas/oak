@@ -20,7 +20,7 @@ import com.inexas.oak.ast.testlibs.*;
 public class TestLibrary {
 
 	@Test
-	public void testFunctionCreation() throws LibraryException, InvalidMethodException {
+	public void testFunctionCreation() throws InvalidMethodException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib());
 		assertEquals(5, register.map.size());
@@ -68,32 +68,32 @@ public class TestLibrary {
 	}
 
 	@Test(expected = InvalidMethodException.class)
-	public void testVoidMethod() throws LibraryException, InvalidMethodException {
+	public void testVoidMethod() throws InvalidMethodException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib1());
 	}
 
-	@Test(expected = LibraryException.class)
-	public void testNonPublicMethod() throws LibraryException, InvalidMethodException {
+	@Test
+	public void testNonPublicMethod() throws InvalidMethodException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib2());
 	}
 
-	@Test(expected = LibraryException.class)
-	public void testNoMethod() throws LibraryException, InvalidMethodException {
+	@Test
+	public void testNoMethod() throws InvalidMethodException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib4());
 	}
 
 	@Test(expected = InvalidMethodException.class)
-	public void testDupe() throws LibraryException, InvalidMethodException {
+	public void testDupe() throws InvalidMethodException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib());
 		register.register(new TestFunclib());
 	}
 
 	@Test
-	public void testGet() throws LibraryException, InvalidMethodException {
+	public void testGet() throws InvalidMethodException, LibraryException {
 		final LibraryRegistry register = new LibraryRegistry();
 		register.register(new TestFunclib());
 		final ExpressionNode[] parameters = {
