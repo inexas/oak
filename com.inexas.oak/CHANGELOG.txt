@@ -10,3 +10,7 @@ Version 0.1.5
 * Fixed bug: Rulebase static was named dialect
 * Added some documentation examples
 * Fixed late evaluation of functions and symbols
+
+Version 0.1.6
+
+* Fixed a bug which mistook an Oak object for a collection if it extended a collection

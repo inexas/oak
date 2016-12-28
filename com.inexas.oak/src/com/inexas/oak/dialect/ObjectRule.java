@@ -292,6 +292,7 @@ public class ObjectRule extends Rule {
 		result.append(" new");
 		result.append(typeName);
 		addParameters(parameterTypes, result);
+		result.append(" throws OakConstructorException");
 		return result.toString();
 	}
 

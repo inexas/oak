@@ -114,6 +114,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					@SuppressWarnings("unchecked")
 					List<Object> list = (List<Object>)contents.get(name);
 					if(list == null) {
+						// Use ArrayList, see note 1.
 						list = new ArrayList<>();
 						contents.put(name, list);
 					}
@@ -124,6 +125,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					@SuppressWarnings("unchecked")
 					Map<Identifier, Object> map = (Map<Identifier, Object>)contents.get(name);
 					if(map == null) {
+						// Use HashMap, see note 1.
 						map = new HashMap<>();
 						contents.put(name, map);
 					}
@@ -143,6 +145,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					@SuppressWarnings("unchecked")
 					Set<Object> set = (Set<Object>)contents.get(name);
 					if(set == null) {
+						// Use HashSet, see note 1.
 						set = new HashSet<>();
 						contents.put(name, set);
 					}
@@ -272,9 +275,16 @@ public class AstToTemplateTree extends AstVisitor.Base {
 
 					// Check the cardinality...
 					final int objectCount;
+					/*
+					 * I was using instanceOf but this doesn't always work
+					 * because an Oak (template) object might be an instance of
+					 * a List for example and a singleton will look like a
+					 * collection.
+					 */
+					final Class<?> objectClass = object == null ? null : object.getClass();
 					if(object == null) {
 						objectCount = 0;
-					} else if(object instanceof Map) {
+					} else if(objectClass == HashMap.class) {
 						@SuppressWarnings("unchecked")
 						final Map<String, Object> map = (Map<String, Object>)object;
 						objectCount = map.size();
@@ -283,8 +293,7 @@ public class AstToTemplateTree extends AstVisitor.Base {
 							final PropertyRule property = (PropertyRule)relation.subject;
 							property.validateMap(map);
 						}
-					} else if(object instanceof Collection) {
-						// Either a List or a Set
+					} else if(objectClass == ArrayList.class || objectClass == HashSet.class) {
 						@SuppressWarnings("unchecked")
 						final Collection<Object> collection = (Collection<Object>)object;
 						objectCount = collection.size();
@@ -303,7 +312,10 @@ public class AstToTemplateTree extends AstVisitor.Base {
 					}
 					final Cardinality cardinality = child.cardinality;
 					if(!cardinality.isValid(objectCount)) {
-						error(node, "Need " + cardinality + " " + name + "(s)" + " in " + context);
+						error(
+								node,
+								"Need " + cardinality + ' ' + name + "(s)" + " in " + context
+										+ " but there's " + objectCount);
 					}
 				}
 
@@ -322,9 +334,9 @@ public class AstToTemplateTree extends AstVisitor.Base {
 		}
 
 		/**
-		 * If we fail to find a Relation, for example the name is spelled wrong
-		 * in the input file, then do the best we can to find a matching on so
-		 * that we can carry on generating useful error messages
+		 * Note 1: If we fail to find a Relation, for example the name is
+		 * spelled wrong in the input file, then do the best we can to find a
+		 * matching on so that we can carry on generating useful error messages
 		 *
 		 * @param relationName
 		 * @return The best guess relationName
