@@ -36,21 +36,19 @@ public class TestDataType {
 	private static final Long integerMinMinus1AsLong = new Long(Integer.MIN_VALUE - 1L);
 
 	private static final BigInteger longMaxAsBigInteger = BigInteger.valueOf(Long.MAX_VALUE);
-	private static final BigInteger longMaxPlus1AsBigInteger =
-			BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
+	private static final BigInteger longMaxPlus1AsBigInteger = BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE);
 	private static final BigInteger longMinAsBigInteger = BigInteger.valueOf(Long.MIN_VALUE);
-	private static final BigInteger longMinMinus1AsBigInteger =
-			BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE);
+	private static final BigInteger longMinMinus1AsBigInteger = BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE);
 
 	private static final Double floatMaxAsDouble = new Double(Float.MAX_VALUE);
 	private static final Double floatMaxPlus1AsDouble = new Double(Float.MAX_VALUE + 1e30);
 	private static final Double floatMinAsDouble = new Double(-Float.MAX_VALUE);
 	private static final Double floatMinMinus1AsDouble = new Double(-Float.MAX_VALUE - 1e30);
 
-	private static final BigDecimal doubleMaxPlus1AsBigDecimal =
-			BigDecimal.valueOf(Double.MAX_VALUE).add(BigDecimal.valueOf(1e100));
-	private static final BigDecimal doubleMinMinus1AsBigDecimal =
-			BigDecimal.valueOf(-Double.MAX_VALUE).subtract(BigDecimal.valueOf(1e290));
+	private static final BigDecimal doubleMaxPlus1AsBigDecimal = BigDecimal.valueOf(Double.MAX_VALUE)
+			.add(BigDecimal.valueOf(1e100));
+	private static final BigDecimal doubleMinMinus1AsBigDecimal = BigDecimal.valueOf(-Double.MAX_VALUE)
+			.subtract(BigDecimal.valueOf(1e290));
 
 	@SuppressWarnings("unused")
 	private static final double ACCEPTABLE_ERROR = 1e-15;
@@ -87,8 +85,7 @@ public class TestDataType {
 
 	private void doValueTest(boolean expectedResult, Object expectedObject, String toTest)
 			throws RuntimeException {
-		final Text t = new Text();
-		t.append(toTest);
+		final Parser t = new Parser(toTest);
 		final List<Object> list = new ArrayList<>();
 		// value() is private (and should be)
 		try {
@@ -116,11 +113,10 @@ public class TestDataType {
 	}
 
 	private void doDateTest(Object expectedResult, String methodName, String toTest) {
-		final Text t = new Text();
-		t.append(toTest);
+		final Parser t = new Parser(toTest);
 		// date() is private (and should be)
 		try {
-			final Method method = DataType.class.getDeclaredMethod(methodName, Text.class);
+			final Method method = DataType.class.getDeclaredMethod(methodName, Parser.class);
 			method.setAccessible(true);
 			final Object result = method.invoke(null, t);
 			assertEquals(expectedResult, result);
@@ -133,14 +129,13 @@ public class TestDataType {
 	}
 
 	private void doCardinalityTest(Cardinality expected, String toTest) {
-		final Text t = new Text();
-		t.append(toTest);
+		final Parser t = new Parser(toTest);
 		try {
 			// private static boolean cardinality(TextBuilder, List<Object>
 			// valueList)
 			final Method method = DataType.class.getDeclaredMethod(
 					"cardinality",
-					Text.class,
+					Parser.class,
 					List.class);
 			method.setAccessible(true);
 			final List<Object> list = new ArrayList<>();
@@ -156,22 +151,21 @@ public class TestDataType {
 	}
 
 	private void doNumberTest(Object expected, DataType type, String toTest) {
-		final Text t = new Text();
-		t.append(toTest);
+		final Parser parser = new Parser(toTest);
 		// number() is private (and should be)
 		try {
 			// private static Object number(TextBuilder)
 			final Method method = DataType.class.getDeclaredMethod(
 					"number",
-					Text.class,
+					Parser.class,
 					DataType.class,
 					List.class);
 			method.setAccessible(true);
 			final List<Object> list = new ArrayList<>();
-			final Boolean result = (Boolean)method.invoke(null, t, type, list);
+			final Boolean result = (Boolean)method.invoke(null, parser, type, list);
 			assertTrue(result.booleanValue());
 			assertEquals(expected, list.get(0));
-			assertEquals(toTest.length(), t.cursor());
+			assertEquals(toTest.length(), parser.cursor());
 		} catch(final InvocationTargetException e) {
 			throw (RuntimeException)e.getCause();
 		} catch(final Exception e) {
@@ -346,30 +340,30 @@ public class TestDataType {
 
 	@Test
 	public void testNumbers() {
-		doNumberTest(new Long(0), DataType.any, "0");
-		doNumberTest(new Long(123), DataType.any, "123");
-		doNumberTest(new Long(-123), DataType.any, "-123");
-		doNumberTest(new Long(123), DataType.any, "123z");
+		doNumberTest(new Integer(0), DataType.any, "0");
+		doNumberTest(new Integer(123), DataType.any, "123");
+		doNumberTest(new Integer(-123), DataType.any, "-123");
+		doNumberTest(new Integer(123), DataType.any, "123z");
 
-		doNumberTest(new Long(4), DataType.any, "0b100");
-		doNumberTest(new Long(17), DataType.any, "0x11");
-		doNumberTest(new Long(634799), DataType.any, "0x09afAF");
+		doNumberTest(new Integer(4), DataType.any, "0b100");
+		doNumberTest(new Integer(17), DataType.any, "0x11");
+		doNumberTest(new Integer(634799), DataType.any, "0x09afAF");
 
 		doNumberTest(new BigInteger("123"), DataType.any, "123Z");
 		doNumberTest(new BigInteger("-123"), DataType.any, "-123Z");
 
-		doNumberTest(new Double(0), DataType.any, "0.0");
-		doNumberTest(new Double(200), DataType.any, "2e2");
-		doNumberTest(new Double(-0.02), DataType.any, "-2e-2");
-		doNumberTest(new Double(0.3), DataType.any, ".3");
-		doNumberTest(new Double(-.3), DataType.any, "-.3");
-		doNumberTest(new Double(1.23), DataType.any, "1.23f");
+		doNumberTest(new Float(0), DataType.any, "0.0");
+		doNumberTest(new Float(200), DataType.any, "2e2");
+		doNumberTest(new Float(-0.02), DataType.any, "-2e-2");
+		doNumberTest(new Float(0.3), DataType.any, ".3");
+		doNumberTest(new Float(-.3), DataType.any, "-.3");
+		doNumberTest(new Float(1.23), DataType.any, "1.23f");
 
 		doNumberTest(new BigDecimal(0.5), DataType.any, "0.5F");
 
-		doNumberTest(new Long(0), DataType.z, "0");
+		doNumberTest(new Integer(0), DataType.z, "0");
 		doNumberTest(new BigInteger("0"), DataType.Z, "0");
-		doNumberTest(new Double(0), DataType.f, "0");
+		doNumberTest(new Float(0), DataType.f, "0");
 		doNumberTest(new BigDecimal(0), DataType.F, "0");
 	}
 
@@ -391,10 +385,15 @@ public class TestDataType {
 	public void testArray() {
 		doArrayTest("[ true, false, null ]", DataType.bool, Boolean.TRUE, Boolean.FALSE, null);
 		doArrayTest("[ ]", DataType.z);
-		doArrayTest("[1,2]", DataType.z, new Long(1), new Long(2));
+		doArrayTest("[1,2]", DataType.z, new Integer(1), new Integer(2));
 		doArrayTest("[1,2F]", DataType.F, new BigDecimal(1), new BigDecimal(2));
-		doArrayTest("[\"abc\", 1, 2Z, null]", DataType.any,
-				"abc", new Long(1), new BigInteger("2"), null);
+		doArrayTest(
+				"[\"abc\", 1, 2Z, null]",
+				DataType.any,
+				"abc",
+				new Integer(1),
+				new BigInteger("2"),
+				null);
 	}
 
 	@Test
@@ -432,6 +431,12 @@ public class TestDataType {
 
 	@Test(expected = ParsingException.class)
 	public void testTextToInternalFormat4() {
-		DataType.textToInternalFormat("\" \\ug \"");
+		try {
+			DataType.textToInternalFormat("\" \\ug \"");
+			System.out.println("no");
+		} catch(final Throwable e) {
+			System.out.println(e.getClass().getName());
+			throw e;
+		}
 	}
 }

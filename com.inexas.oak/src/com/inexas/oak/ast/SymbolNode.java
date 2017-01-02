@@ -1,6 +1,6 @@
 package com.inexas.oak.ast;
 
-import java.math.BigInteger;
+import java.math.*;
 import java.time.*;
 import org.antlr.v4.runtime.ParserRuleContext;
 import com.inexas.oak.*;
@@ -62,7 +62,7 @@ public class SymbolNode extends ExpressionNode {
 			value = new ConstantNode(context, (Float)resolved);
 			break;
 		case F:
-			value = new ConstantNode(context, (BigInteger)resolved);
+			value = new ConstantNode(context, (BigDecimal)resolved);
 			break;
 		case z:
 			value = new ConstantNode(context, (Integer)resolved);

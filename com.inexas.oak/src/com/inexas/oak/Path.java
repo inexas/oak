@@ -3,7 +3,7 @@ package com.inexas.oak;
 import java.util.*;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.exception.UnexpectedException;
-import com.inexas.util.Text;
+import com.inexas.util.*;
 
 public class Path {
 	public static enum Recurse {
@@ -99,13 +99,13 @@ public class Path {
 	private final static int PARENT = 2;
 	private final static int NAMED = 3;
 
-	private final static Text.Checker oneToNine = new Text.Checker() {
+	private final static Parser.Checker oneToNine = new Parser.Checker() {
 		@Override
 		public boolean isValid(int offset, char c) {
 			return c >= '1' && c <= '9';
 		}
 	};
-	private final static Text.Checker zeroToNine = new Text.Checker() {
+	private final static Parser.Checker zeroToNine = new Parser.Checker() {
 		@Override
 		public boolean isValid(int offset, char c) {
 			return c >= '0' && c <= '9';
@@ -118,45 +118,43 @@ public class Path {
 
 	@Nullable
 	public static Path parse(String string) {
-		final Text t = new Text();
+		final Parser parser;
 		if(string != null && string.length() > 0 && string.charAt(0) != '`') {
-			t.append('`');
-			t.append(string);
-			t.append('`');
+			parser = new Parser("`" + string + '`');
 		} else {
-			t.append(string);
+			parser = new Parser(string);
 		}
-		return parse(t);
+		return parse(parser);
 	}
 
 	/**
 	 * Parse a path from a TextBuilder. e.g. `/Abc`
 	 *
-	 * @param t
+	 * @param parser
 	 *            Source to parse.
 	 * @return Either a Path or null if a path could not be parsed.
 	 */
 	@Nullable
-	public static Path parse(Text t) {
+	public static Path parse(Parser parser) {
 		final Path result;
 
 		// Set up for parse...
-		final int save = t.cursor();
+		final int save = parser.cursor();
 		final Recurse recurse;
 		final String protocol;
 		@Nullable
 		final Element[] elementList;
 
 		// '`' path: protocol? elementList recurse? '`' ;
-		if(t.consume('`')
-				&& ((protocol = protocol(t)) != null || true)
-				&& ((elementList = elementList(t)) != null)
-				&& ((recurse = recurse(t)) != null || true)
-				&& t.consume('`')) {
+		if(parser.consume('`')
+				&& ((protocol = protocol(parser)) != null || true)
+				&& ((elementList = elementList(parser)) != null)
+				&& ((recurse = recurse(parser)) != null || true)
+				&& parser.consume('`')) {
 			assert elementList != null;
 			result = new Path(protocol, elementList, recurse);
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = null;
 		}
 
@@ -177,15 +175,15 @@ public class Path {
 	}
 
 	@Nullable
-	private static String protocol(Text t) {
+	private static String protocol(Parser parser) {
 		final String result;
 
 		// Identifier ':'
-		final int save = t.cursor();
-		if(Identifier.consume(t) && t.consume(':')) {
-			result = t.getString(save, t.cursor() - 1); // -1 for ':'
+		final int save = parser.cursor();
+		if(Identifier.consume(parser) && parser.consume(':')) {
+			result = parser.getString(save, parser.cursor() - 1); // -1 for ':'
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = null;
 		}
 
@@ -193,7 +191,7 @@ public class Path {
 	}
 
 	@Nullable
-	private static Element[] elementList(Text t) {
+	private static Element[] elementList(Parser parser) {
 		@Nullable
 		final Element[] result;
 
@@ -203,16 +201,16 @@ public class Path {
 		// . : slash
 		// . | slash? element (slash element)*
 		// . ;
-		slash(t, elementList);
+		slash(parser, elementList);
 
-		if(element(t, elementList)) {
+		if(element(parser, elementList)) {
 			while(true) {
-				final int save = t.cursor();
+				final int save = parser.cursor();
 				final int saveElementList = elementList.size();
-				if(slash(t, elementList) && element(t, elementList)) {
+				if(slash(parser, elementList) && element(parser, elementList)) {
 					// Keep going
 				} else {
-					t.setCursor(save);
+					parser.setCursor(save);
 					final int size = elementList.size();
 					if(saveElementList != size) {
 						elementList.remove(size - 1);
@@ -232,15 +230,15 @@ public class Path {
 		return result;
 	}
 
-	private static boolean element(Text t, List<Element> elementList) {
+	private static boolean element(Parser parser, List<Element> elementList) {
 		final boolean result;
 
 		// element: ('.' |'..' | Id) '[' ( posint | Id) ']'
 		final int type;
 		final String name;
 		Object index;
-		if(t.consume('.')) {
-			if(t.consume('.')) {
+		if(parser.consume('.')) {
+			if(parser.consume('.')) {
 				type = PARENT;
 				name = "..";
 			} else {
@@ -250,18 +248,18 @@ public class Path {
 			result = true;
 		} else {
 			type = NAMED;
-			name = identifier(t);
+			name = identifier(parser);
 			result = name != null;
 		}
 
 		if(result) {
-			final int save = t.cursor();
-			if(t.consume('[')
-					&& (((index = posint(t)) != null) || ((index = identifier(t)) != null))
-					&& t.consume(']')) {
+			final int save = parser.cursor();
+			if(parser.consume('[')
+					&& (((index = posint(parser)) != null) || ((index = identifier(parser)) != null))
+					&& parser.consume(']')) {
 				// index is set up
 			} else {
-				t.setCursor(save);
+				parser.setCursor(save);
 				index = null;
 			}
 		} else {
@@ -275,12 +273,12 @@ public class Path {
 		return result;
 	}
 
-	private static String identifier(Text t) {
+	private static String identifier(Parser parser) {
 		final String result;
 
-		final int start = t.cursor();
-		if(Identifier.consume(t)) {
-			result = t.getString(start);
+		final int start = parser.cursor();
+		if(Identifier.consume(parser)) {
+			result = parser.getString(start);
 		} else {
 			result = null;
 		}
@@ -289,16 +287,16 @@ public class Path {
 	}
 
 	@Nullable
-	private static Integer posint(Text t) {
+	private static Integer posint(Parser parser) {
 		final Integer result;
 
 		// '0' | ([1-9][0-9]*)
-		final int save = t.cursor();
-		if(t.consume('0')) {
+		final int save = parser.cursor();
+		if(parser.consume('0')) {
 			result = new Integer(0);
-		} else if(t.parse(oneToNine) != null) {
-			t.parse(zeroToNine);
-			final String string = t.getString(save);
+		} else if(parser.parse(oneToNine) != null) {
+			parser.parse(zeroToNine);
+			final String string = parser.getString(save);
 			result = new Integer(string);
 		} else {
 			result = null;
@@ -307,10 +305,10 @@ public class Path {
 		return result;
 	}
 
-	private static boolean slash(Text t, List<Element> elementList) {
+	private static boolean slash(Parser parser, List<Element> elementList) {
 		final boolean result;
 
-		if(t.consume('/')) {
+		if(parser.consume('/')) {
 			elementList.add(new Element(SLASH, "/", null));
 			result = true;
 		} else {
@@ -320,11 +318,11 @@ public class Path {
 		return result;
 	}
 
-	private static Recurse recurse(Text t) {
+	private static Recurse recurse(Parser parser) {
 		final Recurse result;
 
-		if(t.consume('*')) {
-			result = t.consume('*') ? Recurse.deep : Recurse.shallow;
+		if(parser.consume('*')) {
+			result = parser.consume('*') ? Recurse.deep : Recurse.shallow;
 		} else {
 			result = Recurse.none;
 		}

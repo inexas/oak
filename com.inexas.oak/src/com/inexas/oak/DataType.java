@@ -153,7 +153,7 @@ public enum DataType {
 	 * The common type depends on the operation and operands. For something like
 	 * 5z + 6Z then the operands' common type is Z (the broader of the two) and
 	 * the returnType will be Z because of the operation.
-	 * 
+	 *
 	 * @param rhs
 	 *            The other type.
 	 * @return The common type
@@ -583,9 +583,9 @@ public enum DataType {
 	}
 
 	/**
-	 * In Oak it is possible to embed a tab character as an ASCII 8 or as a \t
-	 * but internally we store this in ASCII. The same goes for newlines and
-	 * other tables (see the Oak reference). Here we convert external format to
+	 * In Oak it is possible to embed control characters like tab character as
+	 * an ASCII 8 or as a \t but internally we always store the ASCII character
+	 * rather than an escape sequence. Here we convert external format to
 	 * internal format.
 	 *
 	 * @param source
@@ -630,11 +630,10 @@ public enum DataType {
 							i++;
 
 							// Leave t as it is so create a copy: hex
-							final Text hex = new Text();
-							hex.append(source);
+							final Parser hex = new Parser(source);
 							hex.setCursor(i);
 							final int start = i;
-							if(hex.consumeAscii(Text.ASCII_0_F)) {
+							if(hex.consumeAscii(Parser.ASCII_0_F)) {
 								final int end = start + Math.min(4, hex.cursor() - start);
 								final String string = hex.getString(start, end);
 								final char u = (char)Integer.parseInt(string, 16);
@@ -718,12 +717,12 @@ public enum DataType {
 					// Remove optional trailing 'z'
 					final int length = string.length();
 					if(length > 1 && string.charAt(length - 1) == 'z') {
-						result = (T)new Long(string.substring(0, length - 1));
+						result = (T)new Integer(string.substring(0, length - 1));
 					} else {
-						result = (T)new Long(string);
+						result = (T)new Integer(string);
 					}
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid integer (Long): " + string, e);
+					throw new ParsingException("Invalid integer (z): " + string, e);
 				}
 				break;
 
@@ -734,9 +733,9 @@ public enum DataType {
 					if(end < 0 || string.charAt(end) != 'Z') {
 						throw new ParsingException("Invalid number");
 					}
-					result = (T)new Long(string.substring(0, end));
+					result = (T)new BigInteger(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid integer (BigInteger): " + string, e);
+					throw new ParsingException("Invalid integer (Z): " + string, e);
 				}
 				break;
 
@@ -745,12 +744,12 @@ public enum DataType {
 					// Remove optional trailing 'f'
 					final int length = string.length();
 					if(length > 1 && string.charAt(length - 1) == 'f') {
-						result = (T)new Double(string.substring(0, length - 1));
+						result = (T)new Float(string.substring(0, length - 1));
 					} else {
-						result = (T)new Double(string);
+						result = (T)new Float(string);
 					}
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid float (Double): " + string, e);
+					throw new ParsingException("Invalid float (f): " + string, e);
 				}
 				break;
 
@@ -761,9 +760,9 @@ public enum DataType {
 					if(end < 0 || string.charAt(end) != 'F') {
 						throw new ParsingException("Invalid number");
 					}
-					result = (T)new Long(string.substring(0, end));
+					result = (T)new BigDecimal(string.substring(0, end));
 				} catch(final NumberFormatException e) {
-					throw new ParsingException("Invalid float (BigDecimal): " + string, e);
+					throw new ParsingException("Invalid decimal (F): " + string, e);
 				}
 				break;
 
@@ -844,10 +843,9 @@ public enum DataType {
 			result = null;
 		} else {
 			final List<Object> list = new ArrayList<>();
-			final Text t = new Text();
-			t.append(value);
+			final Parser parser = new Parser(value);
 
-			if(any(t, list) && t.isEof()) {
+			if(any(parser, list) && parser.isEof()) {
 				result = (T)list.get(0);
 			} else {
 				error("Count not parse value: " + value);
@@ -875,12 +873,11 @@ public enum DataType {
 	public static <T> List<T> parseArray(String string, DataType type) {
 		final List<?> result;
 
-		final Text t = new Text();
-		t.append(string);
-		if(t.consume('[')
-				&& (result = elementList(t, type)) != null
-				&& (t.ws() && t.consume(']'))
-				&& t.isEof()) {
+		final Parser parser = new Parser(string);
+		if(parser.consume('[')
+				&& (result = elementList(parser, type)) != null
+				&& (parser.ws() && parser.consume(']'))
+				&& parser.isEof()) {
 			// OK
 		} else {
 			throw new ParsingException("Invalid array: " + string);
@@ -889,17 +886,17 @@ public enum DataType {
 		return (List<T>)result;
 	}
 
-	private static List<Object> elementList(Text t, DataType type) {
+	private static List<Object> elementList(Parser parser, DataType type) {
 		final List<Object> result = new ArrayList<>();
 
 		// elementList: ( WS? value ( WS? ',' WS? value )* WS? )?
-		if(t.ws() && value(t, type, result)) {
+		if(parser.ws() && value(parser, type, result)) {
 			while(true) {
-				final int save = t.cursor();
-				if(t.ws() && t.consume(',') && t.ws() && value(t, type, result)) {
+				final int save = parser.cursor();
+				if(parser.ws() && parser.consume(',') && parser.ws() && value(parser, type, result)) {
 					continue;
 				}
-				t.setCursor(save);
+				parser.setCursor(save);
 				break;
 			}
 		}
@@ -910,7 +907,7 @@ public enum DataType {
 	/**
 	 * Parse a value.
 	 *
-	 * @param t
+	 * @param parser
 	 *            Source.
 	 * @param type
 	 *            The type of the array, may be any..
@@ -919,12 +916,12 @@ public enum DataType {
 	 * @return Return true if a value has been added to the valueList and the
 	 *         cursor advanced or false and the cursor is as it was.
 	 */
-	private static boolean value(Text t, DataType type, List<Object> valueList) {
+	private static boolean value(Parser parser, DataType type, List<Object> valueList) {
 		boolean result;
 
-		if(t.isEof()) {
+		if(parser.isEof()) {
 			result = false;
-		} else if(t.consume("null")) {
+		} else if(parser.consume("null")) {
 			valueList.add(null);
 			result = true;
 		} else {
@@ -933,43 +930,43 @@ public enum DataType {
 			case Z:
 			case f:
 			case F:
-				result = number(t, type, valueList);
+				result = number(parser, type, valueList);
 				break;
 
 			case text:
-				result = text(t, valueList);
+				result = text(parser, valueList);
 				break;
 
 			case identifier:
-				result = identifier(t, valueList);
+				result = identifier(parser, valueList);
 				break;
 
 			case path:
-				result = path(t, valueList);
+				result = path(parser, valueList);
 				break;
 
 			case datetime:
-				result = datetime(t, valueList);
+				result = datetime(parser, valueList);
 				break;
 
 			case date:
-				result = date(t, valueList);
+				result = date(parser, valueList);
 				break;
 
 			case time:
-				result = time(t, valueList);
+				result = time(parser, valueList);
 				break;
 
 			case bool:
-				result = bool(t, valueList);
+				result = bool(parser, valueList);
 				break;
 
 			case cardinality:
-				result = cardinality(t, valueList);
+				result = cardinality(parser, valueList);
 				break;
 
 			case any:
-				result = any(t, valueList);
+				result = any(parser, valueList);
 				break;
 
 			case notEvaluated:
@@ -981,7 +978,7 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean any(Text t, List<Object> valueList) {
+	private static boolean any(Parser parser, List<Object> valueList) {
 		final boolean result;
 
 		// value
@@ -1001,32 +998,32 @@ public enum DataType {
 		 *
 		 * We know we're not EOF and "null" has been dealt with by the caller.
 		 */
-		final char c = t.peek();
+		final char c = parser.peek();
 		if(c == '"') { // Text
-			result = text(t, valueList);
+			result = text(parser, valueList);
 		} else if(c == '`') { // Path
-			result = path(t, valueList);
+			result = path(parser, valueList);
 		} else if(c == '@') { // Temporal
-			result = datetime(t, valueList) // Must be first
-					|| date(t, valueList)
-					|| time(t, valueList);
+			result = datetime(parser, valueList) // Must be first
+					|| date(parser, valueList)
+					|| time(parser, valueList);
 		} else if(c >= '0' && c <= '9' || c == '.' || c == '-') {
-			result = cardinality(t, valueList) ||
-					number(t, DataType.any, valueList);
+			result = cardinality(parser, valueList) ||
+					number(parser, DataType.any, valueList);
 		} else {
-			result = bool(t, valueList) // Must be first
-					|| identifier(t, valueList);
+			result = bool(parser, valueList) // Must be first
+					|| identifier(parser, valueList);
 		}
 
 		return result;
 	}
 
-	private static boolean datetime(Text t, List<Object> valueList) {
+	private static boolean datetime(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(t.consume('@') && date(t) && t.ws() && time(t)) {
-			final String string = t.getString(start + 1); // Jump the'@'
+		final int start = parser.cursor();
+		if(parser.consume('@') && date(parser) && parser.ws() && time(parser)) {
+			final String string = parser.getString(start + 1); // Jump the'@'
 			final LocalDateTime value = DateU.parseStandardDatetime(string);
 			valueList.add(value);
 			result = true;
@@ -1037,12 +1034,12 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean date(Text t, List<Object> valueList) {
+	private static boolean date(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(t.consume('@') && date(t)) {
-			final String string = t.getString(start + 1); // Jump the'@'
+		final int start = parser.cursor();
+		if(parser.consume('@') && date(parser)) {
+			final String string = parser.getString(start + 1); // Jump the'@'
 			final LocalDate value = DateU.parseStandardDate(string);
 			valueList.add(value);
 			result = true;
@@ -1053,32 +1050,32 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean date(Text t) {
+	private static boolean date(Parser parser) {
 		final boolean result;
 
 		// yyyy '/' MM '/' dd
 
-		final int save = t.cursor();
-		if(t.consumeAscii(Text.ASCII_0_9)
-				&& t.consume('/')
-				&& t.consumeAscii(Text.ASCII_0_9)
-				&& t.consume('/')
-				&& t.consumeAscii(Text.ASCII_0_9)) {
+		final int save = parser.cursor();
+		if(parser.consumeAscii(Parser.ASCII_0_9)
+				&& parser.consume('/')
+				&& parser.consumeAscii(Parser.ASCII_0_9)
+				&& parser.consume('/')
+				&& parser.consumeAscii(Parser.ASCII_0_9)) {
 			result = true;
 		} else {
 			result = false;
-			t.setCursor(save);
+			parser.setCursor(save);
 		}
 
 		return result;
 	}
 
-	private static boolean time(Text t, List<Object> valueList) {
+	private static boolean time(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(t.consume('@') && time(t)) {
-			final String string = t.getString(start + 1); // Jump the'@'
+		final int start = parser.cursor();
+		if(parser.consume('@') && time(parser)) {
+			final String string = parser.getString(start + 1); // Jump the'@'
 			final LocalTime value = DateU.parseStandardTime(string);
 			valueList.add(value);
 			result = true;
@@ -1089,36 +1086,36 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean time(Text t) {
+	private static boolean time(Parser parser) {
 		final boolean result;
 
 		// HH ':' mm ( : ss )?
 
 		// Try for HH:mm...
-		int reset = t.cursor();
-		if(t.consumeAscii(Text.ASCII_0_9)
-				&& t.consume(':')
-				&& t.consumeAscii(Text.ASCII_0_9)) {
+		int reset = parser.cursor();
+		if(parser.consumeAscii(Parser.ASCII_0_9)
+				&& parser.consume(':')
+				&& parser.consumeAscii(Parser.ASCII_0_9)) {
 			result = true;
-			reset = t.cursor();
+			reset = parser.cursor();
 
 			// Try for :ss...
-			if(t.consume(':') && t.consumeAscii(Text.ASCII_0_9)) {
-				reset = t.cursor();
+			if(parser.consume(':') && parser.consumeAscii(Parser.ASCII_0_9)) {
+				reset = parser.cursor();
 			}
 		} else {
 			result = false;
 		}
 
-		t.setCursor(reset);
+		parser.setCursor(reset);
 
 		return result;
 	}
 
-	private static boolean cardinality(Text t, List<Object> valueList) {
+	private static boolean cardinality(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final Cardinality value = Cardinality.parse(t);
+		final Cardinality value = Cardinality.parse(parser);
 		if(value == null) {
 			result = false;
 		} else {
@@ -1129,10 +1126,10 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean path(Text t, List<Object> valueList) {
+	private static boolean path(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final Path value = Path.parse(t);
+		final Path value = Path.parse(parser);
 		if(value == null) {
 			result = false;
 		} else {
@@ -1143,12 +1140,12 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean identifier(Text t, List<Object> valueList) {
+	private static boolean identifier(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(Identifier.consume(t)) {
-			final String string = t.getString(start);
+		final int start = parser.cursor();
+		if(Identifier.consume(parser)) {
+			final String string = parser.getString(start);
 			valueList.add(new Identifier(string));
 			result = true;
 		} else {
@@ -1158,13 +1155,13 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean text(Text t, List<Object> valueList) {
+	private static boolean text(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(t.consumeString()) {
+		final int start = parser.cursor();
+		if(parser.consumeString()) {
 			// +/- 1s: drop the quotes
-			final String textValue = unescape(t, start + 1, t.cursor() - 1);
+			final String textValue = unescape(parser, start + 1, parser.cursor() - 1);
 			valueList.add(textValue);
 			result = true;
 		} else {
@@ -1178,7 +1175,7 @@ public enum DataType {
 	/**
 	 * Convert a potentially escaped string to text.
 	 *
-	 * @param t
+	 * @param parser
 	 *            The source string.
 	 * @param start
 	 *            Starting offset.
@@ -1187,7 +1184,7 @@ public enum DataType {
 	 * @return Return the un-escaped string which may be zero-length but not
 	 *         null.
 	 */
-	private static String unescape(Text t, int start, int end) {
+	private static String unescape(Parser parser, int start, int end) {
 		final Text result = new Text();
 
 		/*
@@ -1195,12 +1192,12 @@ public enum DataType {
 		 * from the string but otherwise we can't trust the contents.
 		 */
 		for(int i = start; i < end; i++) {
-			final char c = t.charAt(i);
+			final char c = parser.charAt(i);
 			final char escaped;
 			if(c == '\\') {
 				if(i < end - 1) {
 					i++;
-					final char next = t.charAt(i);
+					final char next = parser.charAt(i);
 					if(next == 't') {
 						escaped = '\t';
 					} else if(next == 'n') {
@@ -1226,13 +1223,13 @@ public enum DataType {
 		return result.toString();
 	}
 
-	private static boolean bool(Text t, List<Object> valueList) {
+	private static boolean bool(Parser parser, List<Object> valueList) {
 		final boolean result;
 
-		if(t.consume("true")) {
+		if(parser.consume("true")) {
 			valueList.add(Boolean.TRUE);
 			result = true;
-		} else if(t.consume("false")) {
+		} else if(parser.consume("false")) {
 			valueList.add(Boolean.FALSE);
 			result = true;
 		} else {
@@ -1246,49 +1243,49 @@ public enum DataType {
 	 * There's a bug in this as it requires seconds in the string whereas the
 	 * time() function does not. It seems to be in the Java parser.
 	 *
-	 * @param t
+	 * @param parser
 	 *            Source to parse.
 	 * @return A Temporal or null if none found.
 	 */
 	@Nullable
-	private static Temporal temporal(Text t) {
+	private static Temporal temporal(Parser parser) {
 		Temporal result;
 
-		final int save = t.cursor();
-		t.consume('@');
+		final int save = parser.cursor();
+		parser.consume('@');
 		final int start = save + 1;
 
 		// yyyy/MM/dd HH:mm:ss
 
 		try {
-			if(date(t)) {
-				final int save2 = t.cursor();
-				t.ws();
-				if(time(t)) {
-					final String string = t.getString(start);
+			if(date(parser)) {
+				final int save2 = parser.cursor();
+				parser.ws();
+				if(time(parser)) {
+					final String string = parser.getString(start);
 					result = DateU.parseStandardDatetime(string);
 				} else {
-					t.setCursor(save2);
-					final String string = t.getString(start);
+					parser.setCursor(save2);
+					final String string = parser.getString(start);
 					result = DateU.parseStandardDate(string);
 				}
-			} else if(time(t)) {
-				final String string = t.getString(start);
+			} else if(time(parser)) {
+				final String string = parser.getString(start);
 				result = DateU.parseStandardTime(string);
 			} else {
 				result = null;
-				t.setCursor(save);
+				parser.setCursor(save);
 			}
 		} catch(final DateTimeParseException e) {
 			result = null;
-			t.setCursor(save);
+			parser.setCursor(save);
 		}
 
 		return result;
 	}
 
 	private static boolean number(
-			Text t,
+			Parser parser,
 			DataType requiredType,
 			List<Object> valueList) {
 		// posNumber
@@ -1300,21 +1297,21 @@ public enum DataType {
 		// ;
 		final boolean result;
 
-		assert !t.isEof() : "Should have been checked by caller";
+		assert !parser.isEof() : "Should have been checked by caller";
 
-		if(binary(t, valueList, requiredType) || hex(t, valueList, requiredType)) {
+		if(binary(parser, valueList, requiredType) || hex(parser, valueList, requiredType)) {
 			// ?todo I could allow negatives here
 			// ( binary | hex | '0' )
 			result = true;
 		} else {
 			// ( Int DecPart | Int | DecPart ) ( 'e' Int )? [zZfF]?
 
-			final int start = t.cursor();
+			final int start = parser.cursor();
 
-			if((t.consumeInt() && (decPart(t) || true) && (exponent(t) || true))
-					|| (t.consume('-') || true) && decPart(t) && (exponent(t) || true)) {
-				final String string = t.getString(start);
-				final Object value = deriveType(string, requiredType, t, 10);
+			if((parser.consumeInt() && (decPart(parser) || true) && (exponent(parser) || true))
+					|| (parser.consume('-') || true) && decPart(parser) && (exponent(parser) || true)) {
+				final String string = parser.getString(start);
+				final Object value = deriveType(string, requiredType, parser, 10);
 				valueList.add(value);
 				result = true;
 			} else {
@@ -1325,66 +1322,66 @@ public enum DataType {
 		return result;
 	}
 
-	private static boolean exponent(Text t) {
+	private static boolean exponent(Parser parser) {
 		final boolean result;
 
 		// 'e' Int
-		final int save = t.cursor();
-		if(t.consume('e') && t.consumeInt()) {
+		final int save = parser.cursor();
+		if(parser.consume('e') && parser.consumeInt()) {
 			result = true;
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean decPart(Text t) {
+	private static boolean decPart(Parser parser) {
 		final boolean result;
 
 		// '.' Digits+
-		final int save = t.cursor();
-		if(t.consume('.') && t.consumeAscii(Text.ASCII_0_9)) {
+		final int save = parser.cursor();
+		if(parser.consume('.') && parser.consumeAscii(Parser.ASCII_0_9)) {
 			result = true;
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean hex(Text t, List<Object> valueList, DataType requiredType) {
+	private static boolean hex(Parser parser, List<Object> valueList, DataType requiredType) {
 		final boolean result;
 
 		// '0x' HexDigit+ [zZfF]?
-		final int save = t.cursor();
-		if(t.consume("0x") && t.consumeAscii(Text.ASCII_0_F)) {
-			final String string = t.getString(save + 2);
-			final Object value = deriveType(string, requiredType, t, 16);
+		final int save = parser.cursor();
+		if(parser.consume("0x") && parser.consumeAscii(Parser.ASCII_0_F)) {
+			final String string = parser.getString(save + 2);
+			final Object value = deriveType(string, requiredType, parser, 16);
 			valueList.add(value);
 			result = true;
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = false;
 		}
 
 		return result;
 	}
 
-	private static boolean binary(Text t, List<Object> valueList, DataType requiredType) {
+	private static boolean binary(Parser parser, List<Object> valueList, DataType requiredType) {
 		final boolean result;
 
 		// '0b' [01]+ [zZfF]?
-		final int save = t.cursor();
-		if(t.consume("0b") && t.consumeAscii(Text.ASCII_0_1)) {
-			final String string = t.getString(save + 2);
-			final Object value = deriveType(string, requiredType, t, 2);
+		final int save = parser.cursor();
+		if(parser.consume("0b") && parser.consumeAscii(Parser.ASCII_0_1)) {
+			final String string = parser.getString(save + 2);
+			final Object value = deriveType(string, requiredType, parser, 2);
 			valueList.add(value);
 			result = true;
 		} else {
-			t.setCursor(save);
+			parser.setCursor(save);
 			result = false;
 		}
 
@@ -1401,7 +1398,7 @@ public enum DataType {
 	 *            contains a '.' or an 'e' then the type must either be f or F.
 	 * @param requiredType
 	 *            Either z, Z, f, F or any.
-	 * @param t
+	 * @param parser
 	 *            The source. The cursor will be at the end of the number but
 	 *            any type specifier will not have been consumed. If there is
 	 *            one then we'll eat it.
@@ -1412,13 +1409,13 @@ public enum DataType {
 	private static Object deriveType(
 			String string,
 			DataType requiredType,
-			Text t,
+			Parser parser,
 			int radix) {
 		final Object result;
 
 		// Figure out the correct type...
 		final DataType derivedType;
-		if(t.isEof()) {
+		if(parser.isEof()) {
 			if(requiredType == DataType.any) {
 				if(string.indexOf('.') >= 0 || string.indexOf('e') >= 0) {
 					derivedType = DataType.f;
@@ -1429,9 +1426,9 @@ public enum DataType {
 				derivedType = requiredType;
 			}
 		} else {
-			final char c = t.peek();
+			final char c = parser.peek();
 			if(c == 'z' || c == 'Z' || c == 'f' || c == 'F') {
-				t.consume(c);
+				parser.consume(c);
 				derivedType = DataType.valueOf(String.valueOf(c));
 				if(!(requiredType == DataType.any || requiredType == derivedType)) {
 					throw new ParsingException("Incompatible type: " + string + c);
@@ -1451,13 +1448,13 @@ public enum DataType {
 
 		switch(derivedType) {
 		case z:
-			result = new Long(Long.parseLong(string, radix));
+			result = new Integer(Integer.parseInt(string, radix));
 			break;
 		case Z:
 			result = new BigInteger(string, radix);
 			break;
 		case f:
-			result = new Double(string);
+			result = new Float(string);
 			break;
 		case F:
 			result = new BigDecimal(string);

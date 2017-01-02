@@ -1,18 +1,35 @@
 package com.inexas.oak.advisory;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.*;
 import java.util.*;
 import com.inexas.tad.Tad;
 import com.inexas.util.*;
 
+/**
+ * An Advisory is an object that collects Advices: error messages, warning
+ * messages and the like. This is tasks where you want to collect the advice but
+ * not terminate processing. It's a TAD object so you can attach it to the
+ * thread and grab it when you need it.
+ *
+ * @author kwhittingham, @date 1 Jan 2017
+ */
 public class Advisory implements Tad {
+	public static enum Type {
+		ERR,
+		WRN,
+		INF;
+	}
+
+	// todo Add info
 	public class Advice implements Comparable<Advice> {
 		public final String message;
 		public final int line, column;
-		public final boolean isError;
+		public final Type type;
 
-		public Advice(int line, int column, boolean isError, String message) {
-			this.isError = isError;
+		public Advice(int line, int column, Type type, String message) {
+			this.type = type;
 			this.message = message;
 			this.line = line;
 			this.column = column;
@@ -54,27 +71,27 @@ public class Advisory implements Tad {
 		 */
 		@Override
 		public String toString() {
-			return (isError ? "ERROR> " : "WARNING> ")
+			return type.name() + "> "
 					+ sourceName + ':' + (line == 0 ? "" : Integer.toString(line))
 					+ ' ' + message;
 		}
 	}
 
+	private final String path;
 	private final String sourceName;
 	private final List<Advice> items = new ArrayList<>();
 
 	private int errorCount, warningCount;
 	private final List<Pair<Object, Locus>> register = new ArrayList<>();
-	private final String string;
 
-	public Advisory(String string) {
-		this.sourceName = "(String input)";
-		this.string = string;
+	public Advisory(String sourceName) {
+		this.path = null;
+		this.sourceName = sourceName;
 	}
 
-	public Advisory(File file) {
-		this.sourceName = file.getName();
-		string = null;
+	public Advisory(File sourceFile) {
+		this.path = sourceFile.getAbsolutePath();
+		this.sourceName = sourceFile.getName();
 	}
 
 	/**
@@ -84,7 +101,7 @@ public class Advisory implements Tad {
 	 *            The error message.
 	 */
 	public void error(String message) {
-		report(null, message, true);
+		report(null, message, Type.ERR);
 	}
 
 	/**
@@ -96,11 +113,11 @@ public class Advisory implements Tad {
 	 *            The error message.
 	 */
 	public void error(Object object, String message) {
-		report(object, message, true);
+		report(object, message, Type.ERR);
 	}
 
 	public void error(int line, int column, String message) {
-		add(line, column, true, message);
+		add(line, column, Type.ERR, message);
 	}
 
 	/**
@@ -112,7 +129,27 @@ public class Advisory implements Tad {
 	 *            The error message.
 	 */
 	public void warning(Object object, String message) {
-		report(object, message, false);
+		report(object, message, Type.WRN);
+	}
+
+	public void warning(int line, int column, String message) {
+		add(line, column, Type.WRN, message);
+	}
+
+	/**
+	 * Report information.
+	 *
+	 * @param object
+	 *            The object in which this error is being reported.
+	 * @param message
+	 *            The error message.
+	 */
+	public void info(Object object, String message) {
+		report(object, message, Type.INF);
+	}
+
+	public void info(int line, int column, String message) {
+		add(line, column, Type.INF, message);
 	}
 
 	/**
@@ -130,13 +167,13 @@ public class Advisory implements Tad {
 	}
 
 	/**
-	 * @return The first error message or null if the Advistory contains no
+	 * @return The first error message or null if the Advisory contains no
 	 *         errors.
 	 */
 	public String getFirstError() {
 		String result = null;
 		for(final Advice advice : items) {
-			if(advice.isError) {
+			if(advice.type == Type.ERR) {
 				result = advice.message;
 				break;
 			}
@@ -177,10 +214,6 @@ public class Advisory implements Tad {
 		} else {
 			sort();
 			final Text t = new Text();
-			if(string != null) {
-				t.append(string);
-				t.newline();
-			}
 			for(final Advice item : items) {
 				t.append(item.toString());
 				t.newline();
@@ -190,21 +223,21 @@ public class Advisory implements Tad {
 		return result;
 	}
 
-	private void report(Object object, String message, boolean isError) {
+	private void report(Object object, String message, Type type) {
 		final Locus locus = lookup(object);
 		if(locus == null) {
-			add(0, 0, true, message);
+			add(0, 0, type, message);
 		} else {
-			add(locus.getLine(), locus.getColumn(), isError, message);
+			add(locus.getLine(), locus.getColumn(), type, message);
 		}
 	}
 
-	private void add(int line, int column, boolean isError, String message) {
-		final Advice item = new Advice(line, column, isError, message);
+	private void add(int line, int column, Type type, String message) {
+		final Advice item = new Advice(line, column, type, message);
 		items.add(item);
-		if(isError) {
+		if(type == Type.ERR) {
 			this.errorCount++;
-		} else {
+		} else if(type == Type.WRN) {
 			this.warningCount++;
 		}
 	}
@@ -229,4 +262,33 @@ public class Advisory implements Tad {
 		return result;
 	}
 
+	/**
+	 * Write the contents to the given path. The directory must exist but the
+	 * file will be created if necessary.
+	 *
+	 * @param logPath
+	 *            Path and file name to write; e.g. /my/file.log
+	 */
+	public void write(Path logPath) {
+		try(BufferedWriter writer = Files.newBufferedWriter(logPath, Charset.defaultCharset())) {
+			writer.write(DateU.formatDatetimeAirline(new Date()));
+			if(path != null) {
+				writer.write(" - ");
+				writer.write(path);
+			}
+			writer.write('\n');
+
+			for(final Advice advice : items) {
+				writer.write(advice.toString());
+				writer.write('\n');
+			}
+			writer.write(Integer.toString(errorCount));
+			writer.write(" error(s), ");
+			writer.write(Integer.toString(warningCount));
+			writer.write(" warning(s)\n");
+		} catch(final IOException x) {
+			System.err.format("IOException: %s%n", x);
+		}
+
+	}
 }

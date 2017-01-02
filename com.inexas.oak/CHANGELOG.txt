@@ -14,3 +14,5 @@ Version 0.1.5
 Version 0.1.6
 
 * Fixed a bug which mistook an Oak object for a collection if it extended a collection
+* Fixed cast to BigDecimal
+* Added Advisory.write()

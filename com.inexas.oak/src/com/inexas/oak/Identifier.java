@@ -14,7 +14,7 @@ import java.io.Serializable;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import com.inexas.oak.advisory.Advisory;
 import com.inexas.tad.TadContext;
-import com.inexas.util.Text;
+import com.inexas.util.Parser;
 
 /**
  * This is a lightweight and specialized version of String.
@@ -26,8 +26,8 @@ import com.inexas.util.Text;
 public class Identifier implements Comparable<Identifier>, Serializable {
 	private static final long serialVersionUID = -7908114113413045720L;
 	public final static int MAX_LENGTH = 32;
-	private final static byte FIRST = Text.ASCII_A_Z | Text.ASCII_a_z | Text.ASCII_UNDERLINE;
-	private final static byte SUBSEQUENT = FIRST | Text.ASCII_0_9;
+	private final static byte FIRST = Parser.ASCII_A_Z | Parser.ASCII_a_z | Parser.ASCII_UNDERLINE;
+	private final static byte SUBSEQUENT = FIRST | Parser.ASCII_0_9;
 
 	private final char ca[];
 	private final int length;
@@ -47,12 +47,12 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	public static boolean isValid(String string) {
 		final boolean result;
 
-		final Text t = new Text(string);
-		if(t.length() <= MAX_LENGTH && consume(t) && t.isEof()) {
+		final Parser parser = new Parser(string);
+		if(parser.length() <= MAX_LENGTH && consume(parser) && parser.isEof()) {
 			result = true;
 		} else {
 			result = false;
-			error(1, t.cursor(), "Unrecognized input");
+			error(1, parser.cursor(), "Unrecognized input");
 		}
 
 		return result;
@@ -61,8 +61,8 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	/**
 	 * Consume an Identifier.
 	 *
-	 * @param t
-	 *            The Text from which to consume; cannot be null.
+	 * @param parser
+	 *            The Parser from which to consume; cannot be null.
 	 * @return True if an Identifier has been consumed. The cursor will have
 	 *         been advanced but is not necessarily at EOF.
 	 * @throws ParsingException
@@ -70,15 +70,15 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	 *             present in which case it is updated and true is returned to
 	 *             allow parsing to continue.
 	 */
-	public static boolean consume(Text t) {
+	public static boolean consume(Parser parser) {
 		final boolean result;
 
-		final int start = t.cursor();
-		if(t.consumeAscii(FIRST) && (t.consumeAscii(SUBSEQUENT) || true)) {
+		final int start = parser.cursor();
+		if(parser.consumeAscii(FIRST) && (parser.consumeAscii(SUBSEQUENT) || true)) {
 			result = true;
-			final int end = t.cursor();
+			final int end = parser.cursor();
 			if(end - start > MAX_LENGTH) {
-				error(1, 1, "Identifier too long: " + t.subSequence(start, end));
+				error(1, 1, "Identifier too long: " + parser.subSequence(start, end));
 			}
 		} else {
 			result = false;
@@ -91,9 +91,9 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 		if(string == null || string.length() == 0) {
 			throw new ParsingException("new Identifier(null) called");
 		}
-		final Text t = new Text(string);
-		if(consume(t)) {
-			ca = t.toCharArray();
+		final Parser parser = new Parser(string);
+		if(consume(parser)) {
+			ca = parser.toCharArray();
 			length = ca.length;
 		} else {
 			throw new ParsingException("Invalid Identifier: " + string);
@@ -110,15 +110,15 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 	}
 
 	/**
-	 * @param t
+	 * @param parser
 	 *            Text to construct from.
 	 */
-	public Identifier(Text t) {
-		if(consume(t)) {
-			ca = t.toCharArray();
+	public Identifier(Parser parser) {
+		if(consume(parser)) {
+			ca = parser.toCharArray();
 			length = ca.length;
 		} else {
-			throw new ParsingException("Invalid Identifier: " + t.getString(t.cursor()));
+			throw new ParsingException("Invalid Identifier: " + parser.getString(parser.cursor()));
 		}
 	}
 
