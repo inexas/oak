@@ -7,7 +7,7 @@ Why use Oak instead of JSON or XML? For these reasons:
 
 1. Oak is more expressive and easier to write and read.
 2. You can build your own 'dialects' rather like a domain specific language. Oak can then do the hard work of checking the correctness of the input and producing meaningful messages.
-3. You can have Oak automatically construct an object hierarchy from a data file in a single like of code.
+3. You can have Oak automatically construct an object hierarchy from a data file in a single line of code.
 
 See [Oak's home page](http://www.inexas.org/display/inexas/Products+-+Oak) for more info. Contact me if you need help.
 
